@@ -3,46 +3,26 @@
 """
 Custom Media Player with AjPanel-Style PlayerBar - WGFileManager edition
 =========================================================================
-Round-95.
+Round-96: player panel, STANDALONE.
 
-Round-95 (subtitle system - ORIGINAL engine vendored):
-  The r94 subpackage (rewritten engine) is replaced by the player's
-  ORIGINAL subtitle files, vendored verbatim under player/subtitles/
-  (engine / studio / autosub / config / http / thread / menu /
-  screens), plus three new glue files: __init__.py (SubtitleManager
-  adapter with the player's SubtitleHandler surface), overlay.py
-  (full-screen transparent dialog the STUDIO singleton binds to,
-  zPosition 500 - below the bar's 1000, so the bar slides OVER
-  subtitles and the panel itself is untouched), and studio_settings.py
-  (the styling overlay). The r94 rewrite had guessed the SubSource API
-  shape and was wrong (real flow: movies/search -> movieId ->
-  subtitles?movieId&language -> subtitles/{id}/download with X-API-Key
-  headers and a recursive JSON normalizer) - the vendored engine is
-  the proven implementation.
-  - Auto-attach pipeline per track: per-file memory -> sidecar next to
-    the video -> engine's subtitle-folder scan (+3.5 s) -> silent
-    SubSource search (+6.5 s, self-skips if anything attached).
-  - The player exposes title / _item_url / _autosub_gen (the engine's
-    autosub worker and menu read these off the player).
-  - showSubtitleMenu constructs the vendored menu helper (it opens its
-    own ChoiceBox; it is NOT a Screen - never session.open it) and no
-    longer re-runs the auto-attach pipeline on every menu open.
-  - SubtitleManager keeps the legacy surface so hotkey_manager's
-    resolver and every existing player call keep working.
-  - RED Stop now exits directly to TV (the earlier "keep red button as
-    exit directly to TV" requirement): stop() stops, restores the
-    pre-player service and closes - no confirmation dialog. EXIT keeps
-    the r93 behaviour (restore early, deferred close).
+  All subtitle-subpackage integration (r94/r95) is removed - the player
+  imports nothing from player/subtitles/. The in-file legacy
+  SubtitleHandler is the only subtitle backend: embedded detection,
+  external .srt attach, delay memory (.ajp), sync adjust. Self-contained,
+  cannot fail at import time.
 
-Round-94 (carried): attribute name 'subtitleHandler' shared by old and
-  new backends; handler-agnostic self-test restore.
+  Base: round-93 (proven) - r88 fixes, r91 AJ-Panel progress bar +
+  gates, r92 inverted-alpha colours, r93 exit-to-TV.
+  Kept from r95: RED = stop + exit DIRECTLY to TV (no confirmation
+  dialog). EXIT keeps r93 behaviour (stop, restore TV immediately,
+  deferred close - this is what fixed the frozen-frame bug).
 
-Round-93 (carried): exit-to-TV - lastServiceRef captured once in
-  __init__; handleExit() restores immediately; onClosePlayer() is the
-  one-shot safety net.
+Round-93 (carried): lastServiceRef captured once in __init__;
+  handleExit() restores immediately; onClosePlayer() is the one-shot
+  safety net for close paths that skip handleExit (RED, EOF).
 
-Round-92 (carried): inverted-alpha fix - all 8-digit colours carry the
-  00 (opaque) prefix.
+Round-92 (carried): Enigma2 alpha is INVERTED - 0x00 = opaque,
+  0xFF = transparent. All 8-digit colours carry the 00 prefix.
 
 Round-91 (carried): progress area on the AJ-Panel pattern - five EMPTY
   bar Labels, colours in the skin (BAR_COLORS + P()), Python only
@@ -83,22 +63,6 @@ from Components.config import config, ConfigSubsection, ConfigInteger, ConfigYes
 from Tools.BoundFunction import boundFunction as BF
 from Tools.LoadPixmap import LoadPixmap
 from Tools.ISO639 import LanguageCodes
-
-# FIX (r95): the ORIGINAL subtitle engine is vendored under
-# player/subtitles/ (engine / studio / autosub / config / http /
-# thread / menu / screens — verbatim from the working plugin) plus
-# glue (__init__ adapter, overlay, studio_settings). NOTE:
-# SubtitleMenuScreen is menu.py's helper object, NOT a Screen —
-# construct it, never session.open it.
-try:
-    from .subtitles import (SubtitleManager, SubtitleMenuScreen,
-                            StudioSettingsScreen)
-except ImportError:
-    try:
-        from subtitles import (SubtitleManager, SubtitleMenuScreen,
-                               StudioSettingsScreen)
-    except ImportError:
-        SubtitleManager = SubtitleMenuScreen = StudioSettingsScreen = None
 
 if sys.version_info[0] >= 3:
     unicode = str
@@ -180,7 +144,7 @@ if not hasattr(_pc, 'playerBarHideSeconds'):
 MEDIA_EXTENSIONS = [
     '*.mp4', '*.mkv', '*.avi', '*.mov', '*.ts', '*.m2ts',
     '*.wmv', '*.flv', '*.mp3', '*.aac', '*.ogg', '*.m4v',
-    '*.webm', '*.flac', '*.wav', '.m4a', '*.3gp', '*.wma',
+    '*.webm', '*.flac', '*.wav', '*.m4a', '*.3gp', '*.wma',
     '*.opus', '*.vob', '*.mpeg', '*.mpg', '*.divx'
 ]
 SUBTITLE_EXTENSIONS = ['.srt', '.ass', '.ssa', '.sub', '.idx', '.txt']
@@ -230,6 +194,11 @@ class PlaylistManager:
         self.shuffle = _pc.playerShufflePlaylist.value
         self.repeat = _pc.playerRepeatPlaylist.value
         self.playback_positions = {}
+        # [player-ux] "mark watched" set, ported alongside the near-end
+        # exit prompt below. Session-memory only, same lifetime as
+        # playback_positions above (neither is written to disk by this
+        # file).
+        self.watched = set()
 
     def addFile(self, filePath):
         if os.path.exists(filePath):
@@ -273,6 +242,14 @@ class PlaylistManager:
         self.items = []
         self.currentIndex = -1
         self.playback_positions.clear()
+        self.watched.clear()
+
+    def markWatched(self, filePath):
+        self.watched.add(filePath)
+        self.playback_positions.pop(filePath, None)
+
+    def isWatched(self, filePath):
+        return filePath in self.watched
 
     def getCurrent(self):
         if 0 <= self.currentIndex < len(self.items):
@@ -335,7 +312,7 @@ class PlaylistManager:
 
 
 # ============================================================================
-# Subtitle Handler (LEGACY - fallback when player/subtitles/ is absent)
+# Subtitle Handler (legacy, in-file - r96: the ONLY subtitle backend)
 # ============================================================================
 class SubtitleHandler:
     FILE_EXTENSIONS = SUBTITLE_EXTENSIONS
@@ -343,7 +320,7 @@ class SubtitleHandler:
 
     def __init__(self, session, screen=None):
         self.session = session
-        self.screen = screen
+        self.screen = screen          # FIX (r88): used for the widget form
         self.currentService = None
         self.subtitleList = []
         self.selectedSubtitle = None
@@ -353,8 +330,11 @@ class SubtitleHandler:
         self._scanRetryTimer = None
         self._scanRetryTimer2 = None
         self._restoreTimer = None
+        # FIX (r88): identity of the ref this handler's state belongs to,
+        # so a deferred restore can bail if the user changed tracks.
         self.serviceRefString = None
 
+    # FIX (r88): centralized timer teardown.
     def _stopTimer(self, attr):
         t = getattr(self, attr, None)
         if t is not None:
@@ -373,12 +353,19 @@ class SubtitleHandler:
         self._stopTimer("_restoreTimer")
 
     def close(self):
+        """FIX (r88): called by the screen on close; stops every pending
+        deferred callback so none of them fire on a dead screen."""
         self._stopAllTimers()
         self.currentService = None
         self.screen = None
 
+    # ------------------------------------------------------------- service
     def setService(self, service):
+        # FIX (r88): stop any pending timers from a previous service
+        # BEFORE we create new ones. Otherwise a stale 2.5s restore can
+        # replay the OLD ref (with its |sub suffix) after a track change.
         self._stopAllTimers()
+
         self.currentService = service
         self.subtitleList = []
         self.selectedSubtitle = None
@@ -388,6 +375,7 @@ class SubtitleHandler:
         self.serviceRefString = None
         if not service:
             return
+        # Remember which ref this handler state is for.
         try:
             ref = self.session.nav.getCurrentlyPlayingServiceReference()
             if ref:
@@ -398,6 +386,7 @@ class SubtitleHandler:
         self._getEmbeddedSubtitles()
         self._scanExternalSubtitles()
 
+        # Deferred rescan (Bug 121): decoder may not be ready yet.
         if not self.subtitleList and not self.externalSubtitles:
             logger.info("[Sub] first scan empty - will retry in 2s")
             try:
@@ -415,6 +404,10 @@ class SubtitleHandler:
             except Exception as e:
                 logger.warning("[Sub] rescan setup failed: %s", e)
 
+        # Restore per-file state (delay / selection) if any - DEFERRED
+        # (round-88): restoring an external sub replays the service ref;
+        # doing that inline races the original play. One-shot timer lets
+        # the original play settle first.
         try:
             self._restoreTimer = eTimer()
 
@@ -472,6 +465,7 @@ class SubtitleHandler:
         self.externalSubtitles = sorted(list(set(found)))
         logger.debug("[Sub] %d external subtitles" % len(self.externalSubtitles))
 
+    # ------------------------------------------------------------ listing
     def getSubtitleList(self):
         result = [(None, "Disabled", "", "", False)]
         for sub in self.subtitleList:
@@ -509,9 +503,13 @@ class SubtitleHandler:
 
     @staticmethod
     def _is_string(obj):
+        # FIX (r88): Py2 unicode paths are not `str`.
         return isinstance(obj, _STRING_TYPES)
 
+    # -------------------------------------------------------- selection
     def selectSubtitle(self, subtitle):
+        # FIX (r88): only commit selectedSubtitle on success, so a failed
+        # enable no longer leaves a phantom "active" row in the menu.
         if subtitle is None:
             self.selectedSubtitle = None
             self.enabled = False
@@ -534,7 +532,12 @@ class SubtitleHandler:
         if not subtitleService:
             logger.error("[Sub] no subtitle service")
             return False
+
+        # The C++ contract is enableSubtitles(subtitle_stream, cache_or_widget).
+        # Try only the forms we can actually supply.
         attempts = [((subtitle, True), "2arg(sub, True)")]
+        # FIX (r88): the widget form only makes sense if we actually have
+        # a widget instance. Previously this always passed None.
         widget = None
         if self.screen is not None:
             widget = getattr(self.screen, "instance", None)
@@ -621,6 +624,7 @@ class SubtitleHandler:
                 return True
         return False
 
+    # ----------------------------------------------------------- delay
     def adjustDelay(self, offset):
         self.currentDelay += offset
         self._applySubtitleDelay()
@@ -645,6 +649,7 @@ class SubtitleHandler:
     def isEnabled(self):
         return self.enabled
 
+    # -------------------------------------------------- state persistence
     def _getSubtitleStatePath(self):
         try:
             ref = self.session.nav.getCurrentlyPlayingServiceReference()
@@ -679,6 +684,9 @@ class SubtitleHandler:
         cur = self.session.nav.getCurrentlyPlayingServiceReference()
         if not cur or not cur.getPath():
             return
+        # FIX (r88): the deferred restore must not run if the service
+        # changed between setService() and now. Previously this compared
+        # the current ref with itself, so it never bailed out.
         if self.serviceRefString is not None:
             try:
                 if cur.toString() != self.serviceRefString:
@@ -723,13 +731,14 @@ class SubtitleHandler:
 
 
 # ============================================================================
-# Subtitle Selection Screen (LEGACY - fallback when subpackage absent)
+# Subtitle Selection Screen
 # ============================================================================
 class SubtitleSelectionScreen(Screen):
     def __init__(self, session, subtitleHandler):
         self.skin = '''
         <screen name="SubtitleSelection" position="center,center" size="800,600" title="Select Subtitle">
-            <widget name="list" position="20,20" size="760,500" scrollbarMode="showOnDemand" />
+            <widget name="list" position="20,20" size="760,440" scrollbarMode="showOnDemand" />
+            <widget name="syncToast" position="20,470" size="760,40" backgroundColor="#FFD740" foregroundColor="#0D1117" font="Regular;22" halign="center" valign="center" transparent="0" />
             <widget name="key_red" position="20,530" size="180,40" backgroundColor="#9f1313" font="Regular;20" halign="center" valign="center" />
             <widget name="key_green" position="220,530" size="180,40" backgroundColor="#1f771f" font="Regular;20" halign="center" valign="center" />
             <widget name="key_yellow" position="420,530" size="180,40" backgroundColor="#a08500" font="Regular;20" halign="center" valign="center" />
@@ -739,10 +748,25 @@ class SubtitleSelectionScreen(Screen):
         Screen.__init__(self, session)
         self.subtitleHandler = subtitleHandler
         self["list"] = MenuList([])
+        # [player-ux] sync-adjust toast, ported from the streaming
+        # player's _showSyncToast. Replaces the old per-keypress
+        # MessageBox (which stacked awkwardly when YELLOW/BLUE were
+        # pressed repeatedly to dial in sync) with a small label on this
+        # same screen, hidden until the first adjustment.
+        self["syncToast"] = Label("")
+        try:
+            self["syncToast"].hide()
+        except Exception:
+            pass
+        self._syncToastTimer = eTimer()
+        _connect_timer_once(self._syncToastTimer, self._hideSyncToast)
         self["key_red"] = Label("Disable")
         self["key_green"] = Label("Select")
         self["key_yellow"] = Label("Sync +")
         self["key_blue"] = Label("Sync -")
+        # FIX (r88): the previous contexts did not map colours or up/down,
+        # so RED/GREEN/YELLOW/BLUE and list navigation silently did
+        # nothing. Use the real contexts declared in the player keymap.
         self["subtitleSelectActions"] = ActionMap(
             ["CustomMediaPlayerColorActions", "DirectionActions", "OkCancelActions"],
             {
@@ -756,6 +780,13 @@ class SubtitleSelectionScreen(Screen):
                 "down":   self["list"].down,
             }, -2)
         self.onShown.append(self.updateList)
+        self.onClose.append(self._onSubtitleScreenClose)
+
+    def _onSubtitleScreenClose(self):
+        try:
+            self._syncToastTimer.stop()
+        except Exception:
+            pass
 
     def updateList(self):
         subs = self.subtitleHandler.getSubtitleList()
@@ -767,6 +798,8 @@ class SubtitleSelectionScreen(Screen):
 
     def selectSubtitle(self):
         current = self["list"].getCurrent()
+        # FIX (r88): always close, even on an empty list, so OK never
+        # leaves the screen stuck.
         if current:
             self.subtitleHandler.selectSubtitle(current[1])
         self.close()
@@ -777,8 +810,18 @@ class SubtitleSelectionScreen(Screen):
 
     def adjustSync(self, offset):
         new_delay = self.subtitleHandler.adjustDelay(offset)
-        self.session.open(MessageBox, "Subtitle delay: %dms" % new_delay,
-                          MessageBox.TYPE_INFO, timeout=2)
+        try:
+            self["syncToast"].setText("Subtitle sync: %+d ms" % new_delay)
+            self["syncToast"].show()
+            self._syncToastTimer.start(1500, True)
+        except Exception:
+            pass
+
+    def _hideSyncToast(self):
+        try:
+            self["syncToast"].hide()
+        except Exception:
+            pass
 
 
 # ============================================================================
@@ -901,8 +944,8 @@ class PlayerHelpScreen(Screen):
         help_text = """AJPanel-Style Player - Remote Control
 
 PLAYER BAR:
-OK       Show/Hide the bar (auto-hides; toggle in BLUE menu)
-EXIT     Exit player (stops playback, returns to plugin)
+OK       Show/Hide the bar (auto-hides; toggle in menu)
+EXIT     Exit player (stops playback, returns to TV)
 
 PLAYBACK:
 GREEN    Play/Pause          RED     Stop - exit straight to TV
@@ -917,10 +960,11 @@ PREV/NEXT    Jump to start / end
 HOLD OK      Play whole folder as playlist
 
 SUBTITLES:
-YELLOW   Subtitle menu (search / browse / sync / Studio)
+YELLOW   Subtitle selection menu
 TEXT     Toggle subtitles on/off
-SUBTITLE Subtitle menu
-HOLD MENU  Subtitle menu
+SUBTITLE Subtitle selection
+HOLD MENU  Subtitle selection
+In the menu: YELLOW/BLUE = sync +/-100ms
 
 AUDIO / INFO:
 AUDIO    Audio track selection
@@ -944,6 +988,12 @@ class _CustomMediaPlayerBase(Screen):
     STATE_PLAYING = 1
     STATE_PAUSED = 2
 
+    # ROUND-92 ALPHA FIX (carried): every 8-digit colour carries the 00
+    # (OPAQUE) prefix. Under Enigma2's inverted alpha convention the old
+    # FF prefixes meant "fully transparent" - the panels, borders,
+    # buttons, poster backdrop and the entire progress bar were painted
+    # invisible. The text entries in PANEL_FG were already 00-prefixed,
+    # which is why the words rendered while their surroundings did not.
     PANEL_BG = {
         "panelTop":     "#001B2A44",
         "panelMid":     "#001B2A44",
@@ -958,9 +1008,14 @@ class _CustomMediaPlayerBase(Screen):
         "keyGreen":  "#001F771F",
         "keyYellow": "#00A08500",
         "keyBlue":   "#0018188B",
+        # [player-ux] seek-arrow / exit-toast overlay, ported from the
+        # streaming player's _showSeekFlash. Reuses this file's own 00-
+        # opaque alpha convention (round-92).
+        "seekFlash": "#00234E70",
     }
 
     PANEL_FG = {
+        # chrome entries (painted as block glyphs over the matching bg)
         "panelTop":     "#001B2A44",
         "panelMid":     "#001B2A44",
         "panelBottom":  "#001B2A44",
@@ -969,6 +1024,7 @@ class _CustomMediaPlayerBase(Screen):
         "borderRight":  "#002E86C1",
         "borderBottom": "#002E86C1",
         "posterBack":   "#00101826",
+        # text entries (were already correct)
         "movieTitle":         "#00FFFFFF",
         "clock":              "#00FFD24D",
         "playlistInfo":       "#00DDDDDD",
@@ -985,10 +1041,14 @@ class _CustomMediaPlayerBase(Screen):
         "keyGreen":  "#00FFFFFF",
         "keyYellow": "#00FFFFFF",
         "keyBlue":   "#00FFFFFF",
+        "seekFlash": "#00FFD24D",
     }
 
+    # FIX (r91): single source of truth for bar colours - consumed by
+    # generateSkin()'s P() helper and the r91 gate suite.
+    # FIX (r92): 00 (opaque) prefixes - the FF versions painted nothing.
     BAR_COLORS = {
-        "progressFrame":  "#002E86C1",
+        "progressFrame":  "#002E86C1",   # ring around the track
         "progressTrack":  "#001E2836",
         "progressFill":   "#0000E650",
         "progressMarker": "#00FF9A00",
@@ -1022,17 +1082,10 @@ class _CustomMediaPlayerBase(Screen):
         self._delay_total = 0
         self._osd_visible = False
 
-        # FIX (r95): attributes the vendored engine reads off the player
-        # (autosub worker, menu, browser): display title, per-file key,
-        # and the auto-subtitle generation counter (stale background
-        # workers bail out when it changes).
-        self.title = ""
-        self._item_url = ""
-        self._autosub_gen = 0
-
         # PlayerBar slide state
         self.playerBarVisible = False
         self.slideTimer = eTimer()
+        # FIX (r88): single attach -> no double-firing.
         _connect_timer_once(self.slideTimer, self._slideAnimation)
         self.slideDirection = None
         self.slideStep = scaleY(15)
@@ -1047,22 +1100,30 @@ class _CustomMediaPlayerBase(Screen):
             self.barVisibleY = scaleY(5)
             self.barHiddenY = -bar_height - scaleY(10)
 
-        # FIX (r95): the ORIGINAL subtitle engine (vendored under
-        # player/subtitles/) replaces the r94 rewrite. Same attribute
-        # name ('subtitleHandler'), so hotkey_manager's resolver and
-        # every existing player call keep working. Legacy in-file
-        # SubtitleHandler is the fallback when the subpackage is absent.
-        if SubtitleManager is not None:
-            self.subtitleHandler = SubtitleManager(session, self)
-        else:
-            self.subtitleHandler = SubtitleHandler(session, self)
+        # FIX (r88): hand the screen to the handler so the widget form of
+        # enableSubtitles() can pass a real widget instance.
+        # FIX (r96): the in-file legacy handler is the ONLY backend - no
+        # external subpackage, nothing that can fail at import time.
+        self.subtitleHandler = SubtitleHandler(session, self)
 
         # FIX (r93): remember what was on screen BEFORE the player was
-        # opened (normally the live TV service), so exit can zap back.
+        # opened (normally the live TV service). On exit the player
+        # only ever called nav.stopService(), which empties the video
+        # pipeline but restarts nothing - the video layer keeps the
+        # last decoded movie frame frozen and the box never returns to
+        # TV. Stock MoviePlayer and AJ Panel both replay their stored
+        # previous service on close; now we do too. Captured ONCE here
+        # (before playCurrent() starts anything), so track changes and
+        # the external-subtitle replay can never overwrite it.
         self.lastServiceRef = self._captureLastServiceRef()
 
         # ---- widget declarations ----
+        # FIX (r91): order == stacking on Py3 images (Screen is a dict;
+        # later creation = on top). Chrome first, bar stack second, text
+        # last. The skin also pins zPosition on the bar widgets so Py2
+        # images (hash-ordered dicts) stack identically.
         _BLK = u"\u2588" * 200
+        # 1) opaque chrome (unchanged behaviour)
         self["panelTop"] = Label(_BLK)
         self["panelMid"] = Label(_BLK)
         self["panelBottom"] = Label(_BLK)
@@ -1071,11 +1132,15 @@ class _CustomMediaPlayerBase(Screen):
         self["borderRight"] = Label(u"\u2588" * 70)
         self["borderBottom"] = Label(_BLK)
         self["posterBack"] = Label(u"\u2588" * 36)
-        self["progressFrame"] = Label()
-        self["progressTrack"] = Label()
-        self["progressFill"] = Label()
-        self["progressMarker"] = Label()
-        self["percentBack"] = Label()
+        # 2) progress area - FIX (r91): AJ-Panel pattern. EMPTY Labels;
+        # the skin paints them, Python sizes/moves them. No glyphs, so
+        # no font dependence and no text relayout on resize.
+        self["progressFrame"] = Label()   # AJ "bar_frame" - ring
+        self["progressTrack"] = Label()   # AJ "bar_bg"
+        self["progressFill"] = Label()    # AJ "bar_progress" (resize)
+        self["progressMarker"] = Label()  # AJ "bar_marker" (move)
+        self["percentBack"] = Label()     # chip under percent text
+        # 3) text + pixmaps (unchanged)
         self["videoInfo"] = Label("")
         self["clock"] = Label("")
         self["movieTitle"] = Label("")
@@ -1093,6 +1158,30 @@ class _CustomMediaPlayerBase(Screen):
         self["keyYellow"] = Label("Subtitle")
         self["keyBlue"] = Label("Chapters")
         self["poster"] = Pixmap()
+        # [player-ux] seek-arrow / exit-toast overlay, ported from the
+        # streaming player's _showSeekFlash + exit-confirmation toast.
+        # Created last among the text widgets so it stacks above
+        # movieTitle/clock (creation order == paint order, per the r91
+        # stacking convention used throughout this file). Starts hidden.
+        self["seekFlash"] = Label("")
+        try:
+            self["seekFlash"].hide()
+        except Exception:
+            pass
+        self.seekFlashTimer = eTimer()
+        _connect_timer_once(self.seekFlashTimer, self._hideSeekFlash)
+
+        # [player-ux] sleep timer, ported from the streaming player.
+        self.sleepMinutes = 0
+        self.sleepTimer = eTimer()
+        _connect_timer_once(self.sleepTimer, self._sleepExpired)
+
+        # [player-ux] hold-to-accelerate seek state (LEFT/RIGHT/FF/REW
+        # share one state machine, same as the streaming player's
+        # _stepForHold).
+        self._hold_dir = 0
+        self._hold_count = 0
+        self._hold_last_t = 0.0
 
         # ---- action maps ----
         self["playerColorActions"] = ActionMap(["CustomMediaPlayerColorActions"], {
@@ -1110,13 +1199,19 @@ class _CustomMediaPlayerBase(Screen):
             "cancel": self.handleExit,
             "up": self.previousTrack,
             "down": self.nextTrack,
-            "left": BF(self.seek, -self.jumpSeconds),
-            "right": BF(self.seek, self.jumpSeconds),
+            # FIX (player-ux): these used to be BF(self.seek, -self.jumpSeconds)
+            # / BF(self.seek, self.jumpSeconds), which evaluate self.jumpSeconds
+            # ONCE at bind time -- changing the jump time via 0-9 afterwards
+            # never actually changed what LEFT/RIGHT did. Routed through
+            # _navLeftKey/_navRightKey instead: reads self.jumpSeconds live
+            # on every press AND layers hold-to-accelerate on top of it.
+            "left": self._navLeftKey,
+            "right": self._navRightKey,
         }, -1)
 
         self["playerSeekActions"] = ActionMap(["CustomMediaPlayerSeekActions"], {
-            "seekFwd": BF(self.seek, 300),
-            "seekBack": BF(self.seek, -300),
+            "seekFwd": self._navSeekFwdKey,
+            "seekBack": self._navSeekBackKey,
         }, -1)
 
         self["playerNumberActions"] = ActionMap(["CustomMediaPlayerNumberActions"], {
@@ -1156,6 +1251,7 @@ class _CustomMediaPlayerBase(Screen):
         }, -1)
 
         # ---- timers ----
+        # FIX (r88): single-attach pattern for every long-lived timer.
         self.updateTimer = eTimer()
         _connect_timer_once(self.updateTimer, self.updateInfo)
 
@@ -1193,12 +1289,19 @@ class _CustomMediaPlayerBase(Screen):
                 name, scaleX(x), scaleY(y), scaleX(ww), scaleY(hh), f, extra)
 
         def P(name, x, y, ww, hh):
+            # FIX (r91): AJ-Panel bar-widget formulation - empty Label,
+            # backgroundColor straight from the skin, NO transparent
+            # attribute (their exact attribute set), explicit zPosition
+            # so the bar stacks above the opaque panels on every image.
+            # FIX (r92): BAR_COLORS are now 00-prefixed (opaque).
             return ('            <widget name="%s" position="%d,%d" '
                     'size="%d,%d" zPosition="2" backgroundColor="%s" />'
                     % (name, scaleX(x), scaleY(y), scaleX(ww), scaleY(hh),
                        self.BAR_COLORS[name]))
 
         L = []
+        # FIX (r92): #E6102018 rendered ~10% opaque under the inverted
+        # convention; the backdrop is meant to be opaque dark.
         L.append('<screen name="CustomMediaPlayer" position="%d,%d" size="%d,%d" backgroundColor="#00102018" flags="wfNoBorder" zPosition="1000">'
                  % (x_pos, y_pos, w, h))
 
@@ -1214,6 +1317,12 @@ class _CustomMediaPlayerBase(Screen):
         L.append(W("movieTitle", 24,  16, 700, 32, scaleY(28)))
         L.append(W("clock",      740, 16, 280, 32, scaleY(24)))
 
+        # --- FIX (r91): progress area, AJ-Panel pattern -------------------
+        # bottom -> top: frame (ring; sits behind the track so only its
+        # edge shows; 4 design px so sub-1080p rounding cannot collapse
+        # it) / track / fill (width set from Python) / marker (moved
+        # from Python, pokes past the ring, AJ-style) / percent chip /
+        # percent text (z=3 so the text reads over the chip).
         L.append(P("progressFrame",  20,  80, 1004, 36))
         L.append(P("progressTrack",  24,  86, 996,  24))
         L.append(P("progressFill",   24,  86, 2,    24))
@@ -1239,6 +1348,13 @@ class _CustomMediaPlayerBase(Screen):
         L.append(W("posterBack",        1036, 118, 340, 60))
         L.append(W("poster",            1066, 122, 280, 52, extra=' alphatest="blend"'))
         L.append(W("fileType",          1036, 186, 340, 22, scaleY(16)))
+
+        # [player-ux] seek-arrow / exit-toast overlay, ported from the
+        # streaming player. Declared (and created in __init__) LAST so it
+        # paints above movieTitle/clock per this file's own creation-order
+        # stacking convention (r91); covers the same row it sits over, and
+        # is hidden/shown rather than resized.
+        L.append(W("seekFlash", 24, 16, 996, 32, scaleY(30), extra=' zPosition="4"'))
 
         L.append("        </screen>")
         return chr(10).join(L)
@@ -1279,7 +1395,10 @@ class _CustomMediaPlayerBase(Screen):
             logger.info("[Player] runtime colors applied: %d backgrounds, %d foregrounds",
                         ok_bg, ok_fg)
 
+    # ------------------------------------------------------- bar painting
     def _applyPanelPixmaps(self):
+        # FIX (r88): _applyColors is now called exactly once (from
+        # onFirstShow); this method only handles the poster.
         try:
             item = self.playlist.getCurrent()
             if item:
@@ -1288,11 +1407,18 @@ class _CustomMediaPlayerBase(Screen):
             pass
 
     def _buildProgressPixmaps(self):
+        """FIX (r91): AJ-Panel init. Captures track geometry AFTER the
+        skin is applied (instance.size() is only meaningful then),
+        collapses the fill to a 1 px sliver so the bar never flashes
+        full-width before the first update tick, and parks the playhead
+        marker at the left end of the track."""
         try:
             size = self["progressTrack"].instance.size()
             self._progGeom = (size.width(), size.height())
         except Exception:
             self._progGeom = (scaleX(996), scaleY(24))
+        # The fill's top-left anchor is fixed by the skin, so resize()
+        # grows it rightward.
         try:
             self["progressFill"].instance.resize(eSize(1, self._progGeom[1]))
         except Exception:
@@ -1308,6 +1434,9 @@ class _CustomMediaPlayerBase(Screen):
         logger.info("[Player] progress geometry: %s", self._progGeom)
 
     def _setProgressFill(self, percent):
+        """FIX (r91): AJ bar_progress pattern - width = track_width *
+        percent / 100, applied via instance.resize(). Clamps to
+        [0,100]; None (unknown duration) -> 1 px sliver."""
         geom = getattr(self, "_progGeom", None)
         if not geom:
             return
@@ -1323,6 +1452,10 @@ class _CustomMediaPlayerBase(Screen):
             logger.debug("[Player] fill resize failed: %s", e)
 
     def _moveProgressMarker(self, seconds, duration):
+        """FIX (r91): AJ bar_marker pattern - linear interpolation across
+        the track, applied via instance.move(). Image-safe: reads x/y
+        via instance.position() (round-88 convention), never assumes a
+        tuple layout."""
         geom = getattr(self, "_progGeom", None)
         if not geom or not duration or duration <= 0:
             return
@@ -1341,9 +1474,13 @@ class _CustomMediaPlayerBase(Screen):
             logger.debug("[Player] marker move failed: %s", e)
 
     def _ensureBarAssets(self):
-        pass
+        pass  # labels-only bar (r91): nothing to regenerate
 
+    # ------------------------------------------------------- r91 gates
     def _runProgressGates(self):
+        """Round-91 gate suite for the progress area. Mutates only the
+        fill width and marker position and restores both afterwards
+        (r88 self-test convention). Run any time from the player menu."""
         results = []
 
         def gate(name, ok, detail=""):
@@ -1352,6 +1489,7 @@ class _CustomMediaPlayerBase(Screen):
             logger.info("[Gate r91][%s] %s %s", "PASS" if ok else "FAIL",
                         name, detail)
 
+        # G1: the five bar labels exist and are EMPTY (no glyphs).
         for n in ("progressFrame", "progressTrack", "progressFill",
                   "progressMarker", "percentBack"):
             try:
@@ -1362,6 +1500,8 @@ class _CustomMediaPlayerBase(Screen):
             except Exception as e:
                 gate("G1 empty:%s" % n, False, str(e))
 
+        # G2: the frame forms a closed ring around the track. Design
+        # ring is 4 px; allow 1..8 to absorb scale rounding.
         try:
             f = self["progressFrame"].instance
             t = self["progressTrack"].instance
@@ -1376,6 +1516,8 @@ class _CustomMediaPlayerBase(Screen):
         except Exception as e:
             gate("G2 frame ring", False, str(e))
 
+        # G3/G4: skin order + AJ-Panel formulation (backgroundColor from
+        # BAR_COLORS, no transparent attribute, zPosition pinned).
         try:
             skin = self.generateSkin()
             names = ("progressFrame", "progressTrack", "progressFill",
@@ -1397,6 +1539,7 @@ class _CustomMediaPlayerBase(Screen):
         except Exception as e:
             gate("G3/G4 skin", False, str(e))
 
+        # G5: fill resize math (50 %, clamp-high, clamp-low), then restore.
         geom = getattr(self, "_progGeom", None)
         if not geom:
             gate("G5 fill math", False, "no _progGeom (run after onFirstShow)")
@@ -1416,6 +1559,7 @@ class _CustomMediaPlayerBase(Screen):
             except Exception as e:
                 gate("G5 fill math", False, str(e))
 
+        # G6: marker interpolation across the track, then restore.
         try:
             m = self["progressMarker"].instance
             start = m.position()
@@ -1433,10 +1577,12 @@ class _CustomMediaPlayerBase(Screen):
         except Exception as e:
             gate("G6 marker math", False, str(e))
 
+        # G7: bar colours have exactly ONE home (the skin).
         stray = [k for k in self.PANEL_BG if k in self.BAR_COLORS]
         stray += [k for k in self.PANEL_FG if k in self.BAR_COLORS]
         gate("G7 palette single-source", not stray, "stray=%s" % stray)
 
+        # G8: instances attached + state consistent after the gates.
         try:
             attached = all(self[n].instance is not None
                            for n in list(self.BAR_COLORS) + ["progressPercent"])
@@ -1466,6 +1612,7 @@ class _CustomMediaPlayerBase(Screen):
 
     # ------------------------------------------------------------ slide
     def _slideAnimation(self):
+        # FIX (r88): _monotonic falls back to time.time() on Py2.
         _now = _monotonic()
         if _now - getattr(self, "_lastSlideTick", 0.0) < 0.005:
             return
@@ -1567,6 +1714,10 @@ class _CustomMediaPlayerBase(Screen):
         except Exception as e:
             logger.warning("[Player] onFirstShow move failed: %s", e)
         self.playerBarVisible = False
+        # FIX (r88): _applyPanelPixmaps no longer applies colours (that's
+        # done once, explicitly). FIX (r91): _buildProgressPixmaps
+        # captures geometry and collapses the fill; bar colours come from
+        # the skin (never from _applyColors - the keys are gone).
         self._applyColors()
         self._applyPanelPixmaps()
         self._buildProgressPixmaps()
@@ -1580,7 +1731,8 @@ class _CustomMediaPlayerBase(Screen):
         except Exception:
             pass
         for t in (self.updateTimer, self.saveTimer, self.slideTimer,
-                  self.eofTimer, self.barHideTimer):
+                  self.eofTimer, self.barHideTimer,
+                  self.seekFlashTimer, self.sleepTimer):
             try:
                 t.stop()
             except Exception:
@@ -1592,14 +1744,22 @@ class _CustomMediaPlayerBase(Screen):
         logger.info("[Player] close: stopping service")
         self.stopService()
         logger.info("[Player] close: service stopped")
-        # FIX (r93): one-shot safety net for close paths that don't run
-        # handleExit (RED Stop, end-of-playlist EOF).
+        # FIX (r93): safety net for close paths that don't run
+        # handleExit (RED Stop, end-of-playlist EOF). One-shot: a no-op
+        # if handleExit already restored. Safe against the stopService()
+        # above because that call is guarded by self.currentService,
+        # which is already None by then - the restored TV service can
+        # never be killed here.
         self._restoreLastService()
         try:
             if self["poster"].instance is not None:
                 self["poster"].instance.setPixmap(None)
         except Exception:
             pass
+        # FIX (r88): stop the subtitle handler's pending timers before
+        # dropping our reference. Previously `self.subtitleHandler = None`
+        # left the eTimers alive, so a deferred restore could replay the
+        # stream after the screen was gone.
         try:
             if self.subtitleHandler is not None:
                 self.subtitleHandler.close()
@@ -1645,11 +1805,6 @@ class _CustomMediaPlayerBase(Screen):
                 seek.seekTo(int(self.resumePosition * 90000))
         self["movieTitle"].setText(name)
         self.state = self.STATE_PLAYING
-        # FIX (r95): attributes the vendored engine's autosub worker and
-        # menu read off the player; gen bump kills stale workers.
-        self.title = name
-        self._item_url = path
-        self._autosub_gen += 1
         self.subtitleHandler.setService(self.currentService)
         self.updateSubtitleIndicator()
         self.updatePlaylistInfo()
@@ -1664,13 +1819,18 @@ class _CustomMediaPlayerBase(Screen):
             self.currentService = None
         self.state = self.STATE_STOPPED
 
+    # ------------------------------------------------- r93: exit-to-TV
     def _captureLastServiceRef(self):
+        """FIX (r93): the service playing when the player was opened."""
         try:
             ref = self.session.nav.getCurrentlyPlayingServiceReference()
             if ref is not None:
                 return ref
         except Exception as e:
             logger.warning("[Player] last-service capture failed: %s", e)
+        # Nothing was playing (player opened with no TV service): fall
+        # back to whatever the channel list has selected. Lazy import -
+        # InfoBar cannot be imported at module load (circular).
         try:
             from Screens.InfoBar import InfoBar
             return InfoBar.instance.servicelist.getCurrentSelection()
@@ -1678,10 +1838,17 @@ class _CustomMediaPlayerBase(Screen):
             return None
 
     def _restoreLastService(self):
+        """FIX (r93): zap back to the pre-player service (one-shot).
+
+        handleExit() restores early so the frozen frame disappears
+        immediately; onClosePlayer() calls it again as the safety net
+        for close paths that skip handleExit (RED Stop, end of
+        playlist). Consuming the ref makes the second call a no-op
+        instead of a second service restart."""
         ref = getattr(self, "lastServiceRef", None)
         if ref is None:
             return False
-        self.lastServiceRef = None
+        self.lastServiceRef = None  # one-shot
         try:
             self.session.nav.playService(ref)
             logger.info("[Player] exit: restored previous service: %s",
@@ -1691,15 +1858,23 @@ class _CustomMediaPlayerBase(Screen):
             logger.warning("[Player] restore previous service failed: %s", e)
             return False
 
-    # ------------------------------------------------- r95: RED = TV exit
+    # ------------------------------------------------- RED = direct exit
     def stop(self):
-        """FIX (r95): RED now exits directly to TV (the earlier
-        requirement 'keep red button as exit directly to tv channel').
-        Stops playback, restores the pre-player service, closes - no
-        confirmation dialog. EXIT keeps the r93 behaviour (return to
-        the plugin's folder view)."""
+        """FIX (r96, from r95): RED stops and exits DIRECTLY to TV - no
+        confirmation dialog (the 'keep red button as exit directly to
+        tv channel' requirement)."""
         try:
             self.savePlaybackPosition()
+        except Exception:
+            pass
+        # [player-ux] exit-confirmation toast (non-blocking -- doesn't
+        # change r96's "no confirmation dialog" behaviour for RED).
+        try:
+            item = self.playlist.getCurrent()
+            if item:
+                pos = self.playlist.getPosition(item[0])
+                if pos and pos > 30:
+                    self._showSeekFlash(0, 0, label=u"✓ Saved at %s" % formatTime(pos))
         except Exception:
             pass
         self.stopService()
@@ -1708,7 +1883,7 @@ class _CustomMediaPlayerBase(Screen):
 
     def confirmStop(self, confirmed):
         # Kept for API compatibility (hotkey maps / old callers); the
-        # r95 stop() no longer routes through here.
+        # r96 stop() no longer routes through here.
         if confirmed:
             self.stopService()
             self._restoreLastService()
@@ -1765,8 +1940,67 @@ class _CustomMediaPlayerBase(Screen):
             self["statusInfo"].setText("Seek %s %d min" % (direction, a // 60))
         else:
             self["statusInfo"].setText("Seek %s %d sec" % (direction, a))
+        # [player-ux] seek-arrow flash, ported from the streaming player.
+        self._showSeekFlash(1 if seconds > 0 else -1, newPos)
         if not self.playerBarVisible:
             self.slideUp()
+
+    # [player-ux] seek-arrow / exit-toast overlay ------------------------
+    def _showSeekFlash(self, direction, target_secs, label=None):
+        try:
+            if label is not None:
+                text = label
+            else:
+                arrow = u"➡" if direction > 0 else u"⬅"
+                text = u"%s %s" % (arrow, formatTime(target_secs))
+            self["seekFlash"].setText(text)
+            self["seekFlash"].show()
+        except Exception as e:
+            logger.debug("[Player] seekFlash show failed: %s" % e)
+        try:
+            self.seekFlashTimer.start(1200 if label is not None else 800, True)
+        except Exception:
+            pass
+
+    def _hideSeekFlash(self):
+        try:
+            self["seekFlash"].hide()
+        except Exception:
+            pass
+
+    # [player-ux] hold-to-accelerate seek, ported from the streaming
+    # player's _stepForHold. Uses self.jumpSeconds (the user's configured
+    # jump time, set via 0-9) as the base step rather than a fixed value,
+    # so the existing "set jump time" feature stays meaningful; holding a
+    # direction key escalates the step (x1 -> x3 -> x6), resetting after
+    # a ~1.2s gap or a direction change.
+    def _stepForHold(self, direction):
+        now = _monotonic()
+        base = self.jumpSeconds if self.jumpSeconds else 10
+        if direction != self._hold_dir or (now - self._hold_last_t) > 1.2:
+            self._hold_dir = direction
+            self._hold_count = 1
+        else:
+            self._hold_count = min(self._hold_count + 1, 30)
+        self._hold_last_t = now
+        n = self._hold_count
+        if n <= 1:
+            return base
+        if n <= 4:
+            return base * 3
+        return base * 6
+
+    def _navLeftKey(self):
+        self.seek(-self._stepForHold(-1))
+
+    def _navRightKey(self):
+        self.seek(self._stepForHold(1))
+
+    def _navSeekFwdKey(self):
+        self.seek(self._stepForHold(1))
+
+    def _navSeekBackKey(self):
+        self.seek(-self._stepForHold(-1))
 
     def _jumpLabel(self):
         a = self.jumpSeconds
@@ -1810,20 +2044,16 @@ class _CustomMediaPlayerBase(Screen):
     def showSubtitleMenu(self):
         if not self.currentService:
             return
-        # FIX (r95): construct the vendored menu helper (it opens its
-        # own ChoiceBox; it is NOT a Screen). No setService call here -
-        # it would re-run the auto-attach pipeline on every menu open.
-        if SubtitleMenuScreen is not None:
-            SubtitleMenuScreen(self.session, self)
-        else:
-            self.session.open(SubtitleSelectionScreen, self.subtitleHandler)
+        try:
+            self.subtitleHandler.setService(self.session.nav.getCurrentService())
+            logger.info("[Player] subtitle menu: %d embedded, %d external",
+                        len(self.subtitleHandler.subtitleList),
+                        len(self.subtitleHandler.externalSubtitles))
+        except Exception as e:
+            logger.warning("[Player] subtitle re-scan failed: %s", e)
+        self.session.open(SubtitleSelectionScreen, self.subtitleHandler)
         if not self.playerBarVisible:
             self.slideUp()
-
-    def _open_studio_overlay(self):
-        # FIX (r95): "Studio settings" entry of the subtitle menu.
-        if StudioSettingsScreen is not None:
-            self.session.open(StudioSettingsScreen)
 
     def toggleSubtitles(self):
         if not self.currentService:
@@ -1857,6 +2087,8 @@ class _CustomMediaPlayerBase(Screen):
             ("Chapters / Jump Points", "chapters"),
             ("Run Self-Test", "selftest"),
             ("Progress Gates (r91)", "proggates"),
+            ("Sleep Timer: %s" % self._sleepLabel(), "sleep"),
+            ("Mark Current Watched", "mark_watched"),
             ("Stop Playback", "stop"),
         ]
         self.session.openWithCallback(self.onMenuSelect, ChoiceBox,
@@ -1927,6 +2159,13 @@ class _CustomMediaPlayerBase(Screen):
                 self._runSelfTest()
             elif action == "proggates":
                 self._runProgressGates()
+            elif action == "sleep":
+                self._sleepMenu()
+            elif action == "mark_watched":
+                item = self.playlist.getCurrent()
+                if item:
+                    self.playlist.markWatched(item[0])
+                    self["statusInfo"].setText("Marked watched")
             elif action == "stop":
                 self.stop()
         except Exception as e:
@@ -1951,15 +2190,102 @@ class _CustomMediaPlayerBase(Screen):
             _pc.playerBarHideSeconds.save()
             self["statusInfo"].setText("Bar hides after %d s" % choice[1])
 
+    # [player-ux] sleep timer, ported from the streaming player. Session-
+    # only (not persisted across restarts), same as that reference.
+    def _sleepLabel(self):
+        return "off" if not self.sleepMinutes else "%d min" % self.sleepMinutes
+
+    def _sleepMenu(self):
+        entries = [("Off", 0), ("15 min", 15), ("30 min", 30), ("60 min", 60), ("90 min", 90)]
+        self.session.openWithCallback(self._sleepPicked, ChoiceBox,
+                                      title="Sleep timer", list=entries)
+
+    def _sleepPicked(self, choice):
+        if not choice:
+            return
+        mins = choice[1] if isinstance(choice, (tuple, list)) and len(choice) > 1 else choice
+        self.sleepMinutes = int(mins or 0)
+        try:
+            self.sleepTimer.stop()
+        except Exception:
+            pass
+        if self.sleepMinutes > 0:
+            self.sleepTimer.start(self.sleepMinutes * 60000, True)
+            self["statusInfo"].setText("Sleep: %d min" % self.sleepMinutes)
+        else:
+            self["statusInfo"].setText("Sleep: off")
+
+    def _sleepExpired(self):
+        logger.info("[Player] sleep timer expired - exiting playback")
+        self._doHandleExit()
+
     # ------------------------------------------------------------ audio/info
     def showAudioMenu(self):
         try:
             self.session.open(AudioSelection, self)
+            if not self.playerBarVisible:
+                self.slideUp()
+            return
         except Exception as e:
-            logger.warning("Audio selection failed: %s" % e)
-            self["statusInfo"].setText("Audio selection not available")
+            logger.warning("Audio selection failed (%s), using fallback list" % e)
+        # [player-ux] manual fallback list, ported from the streaming
+        # player's __audioSelect: only reached when AudioSelection itself
+        # isn't usable. Builds one label per track with language/codec
+        # where the service can supply them, instead of just failing.
+        try:
+            service = self.session.nav.getCurrentService()
+            if not service:
+                return
+            tracks = service.audioTracks()
+            if not tracks:
+                self["statusInfo"].setText("Audio: N/A")
+                return
+            n = tracks.getNumberOfTracks()
+            if n <= 1:
+                self["statusInfo"].setText("Audio: 1 track only")
+                return
+            cur = tracks.getCurrentTrack()
+            entries = []
+            for i in range(n):
+                try:
+                    name = tracks.getTrackName(i) or ""
+                except Exception:
+                    name = ""
+                extra = ""
+                for probe in ("getTrackLanguage", "getTrackCodec"):
+                    try:
+                        fn = getattr(tracks, probe, None)
+                        if fn:
+                            v = fn(i)
+                            if v:
+                                extra = (extra + " - " + str(v)).strip(" -")
+                    except Exception:
+                        pass
+                marker = " >" if i == cur else ""
+                if extra:
+                    label = "Track %d - %s%s%s" % (
+                        i + 1, name, (" - " + extra) if name else extra, marker)
+                else:
+                    label = "Track %d: %s%s" % (i + 1, name, marker)
+                entries.append((label, i))
+            self.session.openWithCallback(self._audioTrackPicked, ChoiceBox,
+                                          title="Audio", list=entries)
+        except Exception as e:
+            logger.error("Audio fallback failed: %s" % e)
         if not self.playerBarVisible:
             self.slideUp()
+
+    def _audioTrackPicked(self, choice):
+        if not choice:
+            return
+        idx = choice[1] if isinstance(choice, (tuple, list)) and len(choice) > 1 else choice
+        try:
+            service = self.session.nav.getCurrentService()
+            tracks = service.audioTracks() if service else None
+            if tracks:
+                tracks.selectTrack(int(idx))
+        except Exception as e:
+            logger.error("Audio track select failed: %s" % e)
 
     def getCurrentService(self):
         return self.session.nav.getCurrentService()
@@ -2053,6 +2379,9 @@ class _CustomMediaPlayerBase(Screen):
                 return points
             cmd = ["ffprobe", "-loglevel", "0", "-of", "json",
                    "-show_chapters", item[0]]
+            # FIX (r88): subprocess.check_output's timeout kwarg is 3.3+.
+            # On Py2 images this raised TypeError, silently disabling
+            # chapter extraction.
             kwargs = {}
             if sys.version_info[0] >= 3:
                 kwargs["timeout"] = 10
@@ -2088,6 +2417,9 @@ class _CustomMediaPlayerBase(Screen):
 
     # ------------------------------------------------------------ self-test
     def _runSelfTest(self):
+        # FIX (r88): snapshot playback state and restore it after the
+        # test. The old version performed real seeks / track changes /
+        # subtitle toggles and left the player in a different state.
         originalIndex = self.playlist.currentIndex
         originalState = self.state
         originalSub = self.subtitleHandler.selectedSubtitle if self.subtitleHandler else None
@@ -2127,9 +2459,11 @@ class _CustomMediaPlayerBase(Screen):
         t("progress-geom", lambda: bool(getattr(self, "_progGeom", None)))
         t("colors-capable", lambda: self._applyColors() or True)
 
+        # FIX (r88): restore snapshot.
         try:
             self.playlist.currentIndex = originalIndex
             if self.state != originalState:
+                # try to bring playback state back
                 if originalState == self.STATE_PLAYING and self.state == self.STATE_PAUSED:
                     try:
                         self.togglePlayPause()
@@ -2148,10 +2482,7 @@ class _CustomMediaPlayerBase(Screen):
                 try:
                     self.subtitleHandler.currentDelay = originalDelay
                     self.subtitleHandler.selectedSubtitle = originalSub
-                    fn = getattr(self.subtitleHandler, "_applySubtitleDelay", None) \
-                        or getattr(self.subtitleHandler, "_apply_sync", None)
-                    if callable(fn):
-                        fn()
+                    self.subtitleHandler._applySubtitleDelay()
                 except Exception:
                     pass
         except Exception as e:
@@ -2242,8 +2573,10 @@ class _CustomMediaPlayerBase(Screen):
             len_s = (r2[1] / 90000.0) if not r2[0] else 0.0
             self._updateVideoInfo(service)
             self._updateClock()
-            self["currentTime"].setText(formatTime(pos_s))
+            self["currentTime"].setText(u"%s %s" % (self._stateGlyph(), formatTime(pos_s)))
             self["totalTime"].setText(formatTime(len_s))
+            # FIX (r88): clear the label when the option is off; the old
+            # code left the last value on-screen forever.
             if self.showTimeRemaining and len_s:
                 self["remainingTime"].setText("-%s" % formatTime(max(0, len_s - pos_s)))
             else:
@@ -2253,7 +2586,10 @@ class _CustomMediaPlayerBase(Screen):
                 if self.showProgressPercent:
                     self["progressPercent"].setText("%d%%" % pct)
                 else:
+                    # FIX (r91): same clear-on-off pattern as remainingTime.
                     self["progressPercent"].setText("")
+                # FIX (r91): AJ-Panel paint helpers - the skin paints the
+                # labels, Python only sizes (fill) and moves (marker).
                 self._setProgressFill(pct)
                 self._moveProgressMarker(pos_s, len_s)
         except Exception:
@@ -2262,11 +2598,22 @@ class _CustomMediaPlayerBase(Screen):
     def updateButtons(self):
         self["keyGreen"].setText("Pause" if self.state == self.STATE_PLAYING else "Play")
 
+    # [player-ux] state glyph beside elapsed time, ported from the
+    # streaming player's _stateGlyph. This file has no "loading"/"error"
+    # playback state (only stopped/playing/paused), so only those three
+    # are mapped.
+    def _stateGlyph(self):
+        if self.state == self.STATE_PLAYING:
+            return u"▶"   # ▶
+        if self.state == self.STATE_PAUSED:
+            return u"⏸"   # ⏸
+        return u"⏹"       # ⏹
+
     def updateSubtitleIndicator(self):
         try:
             if self.subtitleHandler and self.subtitleHandler.isEnabled():
                 sel = self.subtitleHandler.selectedSubtitle
-                if self.subtitleHandler._is_string(sel):
+                if SubtitleHandler._is_string(sel):
                     txt = "SUB: %s" % os.path.basename(sel)[:18]
                 else:
                     txt = "SUB: embedded"
@@ -2331,9 +2678,75 @@ class _CustomMediaPlayerBase(Screen):
             pass
 
     # ------------------------------------------------------------ exit/EOF
+    # [player-ux] near-end exit prompt, ported from the streaming player.
+    def _nearEndInfo(self):
+        if not self.currentService:
+            return False, 0.0, 0.0
+        try:
+            seek = self.currentService.seek()
+            if not seek:
+                return False, 0.0, 0.0
+            r = seek.getPlayPosition()
+            elapsed = (r[1] / 90000.0) if not r[0] else 0.0
+            r2 = seek.getLength()
+            total = (r2[1] / 90000.0) if not r2[0] else 0.0
+        except Exception:
+            return False, 0.0, 0.0
+        near_end = total > 60 and elapsed > 0 and (elapsed / total) >= 0.90
+        return near_end, elapsed, total
+
     def handleExit(self):
         try:
+            near_end, _elapsed, _total = self._nearEndInfo()
+        except Exception:
+            near_end = False
+        if near_end and self.playlist.getCurrent():
+            items = []
+            if len(self.playlist) > 1 and (self.playlist.repeat or
+                    self.playlist.currentIndex < len(self.playlist) - 1):
+                items.append((u"▶ Next track", "next"))
+            items.append((u"✓ Mark watched & exit", "mark"))
+            items.append((u"↵ Save position & exit", "save"))
+            items.append((u"✕ Cancel", "cancel"))
+            self.session.openWithCallback(self._onExitChoice, ChoiceBox,
+                                          title="Near the end -- what now?",
+                                          list=items)
+            return
+        self._doHandleExit()
+
+    def _onExitChoice(self, choice):
+        if not choice:
+            return
+        action = choice[1] if isinstance(choice, (tuple, list)) and len(choice) > 1 else choice
+        if action == "next":
+            self.nextTrack()
+        elif action == "mark":
+            item = self.playlist.getCurrent()
+            if item:
+                self.playlist.markWatched(item[0])
+            self._doHandleExit(toast=u"✓ Marked watched")
+        elif action == "save":
+            self._doHandleExit()
+        # "cancel" (or a dismissed box) -> stay in the player, do nothing.
+
+    def _doHandleExit(self, toast=None):
+        try:
             self.savePlaybackPosition()
+        except Exception:
+            pass
+        # [player-ux] exit-confirmation toast, ported from the streaming
+        # player's "Saved at hh:mm" notice. Shown in the same frame as the
+        # stop/restore below -- the 200ms deferred close gives it time to
+        # actually paint before the screen goes away.
+        try:
+            if toast is None:
+                item = self.playlist.getCurrent()
+                if item:
+                    pos = self.playlist.getPosition(item[0])
+                    if pos and pos > 30:
+                        toast = u"✓ Saved at %s" % formatTime(pos)
+            if toast:
+                self._showSeekFlash(0, 0, label=toast)
         except Exception:
             pass
         try:
@@ -2363,6 +2776,8 @@ class _CustomMediaPlayerBase(Screen):
         self.eofTimer.start(300, True)
 
     def _eofAdvance(self):
+        # FIX (r88): if next-track fails, close cleanly instead of
+        # leaving the player stranded on the last frame.
         try:
             if len(self.playlist) > 1 and (self.playlist.repeat or
                                           self.playlist.currentIndex < len(self.playlist) - 1):
