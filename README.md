@@ -1,1 +1,1 @@
-# WGFileManager
+# WG-File-Manager-PRO-aj-style

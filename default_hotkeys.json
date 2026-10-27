@@ -1,0 +1,147 @@
+{
+  "version": "1.0",
+  "last_updated": "2024-01-01",
+  "hotkey_profiles": {
+    "default": {
+      "name": "Default Profile",
+      "description": "Standard hotkey configuration",
+      "hotkeys": {
+        "subtitle_toggle": {
+          "key": "subtitle",
+          "action": "toggle_subtitle",
+          "label": "Toggle Subtitles",
+          "description": "Toggle subtitles on/off"
+        },
+        "subtitle_menu": {
+          "key": "text",
+          "action": "open_subtitle_menu",
+          "label": "Subtitle Menu",
+          "description": "Open subtitle settings menu"
+        },
+        "audio_selection": {
+          "key": "audio",
+          "action": "open_audio_menu",
+          "label": "Audio Selection",
+          "description": "Open audio track selection"
+        },
+        "quick_jump_back": {
+          "key": "long_audio",
+          "action": "jump_back_30",
+          "label": "Jump Back 30s",
+          "description": "Jump back 30 seconds (long press AUDIO)"
+        },
+        "quick_jump_forward": {
+          "key": "long_text",
+          "action": "jump_forward_30",
+          "label": "Jump Forward 30s",
+          "description": "Jump forward 30 seconds (long press TEXT)"
+        },
+        "chapter_menu": {
+          "key": "info",
+          "action": "open_chapter_menu",
+          "label": "Chapter Menu",
+          "description": "Open chapter selection menu"
+        },
+        "mark_position": {
+          "key": "red",
+          "action": "mark_position",
+          "label": "Mark Position",
+          "description": "Bookmark current position"
+        },
+        "subtitle_settings": {
+          "key": "green",
+          "action": "open_subtitle_settings",
+          "label": "Subtitle Settings",
+          "description": "Open advanced subtitle settings"
+        },
+        "toggle_subtitle_quick": {
+          "key": "yellow",
+          "action": "toggle_subtitle",
+          "label": "Quick Toggle",
+          "description": "Quick toggle subtitles"
+        },
+        "jump_menu": {
+          "key": "blue",
+          "action": "open_jump_menu",
+          "label": "Jump Menu",
+          "description": "Open jump position menu"
+        }
+      }
+    },
+    "advanced": {
+      "name": "Advanced Profile",
+      "description": "Advanced hotkey configuration for power users",
+      "hotkeys": {
+        "subtitle_toggle": {
+          "key": "subtitle",
+          "action": "toggle_subtitle",
+          "label": "Toggle Subtitles"
+        },
+        "subtitle_quick_menu": {
+          "key": "long_subtitle",
+          "action": "open_subtitle_quick_menu",
+          "label": "Subtitle Quick Menu",
+          "description": "Open quick subtitle menu (long press)"
+        },
+        "embedded_tools": {
+          "key": "text",
+          "action": "open_embedded_tools",
+          "label": "Embedded Tools",
+          "description": "Open embedded subtitle tools"
+        },
+        "delay_adjust": {
+          "key": "audio",
+          "action": "open_delay_settings",
+          "label": "Delay Adjust",
+          "description": "Open subtitle delay adjustment"
+        },
+        "style_settings": {
+          "key": "long_audio",
+          "action": "open_style_settings",
+          "label": "Style Settings",
+          "description": "Open subtitle style settings"
+        },
+        "download_subtitles": {
+          "key": "long_text",
+          "action": "download_subtitles",
+          "label": "Download Subs",
+          "description": "Download subtitles online"
+        }
+      }
+    },
+    "minimal": {
+      "name": "Minimal Profile",
+      "description": "Simple hotkey configuration",
+      "hotkeys": {
+        "subtitle_toggle": {
+          "key": "subtitle",
+          "action": "toggle_subtitle",
+          "label": "Toggle Subs"
+        },
+        "subtitle_menu": {
+          "key": "text",
+          "action": "open_subtitle_menu",
+          "label": "Sub Menu"
+        }
+      }
+    }
+  },
+  "action_descriptions": {
+    "toggle_subtitle": "Toggle subtitles on/off",
+    "open_subtitle_menu": "Open subtitle selection menu",
+    "open_subtitle_settings": "Open advanced subtitle settings",
+    "open_subtitle_quick_menu": "Open quick subtitle menu",
+    "open_audio_menu": "Open audio track selection",
+    "open_delay_settings": "Open subtitle delay adjustment",
+    "open_style_settings": "Open subtitle style settings",
+    "open_embedded_tools": "Open embedded subtitle tools",
+    "open_chapter_menu": "Open chapter selection",
+    "open_jump_menu": "Open jump position menu",
+    "download_subtitles": "Download subtitles online",
+    "mark_position": "Bookmark current position",
+    "jump_back_30": "Jump back 30 seconds",
+    "jump_forward_30": "Jump forward 30 seconds",
+    "jump_back_10": "Jump back 10 seconds",
+    "jump_forward_10": "Jump forward 10 seconds"
+  }
+}
