@@ -1,6 +1,7 @@
 {
-  "version": "1.0",
+  "version": "1.1",
   "last_updated": "2024-01-01",
+  "_comment": "BUG-4 fix: pruned all ghost actions whose target methods do not exist on the standalone CustomMediaPlayer (open_subtitle_settings, open_subtitle_quick_menu, open_embedded_tools, open_delay_settings, open_style_settings, download_subtitles, mark_position). The standalone player only implements toggle_subtitle, open_subtitle_menu, open_audio_menu, open_chapter_menu, open_jump_menu and the four jump_back/forward seek actions. The 'advanced' profile's entries were remapped to real actions with corrected labels.",
   "hotkey_profiles": {
     "default": {
       "name": "Default Profile",
@@ -16,7 +17,7 @@
           "key": "text",
           "action": "open_subtitle_menu",
           "label": "Subtitle Menu",
-          "description": "Open subtitle settings menu"
+          "description": "Open subtitle selection menu"
         },
         "audio_selection": {
           "key": "audio",
@@ -42,18 +43,6 @@
           "label": "Chapter Menu",
           "description": "Open chapter selection menu"
         },
-        "mark_position": {
-          "key": "red",
-          "action": "mark_position",
-          "label": "Mark Position",
-          "description": "Bookmark current position"
-        },
-        "subtitle_settings": {
-          "key": "green",
-          "action": "open_subtitle_settings",
-          "label": "Subtitle Settings",
-          "description": "Open advanced subtitle settings"
-        },
         "toggle_subtitle_quick": {
           "key": "yellow",
           "action": "toggle_subtitle",
@@ -77,35 +66,35 @@
           "action": "toggle_subtitle",
           "label": "Toggle Subtitles"
         },
-        "subtitle_quick_menu": {
+        "subtitle_menu_long": {
           "key": "long_subtitle",
-          "action": "open_subtitle_quick_menu",
-          "label": "Subtitle Quick Menu",
-          "description": "Open quick subtitle menu (long press)"
+          "action": "open_subtitle_menu",
+          "label": "Subtitle Menu (Long)",
+          "description": "Open subtitle selection menu (long press SUBTITLE)"
         },
-        "embedded_tools": {
+        "subtitle_menu_text": {
           "key": "text",
-          "action": "open_embedded_tools",
-          "label": "Embedded Tools",
-          "description": "Open embedded subtitle tools"
+          "action": "open_subtitle_menu",
+          "label": "Subtitle Menu (TEXT)",
+          "description": "Open subtitle selection menu (TEXT key)"
         },
-        "delay_adjust": {
+        "audio_menu": {
           "key": "audio",
-          "action": "open_delay_settings",
-          "label": "Delay Adjust",
-          "description": "Open subtitle delay adjustment"
+          "action": "open_audio_menu",
+          "label": "Audio Menu",
+          "description": "Open audio track selection"
         },
-        "style_settings": {
+        "jump_back_long_audio": {
           "key": "long_audio",
-          "action": "open_style_settings",
-          "label": "Style Settings",
-          "description": "Open subtitle style settings"
+          "action": "jump_back_30",
+          "label": "Jump Back 30s",
+          "description": "Jump back 30 seconds (long press AUDIO)"
         },
-        "download_subtitles": {
+        "jump_forward_long_text": {
           "key": "long_text",
-          "action": "download_subtitles",
-          "label": "Download Subs",
-          "description": "Download subtitles online"
+          "action": "jump_forward_30",
+          "label": "Jump Forward 30s",
+          "description": "Jump forward 30 seconds (long press TEXT)"
         }
       }
     },
@@ -129,16 +118,9 @@
   "action_descriptions": {
     "toggle_subtitle": "Toggle subtitles on/off",
     "open_subtitle_menu": "Open subtitle selection menu",
-    "open_subtitle_settings": "Open advanced subtitle settings",
-    "open_subtitle_quick_menu": "Open quick subtitle menu",
     "open_audio_menu": "Open audio track selection",
-    "open_delay_settings": "Open subtitle delay adjustment",
-    "open_style_settings": "Open subtitle style settings",
-    "open_embedded_tools": "Open embedded subtitle tools",
     "open_chapter_menu": "Open chapter selection",
     "open_jump_menu": "Open jump position menu",
-    "download_subtitles": "Download subtitles online",
-    "mark_position": "Bookmark current position",
     "jump_back_30": "Jump back 30 seconds",
     "jump_forward_30": "Jump forward 30 seconds",
     "jump_back_10": "Jump back 10 seconds",

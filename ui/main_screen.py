@@ -34,7 +34,7 @@ class EnhancedFileList(FileList):
     
     def __init__(self, directory, **kwargs):
         """Initialize EnhancedFileList with debug logging"""
-        logger.debug(f"[EnhancedFileList] Initializing with directory: {directory}")
+        logger.debug((("[EnhancedFileList] Initializing with directory: " + "{directory}").format(directory=(directory))))
         try:
             # Initialize parent class
             FileList.__init__(self, directory, **kwargs)
@@ -49,27 +49,27 @@ class EnhancedFileList(FileList):
             self.inhibitDirs = []  # Don't inhibit any directories
             self.isTop = False     # Not at top level
             
-            logger.debug(f"[EnhancedFileList] Initialized successfully. Parent dir enabled: {self.alwaysshow_parent}")
-            logger.debug(f"[EnhancedFileList] InhibitDirs: {self.inhibitDirs}, isTop: {self.isTop}")
+            logger.debug((("[EnhancedFileList] Initialized successfully. Parent dir enabled: " + "{_a0}").format(_a0=(self.alwaysshow_parent))))
+            logger.debug((("[EnhancedFileList] InhibitDirs: " + "{_a0}" + ", isTop: " + "{_a1}").format(_a0=(self.inhibitDirs), _a1=(self.isTop))))
         except Exception as e:
-            logger.error(f"[EnhancedFileList] Init error: {e}")
+            logger.error((("[EnhancedFileList] Init error: " + "{e}").format(e=(e))))
             raise
     
     def changeDir(self, directory, select=None):
         """Override to always show parent directory with detailed debugging"""
-        logger.debug(f"[EnhancedFileList] changeDir called: {directory}, select={select}")
+        logger.debug((("[EnhancedFileList] changeDir called: " + "{directory}" + ", select=" + "{select}").format(directory=(directory), select=(select))))
         
         try:
             # Store original directory for comparison
             old_dir = self.getCurrentDirectory()
-            logger.debug(f"[EnhancedFileList] Changing from {old_dir} to {directory}")
+            logger.debug((("[EnhancedFileList] Changing from " + "{old_dir}" + " to " + "{directory}").format(old_dir=(old_dir), directory=(directory))))
             
             # Call parent method
             FileList.changeDir(self, directory, select)
             
             # Get new directory
             new_dir = self.getCurrentDirectory()
-            logger.debug(f"[EnhancedFileList] Now in directory: {new_dir}")
+            logger.debug((("[EnhancedFileList] Now in directory: " + "{new_dir}").format(new_dir=(new_dir))))
             
             # round-19 fix (Bug 62): during construction this image's FileList
             # triggers changeDir(None) before the real directory is set.
@@ -84,11 +84,11 @@ class EnhancedFileList(FileList):
 
             # Check if we're at root
             is_root = (new_dir == "/")
-            logger.debug(f"[EnhancedFileList] Is root directory: {is_root}")
+            logger.debug((("[EnhancedFileList] Is root directory: " + "{is_root}").format(is_root=(is_root))))
             
             # Only add parent directory if not at root AND parent display is enabled
             if not is_root and self.alwaysshow_parent:
-                logger.debug(f"[EnhancedFileList] Adding parent directory entry for: {new_dir}")
+                logger.debug((("[EnhancedFileList] Adding parent directory entry for: " + "{new_dir}").format(new_dir=(new_dir))))
                 
                 # Check if ".." is already in the list
                 has_parent = False
@@ -101,17 +101,17 @@ class EnhancedFileList(FileList):
                         # Check for parent directory marker
                         if ".." in str(item_path) or ".." in str(item_name):
                             has_parent = True
-                            logger.debug(f"[EnhancedFileList] Found existing '..' entry")
+                            logger.debug("[EnhancedFileList] Found existing '..' entry")
                             break
                     except Exception as e:
-                        logger.debug(f"[EnhancedFileList] Error checking item: {e}")
+                        logger.debug((("[EnhancedFileList] Error checking item: " + "{e}").format(e=(e))))
                         continue
                 
                 # Add ".." at the top if missing
                 if not has_parent:
                     try:
                         parent_dir = os.path.dirname(new_dir)
-                        logger.debug(f"[EnhancedFileList] Creating parent entry for: {parent_dir}")
+                        logger.debug((("[EnhancedFileList] Creating parent entry for: " + "{parent_dir}").format(parent_dir=(parent_dir))))
                         
                         # Create parent directory entry
                         parent_entry = (
@@ -121,15 +121,15 @@ class EnhancedFileList(FileList):
                         
                         # Insert at beginning
                         self.list.insert(0, parent_entry)
-                        logger.debug(f"[EnhancedFileList] Inserted '..' at position 0")
+                        logger.debug("[EnhancedFileList] Inserted '..' at position 0")
                         
                         # Update the list display
                         self.l.setList(self.list)
-                        logger.debug(f"[EnhancedFileList] Updated list display. Total items: {len(self.list)}")
+                        logger.debug((("[EnhancedFileList] Updated list display. Total items: " + "{_a0}").format(_a0=(len(self.list)))))
                         
                         # Log first few items for debugging
                         if len(self.list) > 0 and self._debug_enabled:
-                            logger.debug(f"[EnhancedFileList] First few items in list:")
+                            logger.debug("[EnhancedFileList] First few items in list:")
                             for i, item in enumerate(self.list[:3]):
                                 try:
                                     item_info = {
@@ -139,44 +139,44 @@ class EnhancedFileList(FileList):
                                         'name': item[0][2] if len(item[0]) > 2 else '',
                                         'marked': item[0][3] if len(item[0]) > 3 else False
                                     }
-                                    logger.debug(f"[EnhancedFileList]   Item {i}: {item_info}")
+                                    logger.debug((("[EnhancedFileList]   Item " + "{i}" + ": " + "{item_info}").format(i=(i), item_info=(item_info))))
                                 except Exception as item_error:
-                                    logger.debug(f"[EnhancedFileList]   Item {i} error: {item_error}")
+                                    logger.debug((("[EnhancedFileList]   Item " + "{i}" + " error: " + "{item_error}").format(i=(i), item_error=(item_error))))
                                 
                     except Exception as e:
-                        logger.error(f"[EnhancedFileList] Error adding parent directory: {e}")
+                        logger.error((("[EnhancedFileList] Error adding parent directory: " + "{e}").format(e=(e))))
                 else:
-                    logger.debug(f"[EnhancedFileList] '..' already exists in list")
+                    logger.debug("[EnhancedFileList] '..' already exists in list")
             else:
                 if is_root:
-                    logger.debug(f"[EnhancedFileList] At root, not adding '..'")
+                    logger.debug("[EnhancedFileList] At root, not adding '..'")
                 else:
-                    logger.debug(f"[EnhancedFileList] Parent display disabled")
+                    logger.debug("[EnhancedFileList] Parent display disabled")
                     
         except Exception as e:
-            logger.error(f"[EnhancedFileList] Error in changeDir: {e}")
+            logger.error((("[EnhancedFileList] Error in changeDir: " + "{e}").format(e=(e))))
             # Re-raise to maintain compatibility
             raise
     
     def refresh(self):
         """Refresh the file list with debugging"""
-        logger.debug(f"[EnhancedFileList] refresh() called")
+        logger.debug("[EnhancedFileList] refresh() called")
         try:
             current_dir = self.getCurrentDirectory()
-            logger.debug(f"[EnhancedFileList] Refreshing directory: {current_dir}")
+            logger.debug((("[EnhancedFileList] Refreshing directory: " + "{current_dir}").format(current_dir=(current_dir))))
             
             # Call parent refresh
             result = FileList.refresh(self)
             
             # Re-add parent directory if needed
             if current_dir != "/" and self.alwaysshow_parent:
-                logger.debug(f"[EnhancedFileList] Re-adding parent directory after refresh")
+                logger.debug("[EnhancedFileList] Re-adding parent directory after refresh")
                 self.changeDir(current_dir)  # This will re-add the parent directory
                 
-            logger.debug(f"[EnhancedFileList] Refresh completed successfully")
+            logger.debug("[EnhancedFileList] Refresh completed successfully")
             return result
         except Exception as e:
-            logger.error(f"[EnhancedFileList] Error in refresh: {e}")
+            logger.error((("[EnhancedFileList] Error in refresh: " + "{e}").format(e=(e))))
             return False
     
     def getCurrentDirectory(self):
@@ -184,10 +184,10 @@ class EnhancedFileList(FileList):
         try:
             dir_path = FileList.getCurrentDirectory(self)
             if self._debug_enabled:
-                logger.debug(f"[EnhancedFileList] getCurrentDirectory: {dir_path}")
+                logger.debug((("[EnhancedFileList] getCurrentDirectory: " + "{dir_path}").format(dir_path=(dir_path))))
             return dir_path
         except Exception as e:
-            logger.error(f"[EnhancedFileList] Error getting current directory: {e}")
+            logger.error((("[EnhancedFileList] Error getting current directory: " + "{e}").format(e=(e))))
             return ""
 
 class WGFileManagerMain(Screen):
@@ -202,7 +202,7 @@ class WGFileManagerMain(Screen):
             self.config = WGFileManagerConfig()
             logger.debug("[MainScreen] Config created successfully")
         except Exception as e:
-            logger.error(f"[MainScreen] Config init error: {e}")
+            logger.error((("[MainScreen] Config init error: " + "{e}").format(e=(e))))
             from Components.config import config as en_config
             self.config = en_config
             logger.warning("[MainScreen] Using global config as fallback")
@@ -211,7 +211,7 @@ class WGFileManagerMain(Screen):
         w, h = getDesktop(0).size().width(), getDesktop(0).size().height()
         pane_width = (w - 60) // 2
         pane_height = h - 320 
-        logger.debug(f"[MainScreen] Screen dimensions: {w}x{h}, pane: {pane_width}x{pane_height}")
+        logger.debug((("[MainScreen] Screen dimensions: " + "{w}" + "x" + "{h}" + ", pane: " + "{pane_width}" + "x" + "{pane_height}").format(w=(w), h=(h), pane_width=(pane_width), pane_height=(pane_height))))
         
         # 3. Initialize backend core components
         try:
@@ -223,7 +223,7 @@ class WGFileManagerMain(Screen):
             self.mount_mgr = MountManager(self.config)
             logger.debug("[MainScreen] Core components initialized")
         except Exception as e:
-            logger.error(f"[MainScreen] Error initializing core components: {e}")
+            logger.error((("[MainScreen] Error initializing core components: " + "{e}").format(e=(e))))
         
         # 4. Initialize subtitle manager
         self.subtitle_manager = None  # round-25: legacy engine removed; kept as None for safety
@@ -257,43 +257,15 @@ class WGFileManagerMain(Screen):
         label_y = h - 45
         
         # Skin with proper attributes
-        self.skin = f"""
-        <screen name="WGFileManagerMain" position="0,0" size="{w},{h}" backgroundColor="#1a1a1a" flags="wfNoBorder">
-            <eLabel position="0,0" size="{w},60" backgroundColor="#0055aa" />
-            <eLabel text="WG FILE MANAGER PRO" position="20,8" size="600,44" font="Regular;30" halign="left" valign="center" transparent="1" foregroundColor="#ffffff" />
-            <eLabel text="v1.0 Professional" position="{w-250},12" size="230,36" font="Regular;22" halign="right" valign="center" transparent="1" foregroundColor="#00ffff" />
-            
-            <widget name="left_banner" position="25,70" size="{pane_width},28" font="Regular;20" halign="left" valign="center" backgroundColor="#333333" foregroundColor="#ffff00" />
-            <eLabel position="{pane_width + 30},70" size="10,28" backgroundColor="#555555" />
-            <widget name="right_banner" position="{pane_width + 45},70" size="{pane_width},28" font="Regular;20" halign="left" valign="center" backgroundColor="#333333" foregroundColor="#aaaaaa" />
-            
-            <widget name="left_pane" position="25,110" size="{pane_width},{pane_height}" font="Regular;18" itemHeight="38" selectionColor="#FF5555" scrollbarMode="showOnDemand" />
-            <widget name="right_pane" position="{pane_width + 45},110" size="{pane_width},{pane_height}" font="Regular;18" itemHeight="38" selectionColor="#FF5555" scrollbarMode="showOnDemand" />
-            
-            <widget name="progress_bar" position="20,{h-150}" size="{w-40},8" backgroundColor="#333333" foregroundColor="#00aaff" borderWidth="2" borderColor="#aaaaaa" />
-            <widget name="info_panel" position="20,{h-135}" size="{w-40},30" font="Regular;20" foregroundColor="#ff8800" transparent="1" />
-            <widget name="status_bar" position="20,{h-100}" size="{w-40},35" font="Regular;22" foregroundColor="#ffffff" transparent="1" />
-            
-            <eLabel position="0,{h-60}" size="{w},60" backgroundColor="#000000" />
-            <ePixmap pixmap="buttons/red.png" position="20,{button_y}" size="30,30" alphatest="on" />
-            <ePixmap pixmap="buttons/green.png" position="180,{button_y}" size="30,30" alphatest="on" />
-            <ePixmap pixmap="buttons/yellow.png" position="340,{button_y}" size="30,30" alphatest="on" />
-            <ePixmap pixmap="buttons/blue.png" position="500,{button_y}" size="30,30" alphatest="on" />
-            
-            <eLabel text="Delete" position="60,{label_y}" size="100,30" font="Regular;20" transparent="1" foregroundColor="#ffffff" />
-            <eLabel text="Rename" position="220,{label_y}" size="100,30" font="Regular;20" transparent="1" foregroundColor="#ffffff" />
-            <eLabel text="Select" position="380,{label_y}" size="100,30" font="Regular;20" transparent="1" foregroundColor="#ffffff" />
-            <eLabel text="Copy/Move" position="540,{label_y}" size="150,30" font="Regular;20" transparent="1" foregroundColor="#ffffff" />
-            <widget name="help_text" position="50,{h-80}" size="{w-100},30" font="Regular;18" halign="right" transparent="1" foregroundColor="#aaaaaa" />
-        </screen>"""
+        self.skin = (("\n        <screen name=\"WGFileManagerMain\" position=\"0,0\" size=\"" + "{w}" + "," + "{h}" + "\" backgroundColor=\"#1a1a1a\" flags=\"wfNoBorder\">\n            <eLabel position=\"0,0\" size=\"" + "{_a0}" + ",60\" backgroundColor=\"#0055aa\" />\n            <eLabel text=\"WG FILE MANAGER PRO\" position=\"20,8\" size=\"600,44\" font=\"Regular;30\" halign=\"left\" valign=\"center\" transparent=\"1\" foregroundColor=\"#ffffff\" />\n            <eLabel text=\"v1.0 Professional\" position=\"" + "{_a1}" + ",12\" size=\"230,36\" font=\"Regular;22\" halign=\"right\" valign=\"center\" transparent=\"1\" foregroundColor=\"#00ffff\" />\n            \n            <widget name=\"left_banner\" position=\"25,70\" size=\"" + "{pane_width}" + ",28\" font=\"Regular;20\" halign=\"left\" valign=\"center\" backgroundColor=\"#333333\" foregroundColor=\"#ffff00\" />\n            <eLabel position=\"" + "{_a2}" + ",70\" size=\"10,28\" backgroundColor=\"#555555\" />\n            <widget name=\"right_banner\" position=\"" + "{_a3}" + ",70\" size=\"" + "{_a4}" + ",28\" font=\"Regular;20\" halign=\"left\" valign=\"center\" backgroundColor=\"#333333\" foregroundColor=\"#aaaaaa\" />\n            \n            <widget name=\"left_pane\" position=\"25,110\" size=\"" + "{_a5}" + "," + "{pane_height}" + "\" font=\"Regular;18\" itemHeight=\"38\" selectionColor=\"#FF5555\" scrollbarMode=\"showOnDemand\" />\n            <widget name=\"right_pane\" position=\"" + "{_a6}" + ",110\" size=\"" + "{_a7}" + "," + "{_a8}" + "\" font=\"Regular;18\" itemHeight=\"38\" selectionColor=\"#FF5555\" scrollbarMode=\"showOnDemand\" />\n            \n            <widget name=\"progress_bar\" position=\"20," + "{_a9}" + "\" size=\"" + "{_a10}" + ",8\" backgroundColor=\"#333333\" foregroundColor=\"#00aaff\" borderWidth=\"2\" borderColor=\"#aaaaaa\" />\n            <widget name=\"info_panel\" position=\"20," + "{_a11}" + "\" size=\"" + "{_a12}" + ",30\" font=\"Regular;20\" foregroundColor=\"#ff8800\" transparent=\"1\" />\n            <widget name=\"status_bar\" position=\"20," + "{_a13}" + "\" size=\"" + "{_a14}" + ",35\" font=\"Regular;22\" foregroundColor=\"#ffffff\" transparent=\"1\" />\n            \n            <eLabel position=\"0," + "{_a15}" + "\" size=\"" + "{_a16}" + ",60\" backgroundColor=\"#000000\" />\n            <ePixmap pixmap=\"buttons/red.png\" position=\"20," + "{button_y}" + "\" size=\"30,30\" alphatest=\"on\" />\n            <ePixmap pixmap=\"buttons/green.png\" position=\"180," + "{_a17}" + "\" size=\"30,30\" alphatest=\"on\" />\n            <ePixmap pixmap=\"buttons/yellow.png\" position=\"340," + "{_a18}" + "\" size=\"30,30\" alphatest=\"on\" />\n            <ePixmap pixmap=\"buttons/blue.png\" position=\"500," + "{_a19}" + "\" size=\"30,30\" alphatest=\"on\" />\n            \n            <eLabel text=\"Delete\" position=\"60," + "{label_y}" + "\" size=\"100,30\" font=\"Regular;20\" transparent=\"1\" foregroundColor=\"#ffffff\" />\n            <eLabel text=\"Rename\" position=\"220," + "{_a20}" + "\" size=\"100,30\" font=\"Regular;20\" transparent=\"1\" foregroundColor=\"#ffffff\" />\n            <eLabel text=\"Select\" position=\"380," + "{_a21}" + "\" size=\"100,30\" font=\"Regular;20\" transparent=\"1\" foregroundColor=\"#ffffff\" />\n            <eLabel text=\"Copy/Move\" position=\"540," + "{_a22}" + "\" size=\"150,30\" font=\"Regular;20\" transparent=\"1\" foregroundColor=\"#ffffff\" />\n            <widget name=\"help_text\" position=\"50," + "{_a23}" + "\" size=\"" + "{_a24}" + ",30\" font=\"Regular;18\" halign=\"right\" transparent=\"1\" foregroundColor=\"#aaaaaa\" />\n        </screen>").format(w=(w), h=(h), _a0=(w), _a1=(w-250), pane_width=(pane_width), _a2=(pane_width + 30), _a3=(pane_width + 45), _a4=(pane_width), _a5=(pane_width), pane_height=(pane_height), _a6=(pane_width + 45), _a7=(pane_width), _a8=(pane_height), _a9=(h-150), _a10=(w-40), _a11=(h-135), _a12=(w-40), _a13=(h-100), _a14=(w-40), _a15=(h-60), _a16=(w), button_y=(button_y), _a17=(button_y), _a18=(button_y), _a19=(button_y), label_y=(label_y), _a20=(label_y), _a21=(label_y), _a22=(label_y), _a23=(h-80), _a24=(w-100)))
         
         # Create widgets
         left_path = self.config.plugins.wgfilemanager.left_path.value
         right_path = self.config.plugins.wgfilemanager.right_path.value
         
-        logger.debug(f"[MainScreen] Creating EnhancedFileList widgets")
-        logger.debug(f"[MainScreen] Left pane path: {left_path}")
-        logger.debug(f"[MainScreen] Right pane path: {right_path}")
+        logger.debug("[MainScreen] Creating EnhancedFileList widgets")
+        logger.debug((("[MainScreen] Left pane path: " + "{left_path}").format(left_path=(left_path))))
+        logger.debug((("[MainScreen] Right pane path: " + "{right_path}").format(right_path=(right_path))))
         
         try:
             self["left_pane"] = EnhancedFileList(left_path, showDirectories=True, showFiles=True)
@@ -302,7 +274,7 @@ class WGFileManagerMain(Screen):
             self["right_pane"].useSelection = True
             logger.debug("[MainScreen] EnhancedFileList widgets created successfully")
         except Exception as e:
-            logger.error(f"[MainScreen] Error creating EnhancedFileList: {e}")
+            logger.error((("[MainScreen] Error creating EnhancedFileList: " + "{e}").format(e=(e))))
             # Fallback to standard FileList
             self["left_pane"] = FileList(left_path, showDirectories=True, showFiles=True)
             self["right_pane"] = FileList(right_path, showDirectories=True, showFiles=True)
@@ -315,9 +287,9 @@ class WGFileManagerMain(Screen):
             try:
                 pane.inhibitDirs = []  # Don't inhibit any directories
                 pane.isTop = False  # Not at top level
-                logger.debug(f"[MainScreen] Configured {pane_name}: inhibitDirs={pane.inhibitDirs}, isTop={pane.isTop}")
+                logger.debug((("[MainScreen] Configured " + "{pane_name}" + ": inhibitDirs=" + "{_a0}" + ", isTop=" + "{_a1}").format(pane_name=(pane_name), _a0=(pane.inhibitDirs), _a1=(pane.isTop))))
             except Exception as e:
-                logger.error(f"[MainScreen] Error configuring {pane_name}: {e}")
+                logger.error((("[MainScreen] Error configuring " + "{pane_name}" + ": " + "{e}").format(pane_name=(pane_name), e=(e))))
          
         # Other widgets
         self["progress_bar"] = ProgressBar()
@@ -343,13 +315,13 @@ class WGFileManagerMain(Screen):
                                 pane.l.setFont(0, gFont("Regular", 26))
                             except Exception:
                                 pass
-                        logger.debug(f"[MainScreen] Applied styling to {pane_name}")
+                        logger.debug((("[MainScreen] Applied styling to " + "{pane_name}").format(pane_name=(pane_name))))
                     else:
-                        logger.warning(f"[MainScreen] No 'l' attribute on {pane_name}")
+                        logger.warning((("[MainScreen] No 'l' attribute on " + "{pane_name}").format(pane_name=(pane_name))))
                 except Exception as e:
-                    logger.error(f"[MainScreen] Error applying styling to {pane_name}: {e}")
+                    logger.error((("[MainScreen] Error applying styling to " + "{pane_name}" + ": " + "{e}").format(pane_name=(pane_name), e=(e))))
         except Exception as e:
-            logger.error(f"[MainScreen] Error in UI styling: {e}")
+            logger.error((("[MainScreen] Error in UI styling: " + "{e}").format(e=(e))))
         
         logger.debug("[MainScreen] UI setup complete")
 
@@ -371,7 +343,7 @@ class WGFileManagerMain(Screen):
         
         # Bookmarks
         self.bookmarks = self.config.load_bookmarks()
-        logger.debug(f"[MainScreen] Loaded {len(self.bookmarks)} bookmarks")
+        logger.debug((("[MainScreen] Loaded " + "{_a0}" + " bookmarks").format(_a0=(len(self.bookmarks)))))
         
         # Active pane
         starting_pane = self.config.plugins.wgfilemanager.starting_pane.value
@@ -382,12 +354,12 @@ class WGFileManagerMain(Screen):
             self.active_pane = self["right_pane"]
             self.inactive_pane = self["left_pane"]
         
-        logger.debug(f"[MainScreen] Active pane: {'left' if starting_pane == 'left' else 'right'}")
+        logger.debug((("[MainScreen] Active pane: " + "{_a0}").format(_a0=('left' if starting_pane == 'left' else 'right'))))
         
         # Sort modes
         self.left_sort_mode = self.config.plugins.wgfilemanager.left_sort_mode.value
         self.right_sort_mode = self.config.plugins.wgfilemanager.right_sort_mode.value
-        logger.debug(f"[MainScreen] Sort modes - Left: {self.left_sort_mode}, Right: {self.right_sort_mode}")
+        logger.debug((("[MainScreen] Sort modes - Left: " + "{_a0}" + ", Right: " + "{_a1}").format(_a0=(self.left_sort_mode), _a1=(self.right_sort_mode))))
         
         # Filter
         self.filter_pattern = None
@@ -397,7 +369,7 @@ class WGFileManagerMain(Screen):
         
         # Track marked files for color changes
         self.marked_files = set()
-        logger.debug(f"[MainScreen] State initialization complete")
+        logger.debug("[MainScreen] State initialization complete")
 
     def setup_actions(self):
         """Setup key mappings"""
@@ -473,7 +445,7 @@ class WGFileManagerMain(Screen):
         
         logger.info("[MainScreen] WGFileManager started successfully")
         self["status_bar"].setText("Ready")
-        logger.debug(f"[MainScreen] Startup complete. Active pane: {self.active_pane.getCurrentDirectory()}")
+        logger.debug((("[MainScreen] Startup complete. Active pane: " + "{_a0}").format(_a0=(self.active_pane.getCurrentDirectory()))))
 
     def validate_config(self):
         """Validate configuration with debugging"""
@@ -483,16 +455,16 @@ class WGFileManagerMain(Screen):
         # Check paths exist
         left_path = self.config.plugins.wgfilemanager.left_path.value
         if not os.path.isdir(left_path):
-            issues.append(f"Left path not found: {left_path}")
-            logger.warning(f"[MainScreen] Left path not found: {left_path}")
+            issues.append((("Left path not found: " + "{left_path}").format(left_path=(left_path))))
+            logger.warning((("[MainScreen] Left path not found: " + "{left_path}").format(left_path=(left_path))))
         
         right_path = self.config.plugins.wgfilemanager.right_path.value
         if not os.path.isdir(right_path):
-            issues.append(f"Right path not found: {right_path}")
-            logger.warning(f"[MainScreen] Right path not found: {right_path}")
+            issues.append((("Right path not found: " + "{right_path}").format(right_path=(right_path))))
+            logger.warning((("[MainScreen] Right path not found: " + "{right_path}").format(right_path=(right_path))))
         
         if issues:
-            logger.warning(f"[MainScreen] Config issues: {issues}")
+            logger.warning((("[MainScreen] Config issues: " + "{issues}").format(issues=(issues))))
             return False
         
         logger.debug("[MainScreen] Configuration validated successfully")
@@ -508,7 +480,7 @@ class WGFileManagerMain(Screen):
             self.update_info_panel()
             logger.debug("[MainScreen] UI update complete")
         except Exception as e:
-            logger.error(f"[MainScreen] Error updating UI: {e}")
+            logger.error((("[MainScreen] Error updating UI: " + "{e}").format(e=(e))))
 
     def update_banners(self):
         """Update pane banners - shows full path information"""
@@ -516,15 +488,15 @@ class WGFileManagerMain(Screen):
             is_left_active = (self.active_pane == self["left_pane"])
             is_right_active = (self.active_pane == self["right_pane"])
             
-            logger.debug(f"[MainScreen] Active pane: {'left' if is_left_active else 'right'}")
+            logger.debug((("[MainScreen] Active pane: " + "{_a0}").format(_a0=('left' if is_left_active else 'right'))))
             
             # Get directory paths
             try:
                 left_dir = self["left_pane"].getCurrentDirectory()
                 right_dir = self["right_pane"].getCurrentDirectory()
                 
-                logger.debug(f"[MainScreen] Left dir: {left_dir}")
-                logger.debug(f"[MainScreen] Right dir: {right_dir}")
+                logger.debug((("[MainScreen] Left dir: " + "{left_dir}").format(left_dir=(left_dir))))
+                logger.debug((("[MainScreen] Right dir: " + "{right_dir}").format(right_dir=(right_dir))))
                 
                 # Build text with indicators
                 if is_left_active:
@@ -541,7 +513,7 @@ class WGFileManagerMain(Screen):
                     right_text = right_text[:47] + "..."
                     
             except Exception as e:
-                logger.error(f"[MainScreen] Error getting directory paths: {e}")
+                logger.error((("[MainScreen] Error getting directory paths: " + "{e}").format(e=(e))))
                 left_text = "◀ LEFT" if is_left_active else "LEFT"
                 right_text = "RIGHT ▶" if is_right_active else "RIGHT"
             
@@ -564,26 +536,26 @@ class WGFileManagerMain(Screen):
                 if right_instance:
                     right_instance.setForegroundColor(ACTIVE_COLOR if is_right_active else INACTIVE_COLOR)
                     
-                logger.debug(f"[MainScreen] Banner colors updated")
+                logger.debug("[MainScreen] Banner colors updated")
             except Exception as e:
-                logger.error(f"[MainScreen] Banner styling error: {e}")
+                logger.error((("[MainScreen] Banner styling error: " + "{e}").format(e=(e))))
                 
         except Exception as e:
-            logger.error(f"[MainScreen] Error updating banners: {e}")
+            logger.error((("[MainScreen] Error updating banners: " + "{e}").format(e=(e))))
 
     def update_status_bar(self):
         """Update the bottom status bar with selection info"""
         try:
             # 1. Get the number of marked items
             count = len(self.marked_files)
-            logger.debug(f"[MainScreen] Marked files count: {count}")
+            logger.debug((("[MainScreen] Marked files count: " + "{count}").format(count=(count))))
             
             # 2. Get current path info for the active pane
             sel = self.active_pane.getSelection()
             current_name = ""
             if sel and sel[0]:
                 current_name = os.path.basename(sel[0])
-                logger.debug(f"[MainScreen] Current selection: {current_name}")
+                logger.debug((("[MainScreen] Current selection: " + "{current_name}").format(current_name=(current_name))))
 
             # 3. Create the status text
             if count > 0:
@@ -591,15 +563,15 @@ class WGFileManagerMain(Screen):
             else:
                 current_dir = self.active_pane.getCurrentDirectory()
                 status_text = "Path: %s" % current_dir
-                logger.debug(f"[MainScreen] Current directory: {current_dir}")
+                logger.debug((("[MainScreen] Current directory: " + "{current_dir}").format(current_dir=(current_dir))))
 
             # 4. Update the Label widget
             self["status_bar"].setText(status_text)
             
-            logger.debug(f"[MainScreen] Status bar updated: {status_text[:50]}...")
+            logger.debug((("[MainScreen] Status bar updated: " + "{_a0}" + "...").format(_a0=(status_text[:50]))))
             
         except Exception as e:
-            logger.error(f"[MainScreen] Error updating status bar: {e}")
+            logger.error((("[MainScreen] Error updating status bar: " + "{e}").format(e=(e))))
 
     def update_info_panel(self):
         """Update info panel with current file details"""
@@ -610,7 +582,7 @@ class WGFileManagerMain(Screen):
                 name = os.path.basename(path)
                 icon = get_file_icon(path)
                 
-                logger.debug(f"[MainScreen] Updating info panel for: {name}")
+                logger.debug((("[MainScreen] Updating info panel for: " + "{name}").format(name=(name))))
                 
                 # Check if file is marked
                 is_marked = False
@@ -618,14 +590,14 @@ class WGFileManagerMain(Screen):
                     if item[0][0] == path and item[0][3]:  # Marked
                         is_marked = True
                         break
-                logger.debug(f"[MainScreen] File marked: {is_marked}")
+                logger.debug((("[MainScreen] File marked: " + "{is_marked}").format(is_marked=(is_marked))))
                 
                 # Only get size for files, not directories
                 if os.path.isfile(path):
                     try:
                         size = os.path.getsize(path)
                         size_str = format_size(size)
-                        logger.debug(f"[MainScreen] File size: {size_str}")
+                        logger.debug((("[MainScreen] File size: " + "{size_str}").format(size_str=(size_str))))
                     except:
                         size_str = "?"
                 else:
@@ -633,15 +605,15 @@ class WGFileManagerMain(Screen):
                 
                 # Show in RED if marked
                 if is_marked:
-                    text = f" {icon} {name} | {size_str}"
+                    text = ((" " + "{icon}" + " " + "{name}" + " | " + "{size_str}").format(icon=(icon), name=(name), size_str=(size_str)))
                 else:
-                    text = f"{icon} {name} | {size_str}"
+                    text = (("{icon}" + " " + "{name}" + " | " + "{size_str}").format(icon=(icon), name=(name), size_str=(size_str)))
                     
                 self["info_panel"].setText(text)
-                logger.debug(f"[MainScreen] Info panel text set: {text}")
+                logger.debug((("[MainScreen] Info panel text set: " + "{text}").format(text=(text))))
                 return
         except Exception as e:
-            logger.debug(f"[MainScreen] Error updating info panel: {e}")
+            logger.debug((("[MainScreen] Error updating info panel: " + "{e}").format(e=(e))))
         
         self["info_panel"].setText("")
         logger.debug("[MainScreen] Info panel cleared")
@@ -652,16 +624,16 @@ class WGFileManagerMain(Screen):
             if self.operation_total > 0:
                 progress = int((self.operation_current / self.operation_total) * 100)
                 self["progress_bar"].setValue(progress)
-                logger.debug(f"[MainScreen] Operation progress: {progress}% ({self.operation_current}/{self.operation_total})")
+                logger.debug((("[MainScreen] Operation progress: " + "{progress}" + "% (" + "{_a0}" + "/" + "{_a1}" + ")").format(progress=(progress), _a0=(self.operation_current), _a1=(self.operation_total))))
             self.update_ui()
         except Exception as e:
-            logger.error(f"[MainScreen] Error updating operation progress: {e}")
+            logger.error((("[MainScreen] Error updating operation progress: " + "{e}").format(e=(e))))
 
     def update_help_text(self):
         """Update help text"""
         help_text = "OK:Play/Open 0:Menu INFO:Storage 1-9:BMark MENU:Tools SUBTITLE:Subtitle Settings"
         self["help_text"].setText(help_text)
-        logger.debug(f"[MainScreen] Help text updated")
+        logger.debug("[MainScreen] Help text updated")
 
     # OK Button Long Press Detection
     def ok_pressed(self):
@@ -678,16 +650,16 @@ class WGFileManagerMain(Screen):
                 return
             
             path = sel[0]
-            logger.debug(f"[MainScreen] OK navigation for: {path}")
+            logger.debug((("[MainScreen] OK navigation for: " + "{path}").format(path=(path))))
             
             # Handle parent directory (..)
             if path.endswith("..") or os.path.basename(path) == "..":
                 current_dir = self.active_pane.getCurrentDirectory()
-                logger.debug(f"[MainScreen] Navigating to parent directory from: {current_dir}")
+                logger.debug((("[MainScreen] Navigating to parent directory from: " + "{current_dir}").format(current_dir=(current_dir))))
                 
                 if current_dir != "/":
                     parent_dir = os.path.dirname(current_dir)
-                    logger.debug(f"[MainScreen] Changing to parent directory: {parent_dir}")
+                    logger.debug((("[MainScreen] Changing to parent directory: " + "{parent_dir}").format(parent_dir=(parent_dir))))
                     self.active_pane.changeDir(parent_dir)
                     self.update_ui()
                 else:
@@ -697,49 +669,49 @@ class WGFileManagerMain(Screen):
             # Continue with normal navigation
             if os.path.isdir(path):
                 # Folders: Enter directory
-                logger.debug(f"[MainScreen] Entering directory: {path}")
+                logger.debug((("[MainScreen] Entering directory: " + "{path}").format(path=(path))))
                 self.active_pane.changeDir(path)
                 self.update_ui()
             else:
                 # Files: Smart behavior based on type
                 ext = os.path.splitext(path)[1].lower()
-                logger.debug(f"[MainScreen] File extension: {ext}")
+                logger.debug((("[MainScreen] File extension: " + "{ext}").format(ext=(ext))))
                 
                 # Video files: Show playback options
                 if ext in ['.mp4', '.mkv', '.avi', '.ts', '.m2ts', '.mov', '.m4v', '.mpg', '.mpeg', '.wmv', '.flv']:
-                    logger.debug(f"[MainScreen] Video file detected, showing playback options")
+                    logger.debug("[MainScreen] Video file detected, showing playback options")
                     self.play_media_file(path)   # round-61: direct play (dialog removed)
                 # Audio files: SHOW MENU
                 elif ext in ['.mp3', '.flac', '.wav', '.aac', '.ogg', '.m4a', '.wma', '.ac3', '.dts']:
-                    logger.debug(f"[MainScreen] Audio file detected, showing smart menu")
+                    logger.debug("[MainScreen] Audio file detected, showing smart menu")
                     self.context_menu.show_smart_context_menu(path)
                 # Script files: Show menu
                 elif ext in ['.sh', '.py', '.pl']:
-                    logger.debug(f"[MainScreen] Script file detected, showing smart menu")
+                    logger.debug("[MainScreen] Script file detected, showing smart menu")
                     self.context_menu.show_smart_context_menu(path)
                 # Archive files: Show menu
                 elif ext in ['.zip', '.tar', '.tar.gz', '.tgz', '.rar', '.7z', '.gz']:
-                    logger.debug(f"[MainScreen] Archive file detected, showing smart menu")
+                    logger.debug("[MainScreen] Archive file detected, showing smart menu")
                     self.context_menu.show_smart_context_menu(path)
                 # IPK packages: Show menu
                 elif ext == '.ipk':
-                    logger.debug(f"[MainScreen] IPK package detected, showing smart menu")
+                    logger.debug("[MainScreen] IPK package detected, showing smart menu")
                     self.context_menu.show_smart_context_menu(path)
                 # Text files: Preview
                 elif ext in ['.txt', '.log', '.conf', '.cfg', '.ini', '.xml', '.json', '.md']:
-                    logger.debug(f"[MainScreen] Text file detected, previewing")
+                    logger.debug("[MainScreen] Text file detected, previewing")
                     self.preview_file()
                 # Image files: Preview
                 elif ext in ['.jpg', '.jpeg', '.png', '.gif', '.bmp', '.tiff']:
-                    logger.debug(f"[MainScreen] Image file detected, previewing")
+                    logger.debug("[MainScreen] Image file detected, previewing")
                     self.dialogs.preview_image(path, self.file_ops)
                 # Default: Show file info
                 else:
-                    logger.debug(f"[MainScreen] Unknown file type, showing file info")
+                    logger.debug("[MainScreen] Unknown file type, showing file info")
                     self.show_file_info()
                     
         except Exception as e:
-            logger.error(f"[MainScreen] Error in OK navigation: {e}")
+            logger.error((("[MainScreen] Error in OK navigation: " + "{e}").format(e=(e))))
             self.show_error("Navigation", e)
 
     def _show_media_playback_choice(self, file_path):
@@ -750,12 +722,12 @@ class WGFileManagerMain(Screen):
             ("Play ALL media in this folder", "play_folder"),
         ]
         
-        logger.debug(f"[MainScreen] Showing media playback choice for: {os.path.basename(file_path)}")
+        logger.debug((("[MainScreen] Showing media playback choice for: " + "{_a0}").format(_a0=(os.path.basename(file_path)))))
         
         self.session.openWithCallback(
             lambda choice: self._handle_media_playback_choice(choice, file_path) if choice else None,
             ChoiceBox,
-            title=f"Play: {os.path.basename(file_path)[:30]}",
+            title=(("Play: " + "{_a0}").format(_a0=(os.path.basename(file_path)[:30]))),
             list=menu_items
         )
     
@@ -766,41 +738,41 @@ class WGFileManagerMain(Screen):
             return
         
         action = choice[1]
-        logger.debug(f"[MainScreen] Media playback action selected: {action}")
+        logger.debug((("[MainScreen] Media playback action selected: " + "{action}").format(action=(action))))
         
         try:
             if action == "play_no_subs":
-                logger.debug(f"[MainScreen] Playing without subtitles")
+                logger.debug("[MainScreen] Playing without subtitles")
                 self.play_media_file(file_path)
             elif action == "play_with_subs":
-                logger.debug(f"[MainScreen] Playing with subtitles")
+                logger.debug("[MainScreen] Playing with subtitles")
                 self.play_media_file(file_path)
             elif action == "play_folder":
-                logger.debug(f"[MainScreen] Playing entire folder")
+                logger.debug("[MainScreen] Playing entire folder")
                 from ..player.custom_media_player import playDirectory
                 playDirectory(self.session, os.path.dirname(file_path))
         except Exception as e:
-            logger.error(f"[MainScreen] Error handling playback choice: {e}")
-            self.dialogs.show_message(f"Playback error: {e}", type="error")
+            logger.error((("[MainScreen] Error handling playback choice: " + "{e}").format(e=(e))))
+            self.dialogs.show_message((("Playback error: " + "{e}").format(e=(e))), type="error")
 
     def navigate_to_parent(self):
         """Navigate to parent directory - Enhanced with visual feedback"""
         try:
             current_dir = self.active_pane.getCurrentDirectory()
-            logger.debug(f"[MainScreen] Navigating to parent from: {current_dir}")
+            logger.debug((("[MainScreen] Navigating to parent from: " + "{current_dir}").format(current_dir=(current_dir))))
         
             if current_dir and current_dir != "/":
                 parent_dir = os.path.dirname(current_dir)
-                logger.debug(f"[MainScreen] Parent directory: {parent_dir}")
+                logger.debug((("[MainScreen] Parent directory: " + "{parent_dir}").format(parent_dir=(parent_dir))))
             
                 # Visual feedback
-                self["status_bar"].setText(f"↑ {parent_dir}")
+                self["status_bar"].setText((("↑ " + "{parent_dir}").format(parent_dir=(parent_dir))))
             
                 # Navigate
                 self.active_pane.changeDir(parent_dir)
                 self.update_ui()
             
-                logger.info(f"[MainScreen] Navigated to parent: {parent_dir}")
+                logger.info((("[MainScreen] Navigated to parent: " + "{parent_dir}").format(parent_dir=(parent_dir))))
             else:
                 # Flash indicator when already at root
                 self["status_bar"].setText("Already at root directory")
@@ -817,7 +789,7 @@ class WGFileManagerMain(Screen):
                 self._wg_timers.append(_t)
             
         except Exception as e:
-            logger.error(f"[MainScreen] Error navigating to parent: {e}")
+            logger.error((("[MainScreen] Error navigating to parent: " + "{e}").format(e=(e))))
             self.show_error("Navigate parent", e)
 
     def toggle_selection(self):
@@ -842,9 +814,9 @@ class WGFileManagerMain(Screen):
                 self.update_info_panel()
                 self.update_status_bar()
                 
-                logger.debug(f"[MainScreen] Toggled selection for: {path}")
+                logger.debug((("[MainScreen] Toggled selection for: " + "{path}").format(path=(path))))
         except Exception as e:
-            logger.error(f"[MainScreen] Error toggling selection: {e}")
+            logger.error((("[MainScreen] Error toggling selection: " + "{e}").format(e=(e))))
 
     def unmark_all(self):
         """Clears all marked files from memory and refreshes the UI"""
@@ -867,7 +839,7 @@ class WGFileManagerMain(Screen):
             self.update_info_panel()
             logger.debug("[MainScreen] Moved up in list")
         except Exception as e:
-            logger.error(f"[MainScreen] Error moving up: {e}")
+            logger.error((("[MainScreen] Error moving up: " + "{e}").format(e=(e))))
 
     def down(self):
         """Move down in file list"""
@@ -876,7 +848,7 @@ class WGFileManagerMain(Screen):
             self.update_info_panel()
             logger.debug("[MainScreen] Moved down in list")
         except Exception as e:
-            logger.error(f"[MainScreen] Error moving down: {e}")
+            logger.error((("[MainScreen] Error moving down: " + "{e}").format(e=(e))))
 
     def page_up(self):
         """Page up in file list"""
@@ -886,7 +858,7 @@ class WGFileManagerMain(Screen):
             self.update_info_panel()
             logger.debug("[MainScreen] Page up (10 items)")
         except Exception as e:
-            logger.error(f"[MainScreen] Error page up: {e}")
+            logger.error((("[MainScreen] Error page up: " + "{e}").format(e=(e))))
 
     def page_down(self):
         """Page down in file list"""
@@ -896,7 +868,7 @@ class WGFileManagerMain(Screen):
             self.update_info_panel()
             logger.debug("[MainScreen] Page down (10 items)")
         except Exception as e:
-            logger.error(f"[MainScreen] Error page down: {e}")
+            logger.error((("[MainScreen] Error page down: " + "{e}").format(e=(e))))
 
     def go_home(self):
         """Go to first item"""
@@ -905,7 +877,7 @@ class WGFileManagerMain(Screen):
             self.update_info_panel()
             logger.debug("[MainScreen] Went to first item")
         except Exception as e:
-            logger.error(f"[MainScreen] Error going home: {e}")
+            logger.error((("[MainScreen] Error going home: " + "{e}").format(e=(e))))
 
     def go_end(self):
         """Go to last item"""
@@ -914,7 +886,7 @@ class WGFileManagerMain(Screen):
             self.update_info_panel()
             logger.debug("[MainScreen] Went to last item")
         except Exception as e:
-            logger.error(f"[MainScreen] Error going end: {e}")
+            logger.error((("[MainScreen] Error going end: " + "{e}").format(e=(e))))
 
     def focus_left(self):
         """Switch focus to left pane"""
@@ -925,7 +897,7 @@ class WGFileManagerMain(Screen):
             self.update_help_text()
             logger.debug("[MainScreen] Focus switched to left pane")
         except Exception as e:
-            logger.error(f"[MainScreen] Error focusing left pane: {e}")
+            logger.error((("[MainScreen] Error focusing left pane: " + "{e}").format(e=(e))))
 
     def focus_right(self):
         """Switch focus to right pane"""
@@ -936,7 +908,7 @@ class WGFileManagerMain(Screen):
             self.update_help_text()
             logger.debug("[MainScreen] Focus switched to right pane")
         except Exception as e:
-            logger.error(f"[MainScreen] Error focusing right pane: {e}")
+            logger.error((("[MainScreen] Error focusing right pane: " + "{e}").format(e=(e))))
 
     # File Operations
     def delete_request(self):
@@ -948,9 +920,9 @@ class WGFileManagerMain(Screen):
             if marked:
                 # Multi-select delete
                 files = [x[0][0] for x in marked]
-                logger.debug(f"[MainScreen] Delete request for {len(files)} selected items")
+                logger.debug((("[MainScreen] Delete request for " + "{_a0}" + " selected items").format(_a0=(len(files)))))
                 self.dialogs.show_confirmation(
-                    f"Delete {len(files)} selected items?\n\nThis cannot be undone!",
+                    (("Delete " + "{_a0}" + " selected items?\n\nThis cannot be undone!").format(_a0=(len(files)))),
                     lambda res: self._execute_delete_multiple(res, files) if res else None
                 )
             else:
@@ -965,47 +937,47 @@ class WGFileManagerMain(Screen):
                 is_dir = os.path.isdir(item_path)
                 item_type = "folder" if is_dir else "file"
                 
-                logger.debug(f"[MainScreen] Delete request for {item_type}: {item_name}")
+                logger.debug((("[MainScreen] Delete request for " + "{item_type}" + ": " + "{item_name}").format(item_type=(item_type), item_name=(item_name))))
                 
                 self.dialogs.show_confirmation(
-                    f"Delete {item_type} '{item_name}'?\n\nThis cannot be undone!",
+                    (("Delete " + "{item_type}" + " '" + "{item_name}" + "'?\n\nThis cannot be undone!").format(item_type=(item_type), item_name=(item_name))),
                     lambda res: self._execute_delete(res, item_path, item_name) if res else None
                 )
         except Exception as e:
-            logger.error(f"[MainScreen] Error in delete request: {e}")
+            logger.error((("[MainScreen] Error in delete request: " + "{e}").format(e=(e))))
             self.show_error("Delete", e)
 
     def _execute_delete(self, confirmed, item_path, item_name):
         """Execute deletion"""
         if not confirmed:
-            logger.debug(f"[MainScreen] Delete cancelled for: {item_name}")
+            logger.debug((("[MainScreen] Delete cancelled for: " + "{item_name}").format(item_name=(item_name))))
             return
         
         try:
-            logger.debug(f"[MainScreen] Executing delete for: {item_path}")
+            logger.debug((("[MainScreen] Executing delete for: " + "{item_path}").format(item_path=(item_path))))
             self.file_ops.delete(item_path)
             self.active_pane.refresh()
             self.update_ui()
             
             if self.config.plugins.wgfilemanager.trash_enabled.value == "yes":
-                msg = f"Moved to trash: {item_name}"
+                msg = (("Moved to trash: " + "{item_name}").format(item_name=(item_name)))
             else:
-                msg = f"Permanently deleted: {item_name}"
+                msg = (("Permanently deleted: " + "{item_name}").format(item_name=(item_name)))
             
             self.dialogs.show_message(msg, type="info", timeout=2)
-            logger.info(f"[MainScreen] Deleted: {item_name}")
+            logger.info((("[MainScreen] Deleted: " + "{item_name}").format(item_name=(item_name))))
         except Exception as e:
-            logger.error(f"[MainScreen] Error executing delete: {e}")
+            logger.error((("[MainScreen] Error executing delete: " + "{e}").format(e=(e))))
             self.show_error("Delete", e)
 
     def _execute_delete_multiple(self, confirmed, files):
         """Execute deletion of multiple items"""
         if not confirmed:
-            logger.debug(f"[MainScreen] Multiple delete cancelled")
+            logger.debug("[MainScreen] Multiple delete cancelled")
             return
         
         try:
-            logger.debug(f"[MainScreen] Executing delete for {len(files)} items")
+            logger.debug((("[MainScreen] Executing delete for " + "{_a0}" + " items").format(_a0=(len(files)))))
             success = 0
             errors = []
             
@@ -1014,22 +986,22 @@ class WGFileManagerMain(Screen):
                     self.file_ops.delete(item_path)
                     success += 1
                 except Exception as e:
-                    errors.append(f"{os.path.basename(item_path)}: {str(e)[:30]}")
+                    errors.append((("{_a0}" + ": " + "{_a1}").format(_a0=(os.path.basename(item_path)), _a1=(str(e)[:30]))))
             
-            msg = f"Deleted: {success} items\n"
+            msg = (("Deleted: " + "{success}" + " items\n").format(success=(success)))
             if errors:
-                msg += f"\nFailed: {len(errors)}\n"
+                msg += (("\nFailed: " + "{_a0}" + "\n").format(_a0=(len(errors))))
                 msg += "\n".join(errors[:3])
                 if len(errors) > 3:
-                    msg += f"\n... and {len(errors) - 3} more"
+                    msg += (("\n... and " + "{_a0}" + " more").format(_a0=(len(errors) - 3)))
             
             self.active_pane.refresh()
             self.update_ui()
             self.dialogs.show_message(msg, type="info")
-            logger.info(f"[MainScreen] Multiple delete completed: {success} successful, {len(errors)} failed")
+            logger.info((("[MainScreen] Multiple delete completed: " + "{success}" + " successful, " + "{_a0}" + " failed").format(success=(success), _a0=(len(errors)))))
         except Exception as e:
-            logger.error(f"[MainScreen] Error deleting multiple items: {e}")
-            self.dialogs.show_message(f"Delete multiple failed: {e}", type="error")
+            logger.error((("[MainScreen] Error deleting multiple items: " + "{e}").format(e=(e))))
+            self.dialogs.show_message((("Delete multiple failed: " + "{e}").format(e=(e))), type="error")
 
     def rename_request(self):
         """Request file rename - GREEN button"""
@@ -1038,9 +1010,9 @@ class WGFileManagerMain(Screen):
             marked = [x for x in self.active_pane.list if x[0][3]]
         
             if len(marked) > 1:
-                logger.debug(f"[MainScreen] Rename request for {len(marked)} items - showing bulk rename suggestion")
+                logger.debug((("[MainScreen] Rename request for " + "{_a0}" + " items - showing bulk rename suggestion").format(_a0=(len(marked)))))
                 self.dialogs.show_message(
-                    f"Multiple files selected ({len(marked)} items)\n\nUse MENU -> Tools -> Bulk Rename\nfor renaming multiple files",
+                    (("Multiple files selected (" + "{_a0}" + " items)\n\nUse MENU -> Tools -> Bulk Rename\nfor renaming multiple files").format(_a0=(len(marked)))),
                     type="info"
                 )
                 return
@@ -1053,7 +1025,7 @@ class WGFileManagerMain(Screen):
         
             item_path = sel[0]
             current_name = os.path.basename(item_path)
-            logger.debug(f"[MainScreen] Rename request for: {current_name}")
+            logger.debug((("[MainScreen] Rename request for: " + "{current_name}").format(current_name=(current_name))))
         
             def rename_callback(new_name):
                 if new_name and new_name != current_name:
@@ -1075,24 +1047,24 @@ class WGFileManagerMain(Screen):
             self.session.openWithCallback(rename_callback, keyboard_screen)
         
         except Exception as e:
-            logger.error(f"[MainScreen] Error in rename request: {e}")
+            logger.error((("[MainScreen] Error in rename request: " + "{e}").format(e=(e))))
             self.show_error("Rename", e)
 
     def _execute_rename(self, new_name, old_path, old_name):
         """Execute rename"""
         if not new_name or new_name == old_name:
-            logger.debug(f"[MainScreen] Rename cancelled or same name: {new_name}")
+            logger.debug((("[MainScreen] Rename cancelled or same name: " + "{new_name}").format(new_name=(new_name))))
             return
         
         try:
-            logger.debug(f"[MainScreen] Executing rename: {old_name} -> {new_name}")
+            logger.debug((("[MainScreen] Executing rename: " + "{old_name}" + " -> " + "{new_name}").format(old_name=(old_name), new_name=(new_name))))
             new_path = self.file_ops.rename(old_path, new_name)
             self.active_pane.refresh()
             self.update_ui()
-            self.dialogs.show_message(f"Renamed to: {new_name}", type="info", timeout=2)
-            logger.info(f"[MainScreen] Renamed: {old_name} -> {new_name}")
+            self.dialogs.show_message((("Renamed to: " + "{new_name}").format(new_name=(new_name))), type="info", timeout=2)
+            logger.info((("[MainScreen] Renamed: " + "{old_name}" + " -> " + "{new_name}").format(old_name=(old_name), new_name=(new_name))))
         except Exception as e:
-            logger.error(f"[MainScreen] Error executing rename: {e}")
+            logger.error((("[MainScreen] Error executing rename: " + "{e}").format(e=(e))))
             self.show_error("Rename", e)
 
     def quick_copy(self):
@@ -1116,10 +1088,10 @@ class WGFileManagerMain(Screen):
                 self.dialogs.show_message("No files selected!", type="info")
                 return
             
-            logger.debug(f"[MainScreen] Quick copy: {len(files)} files to {dest}")
+            logger.debug((("[MainScreen] Quick copy: " + "{_a0}" + " files to " + "{dest}").format(_a0=(len(files)), dest=(dest))))
             self.dialogs.show_transfer_dialog(files, dest, self.execute_transfer)
         except Exception as e:
-            logger.error(f"[MainScreen] Error in quick copy: {e}")
+            logger.error((("[MainScreen] Error in quick copy: " + "{e}").format(e=(e))))
             self.show_error("Copy", e)
 
     def get_selected_files(self):
@@ -1135,9 +1107,9 @@ class WGFileManagerMain(Screen):
                 if sel and sel[0]:
                     files.append(sel[0])
             
-            logger.debug(f"[MainScreen] Selected files: {len(files)} items")
+            logger.debug((("[MainScreen] Selected files: " + "{_a0}" + " items").format(_a0=(len(files)))))
         except Exception as e:
-            logger.error(f"[MainScreen] Error getting selected files: {e}")
+            logger.error((("[MainScreen] Error getting selected files: " + "{e}").format(e=(e))))
         
         return files
 
@@ -1149,21 +1121,21 @@ class WGFileManagerMain(Screen):
         
         try:
             dest = self.active_pane.getCurrentDirectory()
-            logger.debug(f"[MainScreen] Paste from clipboard: {len(self.clipboard)} items to {dest}")
+            logger.debug((("[MainScreen] Paste from clipboard: " + "{_a0}" + " items to " + "{dest}").format(_a0=(len(self.clipboard)), dest=(dest))))
             
             if not os.path.isdir(dest):
-                self.dialogs.show_message(f"Invalid destination: {dest}", type="error")
+                self.dialogs.show_message((("Invalid destination: " + "{dest}").format(dest=(dest))), type="error")
                 return
             
             mode = "cp" if self.clipboard_mode == "copy" else "mv"
             action = "Copy" if mode == "cp" else "Move"
             
             self.dialogs.show_confirmation(
-                f"{action} {len(self.clipboard)} items to:\n{dest}?",
+                (("{action}" + " " + "{_a0}" + " items to:\n" + "{dest}" + "?").format(action=(action), _a0=(len(self.clipboard)), dest=(dest))),
                 lambda res: self.execute_paste(res, mode, self.clipboard[:], dest)
             )
         except Exception as e:
-            logger.error(f"[MainScreen] Error pasting from clipboard: {e}")
+            logger.error((("[MainScreen] Error pasting from clipboard: " + "{e}").format(e=(e))))
             self.show_error("Paste", e)
 
     def execute_paste(self, confirmed, mode, files, dest):
@@ -1179,7 +1151,7 @@ class WGFileManagerMain(Screen):
             self.operation_in_progress = True
         
         try:
-            logger.debug(f"[MainScreen] Starting paste operation: {mode}, {len(files)} files to {dest}")
+            logger.debug((("[MainScreen] Starting paste operation: " + "{mode}" + ", " + "{_a0}" + " files to " + "{dest}").format(mode=(mode), _a0=(len(files)), dest=(dest))))
             self.operation_current = 0
             self.operation_total = len(files)
             self.operation_timer.start(500)
@@ -1191,7 +1163,7 @@ class WGFileManagerMain(Screen):
             )
             thread.start()
         except Exception as e:
-            logger.error(f"[MainScreen] Error starting paste operation: {e}")
+            logger.error((("[MainScreen] Error starting paste operation: " + "{e}").format(e=(e))))
             with self.operation_lock:
                 self.operation_in_progress = False
             self.show_error("Paste", e)
@@ -1199,22 +1171,22 @@ class WGFileManagerMain(Screen):
     def _perform_paste(self, mode, files, dest):
         """Perform paste operation in thread"""
         try:
-            logger.debug(f"[MainScreen] Performing paste operation: {mode}, {len(files)} files")
+            logger.debug((("[MainScreen] Performing paste operation: " + "{mode}" + ", " + "{_a0}" + " files").format(mode=(mode), _a0=(len(files)))))
             
             for i, src in enumerate(files):
                 try:
                     if mode == "cp":
-                        logger.debug(f"[MainScreen] Copying: {src} -> {dest}")
+                        logger.debug((("[MainScreen] Copying: " + "{src}" + " -> " + "{dest}").format(src=(src), dest=(dest))))
                         self.file_ops.copy(src, dest)
                     elif mode == "mv":
-                        logger.debug(f"[MainScreen] Moving: {src} -> {dest}")
+                        logger.debug((("[MainScreen] Moving: " + "{src}" + " -> " + "{dest}").format(src=(src), dest=(dest))))
                         self.file_ops.move(src, dest)
                     
                     with self.operation_lock:
                         self.operation_current = i + 1
                     
                 except Exception as e:
-                    logger.error(f"[MainScreen] Paste failed for {src}: {e}")
+                    logger.error((("[MainScreen] Paste failed for " + "{src}" + ": " + "{e}").format(src=(src), e=(e))))
                     # Continue with next file
             
             # Operation complete
@@ -1242,10 +1214,10 @@ class WGFileManagerMain(Screen):
             self.inactive_pane.refresh()
             self.update_ui()
             
-            logger.info(f"[MainScreen] Paste operation completed successfully")
+            logger.info("[MainScreen] Paste operation completed successfully")
             
         except Exception as e:
-            logger.error(f"[MainScreen] Paste operation failed: {e}")
+            logger.error((("[MainScreen] Paste operation failed: " + "{e}").format(e=(e))))
             with self.operation_lock:
                 self.operation_in_progress = False
                 self.operation_timer.stop()
@@ -1254,7 +1226,7 @@ class WGFileManagerMain(Screen):
             self.session.openWithCallback(
                 lambda: None,
                 MessageBox,
-                f"Paste failed:\n{e}",
+                (("Paste failed:\n" + "{e}").format(e=(e))),
                 type=MessageBox.TYPE_ERROR
             )
 
@@ -1267,7 +1239,7 @@ class WGFileManagerMain(Screen):
             self.operation_in_progress = True
         
         try:
-            logger.debug(f"[MainScreen] Starting transfer operation: {mode}, {len(files)} files to {dest}")
+            logger.debug((("[MainScreen] Starting transfer operation: " + "{mode}" + ", " + "{_a0}" + " files to " + "{dest}").format(mode=(mode), _a0=(len(files)), dest=(dest))))
             self.operation_current = 0
             self.operation_total = len(files)
             self.operation_timer.start(500)
@@ -1279,7 +1251,7 @@ class WGFileManagerMain(Screen):
             )
             thread.start()
         except Exception as e:
-            logger.error(f"[MainScreen] Error starting transfer operation: {e}")
+            logger.error((("[MainScreen] Error starting transfer operation: " + "{e}").format(e=(e))))
             with self.operation_lock:
                 self.operation_in_progress = False
             self.show_error("Transfer", e)
@@ -1287,22 +1259,22 @@ class WGFileManagerMain(Screen):
     def _perform_transfer(self, mode, files, dest):
         """Perform transfer in thread"""
         try:
-            logger.debug(f"[MainScreen] Performing transfer operation: {mode}, {len(files)} files")
+            logger.debug((("[MainScreen] Performing transfer operation: " + "{mode}" + ", " + "{_a0}" + " files").format(mode=(mode), _a0=(len(files)))))
             
             for i, src in enumerate(files):
                 try:
                     if mode == "cp":
-                        logger.debug(f"[MainScreen] Copying: {src} -> {dest}")
+                        logger.debug((("[MainScreen] Copying: " + "{src}" + " -> " + "{dest}").format(src=(src), dest=(dest))))
                         self.file_ops.copy(src, dest)
                     elif mode == "mv":
-                        logger.debug(f"[MainScreen] Moving: {src} -> {dest}")
+                        logger.debug((("[MainScreen] Moving: " + "{src}" + " -> " + "{dest}").format(src=(src), dest=(dest))))
                         self.file_ops.move(src, dest)
                     
                     with self.operation_lock:
                         self.operation_current = i + 1
                     
                 except Exception as e:
-                    logger.error(f"[MainScreen] Transfer failed for {src}: {e}")
+                    logger.error((("[MainScreen] Transfer failed for " + "{src}" + ": " + "{e}").format(src=(src), e=(e))))
                     # Continue with next file
             
             # Operation complete
@@ -1324,10 +1296,10 @@ class WGFileManagerMain(Screen):
             self.inactive_pane.refresh()
             self.update_ui()
             
-            logger.info(f"[MainScreen] Transfer operation completed successfully")
+            logger.info("[MainScreen] Transfer operation completed successfully")
             
         except Exception as e:
-            logger.error(f"[MainScreen] Transfer operation failed: {e}")
+            logger.error((("[MainScreen] Transfer operation failed: " + "{e}").format(e=(e))))
             with self.operation_lock:
                 self.operation_in_progress = False
                 self.operation_timer.stop()
@@ -1336,7 +1308,7 @@ class WGFileManagerMain(Screen):
             self.session.openWithCallback(
                 lambda: None,
                 MessageBox,
-                f"Transfer failed:\n{e}",
+                (("Transfer failed:\n" + "{e}").format(e=(e))),
                 type=MessageBox.TYPE_ERROR
             )
 
@@ -1351,7 +1323,7 @@ class WGFileManagerMain(Screen):
             logger.debug("[MainScreen] Opening tools menu")
             self.context_menu.show_tools_menu()
         except Exception as e:
-            logger.error(f"[MainScreen] Error opening tools menu: {e}")
+            logger.error((("[MainScreen] Error opening tools menu: " + "{e}").format(e=(e))))
             self.show_error("Tools menu", e)
 
     def zero_pressed(self):
@@ -1366,39 +1338,39 @@ class WGFileManagerMain(Screen):
             marked = [x for x in self.active_pane.list if x[0][3]]
             
             if marked:
-                logger.debug(f"[MainScreen] Showing multi-selection context menu for {len(marked)} items")
+                logger.debug((("[MainScreen] Showing multi-selection context menu for " + "{_a0}" + " items").format(_a0=(len(marked)))))
                 self.context_menu.show_multi_selection_context_menu(marked)
             else:
                 logger.debug("[MainScreen] Showing regular context menu")
                 self.context_menu.show_context_menu()
         except Exception as e:
-            logger.error(f"[MainScreen] Error in zero pressed: {e}")
+            logger.error((("[MainScreen] Error in zero pressed: " + "{e}").format(e=(e))))
             self.show_error("Context menu", e)
 
     def quick_bookmark(self, num):
         """Quick bookmark access"""
         try:
             key = str(num)
-            logger.debug(f"[MainScreen] Quick bookmark {num} pressed")
+            logger.debug((("[MainScreen] Quick bookmark " + "{num}" + " pressed").format(num=(num))))
             
             if key in self.bookmarks:
                 path = self.bookmarks[key]
                 if os.path.isdir(path):
                     self.active_pane.changeDir(path)
                     self.update_ui()
-                    self["status_bar"].setText(f"Jumped to bookmark {num}: {os.path.basename(path)}")
-                    logger.debug(f"[MainScreen] Jumped to bookmark {num}: {path}")
+                    self["status_bar"].setText((("Jumped to bookmark " + "{num}" + ": " + "{_a0}").format(num=(num), _a0=(os.path.basename(path)))))
+                    logger.debug((("[MainScreen] Jumped to bookmark " + "{num}" + ": " + "{path}").format(num=(num), path=(path))))
                 else:
-                    self.dialogs.show_message(f"Bookmark {num} path not found: {path}", type="error")
-                    logger.warning(f"[MainScreen] Bookmark {num} path not found: {path}")
+                    self.dialogs.show_message((("Bookmark " + "{num}" + " path not found: " + "{path}").format(num=(num), path=(path))), type="error")
+                    logger.warning((("[MainScreen] Bookmark " + "{num}" + " path not found: " + "{path}").format(num=(num), path=(path))))
             else:
                 current = self.active_pane.getCurrentDirectory()
                 self.bookmarks[key] = current
                 self.config.save_bookmarks(self.bookmarks)
-                self.dialogs.show_message(f"Bookmark {num} set to:\n{current}", type="info", timeout=2)
-                logger.info(f"[MainScreen] Bookmark {num} set to: {current}")
+                self.dialogs.show_message((("Bookmark " + "{num}" + " set to:\n" + "{current}").format(num=(num), current=(current))), type="info", timeout=2)
+                logger.info((("[MainScreen] Bookmark " + "{num}" + " set to: " + "{current}").format(num=(num), current=(current))))
         except Exception as e:
-            logger.error(f"[MainScreen] Error in quick bookmark: {e}")
+            logger.error((("[MainScreen] Error in quick bookmark: " + "{e}").format(e=(e))))
             self.show_error("Bookmark", e)
 
     def play_whole_folder(self):
@@ -1413,12 +1385,12 @@ class WGFileManagerMain(Screen):
                 return
             path = sel[0]
             d = os.path.dirname(path)
-            logger.info(f"[MainScreen] Folder play: {d}")
+            logger.info((("[MainScreen] Folder play: " + "{d}").format(d=(d))))
             from ..player.custom_media_player import playDirectory
             playDirectory(self.session, d)
         except Exception as e:
-            logger.error(f"[MainScreen] Folder play failed: {e}")
-            self.dialogs.show_message(f"Folder play failed:\n{e}", type="error")
+            logger.error((("[MainScreen] Folder play failed: " + "{e}").format(e=(e))))
+            self.dialogs.show_message((("Folder play failed:\n" + "{e}").format(e=(e))), type="error")
 
     def preview_file(self):
         """Preview file contents"""
@@ -1428,7 +1400,7 @@ class WGFileManagerMain(Screen):
                 return
             
             file_path = sel[0]
-            logger.debug(f"[MainScreen] Preview file request: {file_path}")
+            logger.debug((("[MainScreen] Preview file request: " + "{file_path}").format(file_path=(file_path))))
             
             if os.path.isdir(file_path):
                 self.dialogs.show_message("Cannot preview directory!\n\nPress OK to enter folder.", type="info")
@@ -1440,7 +1412,7 @@ class WGFileManagerMain(Screen):
                 max_size = int(self.config.plugins.wgfilemanager.preview_size.value) * 1024
                 if size > max_size:
                     self.dialogs.show_message(
-                        f"File too large to preview!\n\nSize: {format_size(size)}\nLimit: {format_size(max_size)}",
+                        (("File too large to preview!\n\nSize: " + "{_a0}" + "\nLimit: " + "{_a1}").format(_a0=(format_size(size)), _a1=(format_size(max_size)))),
                         type="info"
                     )
                     return
@@ -1449,9 +1421,9 @@ class WGFileManagerMain(Screen):
             
             # Delegate to dialogs
             self.dialogs.preview_file(file_path, self.file_ops, self.config)
-            logger.debug(f"[MainScreen] Previewing file: {os.path.basename(file_path)}")
+            logger.debug((("[MainScreen] Previewing file: " + "{_a0}").format(_a0=(os.path.basename(file_path)))))
         except Exception as e:
-            logger.error(f"[MainScreen] Error previewing file: {e}")
+            logger.error((("[MainScreen] Error previewing file: " + "{e}").format(e=(e))))
             self.show_error("Preview", e)
 
     def preview_media(self):
@@ -1466,7 +1438,7 @@ class WGFileManagerMain(Screen):
                 return
             
             file_path = sel[0]
-            logger.debug(f"[MainScreen] Preview media request: {file_path}")
+            logger.debug((("[MainScreen] Preview media request: " + "{file_path}").format(file_path=(file_path))))
             
             # Check if file can be played
             if not self.can_play_file(file_path):
@@ -1486,29 +1458,29 @@ class WGFileManagerMain(Screen):
                 # round-57 direct play: no more with/without-subs dialog -
                 # play immediately; subtitles (if found) auto-load, toggle
                 # with TEXT, pick with YELLOW inside the player.
-                logger.debug(f"[MainScreen] Video file detected - direct play")
+                logger.debug("[MainScreen] Video file detected - direct play")
                 self.play_media_file(file_path)
             else:
                 # Audio or other files: Use existing method
                 if self.config.plugins.wgfilemanager.use_internal_player.value:
                     try:
-                        logger.debug(f"[MainScreen] Using internal player for: {file_path}")
+                        logger.debug((("[MainScreen] Using internal player for: " + "{file_path}").format(file_path=(file_path))))
                         self.play_media_file(file_path)
                     except Exception as e:
-                        logger.error(f"[MainScreen] Internal player failed: {e}")
+                        logger.error((("[MainScreen] Internal player failed: " + "{e}").format(e=(e))))
                         if self.config.plugins.wgfilemanager.fallback_to_external.value:
-                            logger.debug(f"[MainScreen] Falling back to external player")
+                            logger.debug("[MainScreen] Falling back to external player")
                             self.play_with_external_player(file_path)
                         else:
-                            self.dialogs.show_message(f"Media playback failed:\n{e}", type="error")
+                            self.dialogs.show_message((("Media playback failed:\n" + "{e}").format(e=(e))), type="error")
                 else:
-                    logger.debug(f"[MainScreen] Using external player for: {file_path}")
+                    logger.debug((("[MainScreen] Using external player for: " + "{file_path}").format(file_path=(file_path))))
                     self.play_with_external_player(file_path)
             
             self.preview_in_progress = False
             
         except Exception as e:
-            logger.error(f"[MainScreen] Error previewing media: {e}")
+            logger.error((("[MainScreen] Error previewing media: " + "{e}").format(e=(e))))
             self.preview_in_progress = False
             self.show_error("Media preview", e)
 
@@ -1555,10 +1527,10 @@ class WGFileManagerMain(Screen):
                 self._storage_selected, ChoiceBox,
                 title="Storage (%d locations)" % len(entries),
                 list=choices)
-            logger.info(f"[MainScreen] Storage selector: {len(entries)} locations")
+            logger.info((("[MainScreen] Storage selector: " + "{_a0}" + " locations").format(_a0=(len(entries)))))
         except Exception as e:
-            logger.error(f"[MainScreen] Storage selector error: {e}")
-            self.dialogs.show_message(f"Storage selector failed:\n{e}", type="error")
+            logger.error((("[MainScreen] Storage selector error: " + "{e}").format(e=(e))))
+            self.dialogs.show_message((("Storage selector failed:\n" + "{e}").format(e=(e))), type="error")
 
     def _storage_selected(self, choice):
         """round-30: jump the active pane to the chosen storage."""
@@ -1566,12 +1538,12 @@ class WGFileManagerMain(Screen):
             return
         path = choice[1]
         try:
-            logger.debug(f"[MainScreen] Storage selected: {path}")
+            logger.debug((("[MainScreen] Storage selected: " + "{path}").format(path=(path))))
             self.active_pane.changeDir(path)
             self.update_ui()
         except Exception as e:
-            logger.error(f"[MainScreen] Cannot change to {path}: {e}")
-            self.dialogs.show_message(f"Cannot open:\n{path}", type="error")
+            logger.error((("[MainScreen] Cannot change to " + "{path}" + ": " + "{e}").format(path=(path), e=(e))))
+            self.dialogs.show_message((("Cannot open:\n" + "{path}").format(path=(path))), type="error")
 
     def _scan_storage_locations(self):
         """round-30 (Bug 88): enumerate every storage location on the box.
@@ -1626,7 +1598,7 @@ class WGFileManagerMain(Screen):
                 except Exception:
                     continue
         except Exception as e:
-            logger.debug(f"[MainScreen] harddiskmanager unavailable: {e}")
+            logger.debug((("[MainScreen] harddiskmanager unavailable: " + "{e}").format(e=(e))))
 
         # --- 2) /proc/mounts (USB + network mounts) ---
         SKIP_FS = ("proc", "sysfs", "devpts", "tmpfs", "devtmpfs", "squashfs",
@@ -1663,7 +1635,7 @@ class WGFileManagerMain(Screen):
                         name = os.path.basename(dev) or mp_u
                     add(mp_u, "%s: %s" % (kind, name))
         except Exception as e:
-            logger.debug(f"[MainScreen] /proc/mounts unreadable: {e}")
+            logger.debug((("[MainScreen] /proc/mounts unreadable: " + "{e}").format(e=(e))))
 
         # --- 3) well-known locations ---
         for p, lbl in (("/media/hdd", "HDD: hard disk"),
@@ -1691,7 +1663,7 @@ class WGFileManagerMain(Screen):
                         lbl = "MEDIA: %s" % name
                     add(p, lbl)
         except Exception as e:
-            logger.debug(f"[MainScreen] /media enumeration failed: {e}")
+            logger.debug((("[MainScreen] /media enumeration failed: " + "{e}").format(e=(e))))
 
         def prio(item):
             lbl = item[0]
@@ -1715,26 +1687,26 @@ class WGFileManagerMain(Screen):
                 return
             
             file_path = sel[0]
-            logger.debug(f"[MainScreen] Showing file info for: {file_path}")
+            logger.debug((("[MainScreen] Showing file info for: " + "{file_path}").format(file_path=(file_path))))
             
             info = self.file_ops.get_file_info(file_path)
             if info:
-                text = f"File: {info['name']}\n"
-                text += f"Path: {os.path.dirname(info['path'])}\n"
-                text += f"Size: {info['size_formatted']}\n"
-                text += f"Modified: {info['modified'].strftime('%Y-%m-%d %H:%M:%S')}\n"
-                text += f"Permissions: {info['permissions']}\n"
+                text = (("File: " + "{_a0}" + "\n").format(_a0=(info['name'])))
+                text += (("Path: " + "{_a0}" + "\n").format(_a0=(os.path.dirname(info['path']))))
+                text += (("Size: " + "{_a0}" + "\n").format(_a0=(info['size_formatted'])))
+                text += (("Modified: " + "{_a0}" + "\n").format(_a0=(info['modified'].strftime('%Y-%m-%d %H:%M:%S'))))
+                text += (("Permissions: " + "{_a0}" + "\n").format(_a0=(info['permissions'])))
                 
                 if info['is_dir']:
-                    text += f"Type: Directory\n"
+                    text += "Type: Directory\n"
                     if 'item_count' in info:
-                        text += f"Items: {info['item_count']}\n"
+                        text += (("Items: " + "{_a0}" + "\n").format(_a0=(info['item_count'])))
                 else:
-                    text += f"Type: File\n"
+                    text += "Type: File\n"
                 
                 self.dialogs.show_message(text, type="info")
         except Exception as e:
-            logger.error(f"[MainScreen] Error showing file info: {e}")
+            logger.error((("[MainScreen] Error showing file info: " + "{e}").format(e=(e))))
             self.show_error("File info", e)
 
     # Subtitle Methods
@@ -1752,7 +1724,7 @@ class WGFileManagerMain(Screen):
                 type="info", timeout=6
             )
         except Exception as e:
-            logger.debug(f"[MainScreen] subtitle info: {e}")
+            logger.debug((("[MainScreen] subtitle info: " + "{e}").format(e=(e))))
 
     def next_sort(self):
         """Cycle to next sort mode"""
@@ -1763,21 +1735,21 @@ class WGFileManagerMain(Screen):
                 self.left_sort_mode = modes[(current_idx + 1) % len(modes)]
                 self.config.plugins.wgfilemanager.left_sort_mode.value = self.left_sort_mode
                 self.config.plugins.wgfilemanager.left_sort_mode.save()
-                logger.debug(f"[MainScreen] Left sort mode changed to: {self.left_sort_mode}")
+                logger.debug((("[MainScreen] Left sort mode changed to: " + "{_a0}").format(_a0=(self.left_sort_mode))))
             else:
                 modes = ["name", "size", "date", "type"]
                 current_idx = modes.index(self.right_sort_mode) if self.right_sort_mode in modes else 0
                 self.right_sort_mode = modes[(current_idx + 1) % len(modes)]
                 self.config.plugins.wgfilemanager.right_sort_mode.value = self.right_sort_mode
                 self.config.plugins.wgfilemanager.right_sort_mode.save()
-                logger.debug(f"[MainScreen] Right sort mode changed to: {self.right_sort_mode}")
+                logger.debug((("[MainScreen] Right sort mode changed to: " + "{_a0}").format(_a0=(self.right_sort_mode))))
             
             self.apply_sorting()
             self.update_ui()
-            self.dialogs.show_message(f"Sort: {self.left_sort_mode if self.active_pane == self['left_pane'] else self.right_sort_mode.upper()}", 
+            self.dialogs.show_message((("Sort: " + "{_a0}").format(_a0=(self.left_sort_mode if self.active_pane == self['left_pane'] else self.right_sort_mode.upper()))), 
                                      type="info", timeout=1)
         except Exception as e:
-            logger.error(f"[MainScreen] Error in next sort: {e}")
+            logger.error((("[MainScreen] Error in next sort: " + "{e}").format(e=(e))))
 
     def prev_sort(self):
         """Cycle to previous sort mode"""
@@ -1788,21 +1760,21 @@ class WGFileManagerMain(Screen):
                 self.left_sort_mode = modes[(current_idx - 1) % len(modes)]
                 self.config.plugins.wgfilemanager.left_sort_mode.value = self.left_sort_mode
                 self.config.plugins.wgfilemanager.left_sort_mode.save()
-                logger.debug(f"[MainScreen] Left sort mode changed to: {self.left_sort_mode}")
+                logger.debug((("[MainScreen] Left sort mode changed to: " + "{_a0}").format(_a0=(self.left_sort_mode))))
             else:
                 modes = ["name", "size", "date", "type"]
                 current_idx = modes.index(self.right_sort_mode) if self.right_sort_mode in modes else 0
                 self.right_sort_mode = modes[(current_idx - 1) % len(modes)]
                 self.config.plugins.wgfilemanager.right_sort_mode.value = self.right_sort_mode
                 self.config.plugins.wgfilemanager.right_sort_mode.save()
-                logger.debug(f"[MainScreen] Right sort mode changed to: {self.right_sort_mode}")
+                logger.debug((("[MainScreen] Right sort mode changed to: " + "{_a0}").format(_a0=(self.right_sort_mode))))
             
             self.apply_sorting()
             self.update_ui()
-            self.dialogs.show_message(f"Sort: {self.left_sort_mode if self.active_pane == self['left_pane'] else self.right_sort_mode.upper()}", 
+            self.dialogs.show_message((("Sort: " + "{_a0}").format(_a0=(self.left_sort_mode if self.active_pane == self['left_pane'] else self.right_sort_mode.upper()))), 
                                      type="info", timeout=1)
         except Exception as e:
-            logger.error(f"[MainScreen] Error in prev sort: {e}")
+            logger.error((("[MainScreen] Error in prev sort: " + "{e}").format(e=(e))))
 
     def apply_sorting(self):
         """Apply current sort mode to active pane"""
@@ -1817,7 +1789,7 @@ class WGFileManagerMain(Screen):
             else:
                 current_sort = self.right_sort_mode
             
-            logger.debug(f"[MainScreen] Applying {current_sort} sorting to active pane")
+            logger.debug((("[MainScreen] Applying " + "{current_sort}" + " sorting to active pane").format(current_sort=(current_sort))))
             
             # Sort based on mode
             if current_sort == "name":
@@ -1837,9 +1809,9 @@ class WGFileManagerMain(Screen):
             
             self.active_pane.list = items
             self.active_pane.l.setList(items)
-            logger.debug(f"[MainScreen] Sorting applied. Total items: {len(items)}")
+            logger.debug((("[MainScreen] Sorting applied. Total items: " + "{_a0}").format(_a0=(len(items)))))
         except Exception as e:
-            logger.error(f"[MainScreen] Sorting failed: {e}")
+            logger.error((("[MainScreen] Sorting failed: " + "{e}").format(e=(e))))
 
     def apply_show_dirs_first(self):
         """Apply show directories first setting"""
@@ -1853,9 +1825,9 @@ class WGFileManagerMain(Screen):
             
             self.active_pane.list = dirs + files
             self.active_pane.l.setList(self.active_pane.list)
-            logger.debug(f"[MainScreen] Show dirs first applied. Dirs: {len(dirs)}, Files: {len(files)}")
+            logger.debug((("[MainScreen] Show dirs first applied. Dirs: " + "{_a0}" + ", Files: " + "{_a1}").format(_a0=(len(dirs)), _a1=(len(files)))))
         except Exception as e:
-            logger.error(f"[MainScreen] Show dirs first failed: {e}")
+            logger.error((("[MainScreen] Show dirs first failed: " + "{e}").format(e=(e))))
 
     # System Methods
     def check_dependencies(self):
@@ -1877,12 +1849,12 @@ class WGFileManagerMain(Screen):
                 import subprocess
                 result = subprocess.run(["which", tool], capture_output=True, timeout=2)
                 if result.returncode != 0:
-                    missing.append(f"{tool} ({desc})")
+                    missing.append((("{tool}" + " (" + "{desc}" + ")").format(tool=(tool), desc=(desc))))
             except:
-                missing.append(f"{tool} ({desc})")
+                missing.append((("{tool}" + " (" + "{desc}" + ")").format(tool=(tool), desc=(desc))))
         
         if missing:
-            logger.warning(f"[MainScreen] Missing tools: {', '.join(missing)}")
+            logger.warning((("[MainScreen] Missing tools: " + "{_a0}").format(_a0=(', '.join(missing)))))
         else:
             logger.debug("[MainScreen] All dependencies satisfied")
 
@@ -1925,7 +1897,7 @@ class WGFileManagerMain(Screen):
             try:
                 subprocess.Popen(player_cmd, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
                 self.dialogs.show_message(
-                    f"Playing with external player:\n{os.path.basename(path)}",
+                    (("Playing with external player:\n" + "{_a0}").format(_a0=(os.path.basename(path)))),
                     type="info",
                     timeout=3
                 )
@@ -1938,6 +1910,149 @@ class WGFileManagerMain(Screen):
             type="error"
         )
 
+    # ------------------------------------------------------------------
+    # BUG-3 fix: save_resume_point()
+    # ------------------------------------------------------------------
+    # ui/audio_player.py's exit_confirmed() calls
+    # self.main_screen_ref.save_resume_point(current_track, current_pos)
+    # but WGFileManagerMain never defined it. The surrounding try/except
+    # swallowed the AttributeError, so the user's resume point was
+    # silently lost every time they exited the audio player.
+    #
+    # We mirror the video player's per-file resume pattern: write the
+    # position to a JSON sidecar at /etc/enigma2/wgfilemanager_resume.json
+    # (or /tmp/... if /etc/enigma2 is not writable). Each entry is keyed
+    # by absolute file path and stores position in seconds. The audio
+    # player does NOT consume this on its own (yet), but the file is
+    # self-contained and a future UI can offer "Resume from X" on the
+    # context menu for any audio file that has an entry here.
+    # ------------------------------------------------------------------
+    def save_resume_point(self, track_path, position_seconds):
+        """Persist an audio track resume position so the next session
+        can offer to pick up where the user left off.
+
+        Args:
+            track_path: absolute filesystem path to the audio file.
+            position_seconds: float seconds into the file.
+        Returns:
+            bool - True on success.
+        """
+        try:
+            track_path = str(track_path or "")
+            if not track_path:
+                return False
+            position = float(position_seconds or 0)
+            if position < 0:
+                position = 0.0
+            import json
+            import os
+            # Prefer /etc/enigma2/ (persistent across reboots); fall
+            # back to /tmp/ (volatile) if /etc/enigma2 is not writable.
+            candidates = [
+                "/etc/enigma2/wgfilemanager_resume.json",
+                "/tmp/wgfilemanager_resume.json",
+            ]
+            target = candidates[0]
+            try:
+                # Touch + write test
+                if not os.path.exists(os.path.dirname(target)):
+                    os.makedirs(os.path.dirname(target), exist_ok=True)
+                # Quick writability probe.
+                with open(target, "a") as f:
+                    pass
+            except Exception:
+                target = candidates[1]
+                try:
+                    if not os.path.exists(os.path.dirname(target)):
+                        os.makedirs(os.path.dirname(target), exist_ok=True)
+                except Exception:
+                    return False
+
+            # Load existing entries.
+            data = {}
+            try:
+                if os.path.exists(target):
+                    with open(target, "r") as f:
+                        loaded = json.load(f)
+                    if isinstance(loaded, dict):
+                        data = loaded
+            except Exception as e:
+                logger.warning(
+                    ("[MainScreen] resume file unreadable, starting fresh: " + "{e}").format(e=(e))
+                )
+                data = {}
+
+            data[track_path] = {
+                "position": position,
+                "ts": __import__("time").time(),
+            }
+            # Cap the table at 400 entries (LRU-ish by insertion order).
+            if len(data) > 400:
+                keys = list(data.keys())
+                for k in keys[:len(keys) - 400]:
+                    del data[k]
+
+            tmp = target + ".tmp"
+            try:
+                with open(tmp, "w") as f:
+                    json.dump(data, f, indent=2)
+                os.rename(tmp, target)
+            except Exception as e:
+                logger.warning(
+                    ("[MainScreen] resume file write failed: " + "{e}").format(e=(e))
+                )
+                try:
+                    if os.path.exists(tmp):
+                        os.remove(tmp)
+                except Exception:
+                    pass
+                return False
+
+            logger.info(
+                ("[MainScreen] saved resume point for " + "{track}" + " at " + "{pos}" + "s").format(
+                    track=(os.path.basename(track_path)),
+                    pos=(position)
+                )
+            )
+            return True
+        except Exception as e:
+            logger.error((("[MainScreen] save_resume_point failed: " + "{e}").format(e=(e))))
+            return False
+
+    def get_resume_point(self, track_path):
+        """Look up a previously-saved resume point for an audio track.
+
+        Args:
+            track_path: absolute filesystem path to the audio file.
+        Returns:
+            float seconds into the file, or 0.0 if no entry exists.
+        """
+        try:
+            track_path = str(track_path or "")
+            if not track_path:
+                return 0.0
+            import json
+            import os
+            for target in (
+                "/etc/enigma2/wgfilemanager_resume.json",
+                "/tmp/wgfilemanager_resume.json",
+            ):
+                if not os.path.exists(target):
+                    continue
+                try:
+                    with open(target, "r") as f:
+                        data = json.load(f)
+                    if isinstance(data, dict) and track_path in data:
+                        entry = data[track_path]
+                        if isinstance(entry, dict):
+                            return float(entry.get("position") or 0)
+                except Exception:
+                    continue
+            return 0.0
+        except Exception as e:
+            logger.warning((("[MainScreen] get_resume_point failed: " + "{e}").format(e=(e))))
+            return 0.0
+
     # Hotkey settings
     def open_hotkey_settings(self):
         """Open hotkey settings directly from HELP button"""
@@ -1946,32 +2061,31 @@ class WGFileManagerMain(Screen):
             logger.debug("[MainScreen] Opening hotkey settings")
             self.session.open(HotkeySetupScreen)
         except ImportError as e:
-            logger.error(f"[MainScreen] Hotkey settings not available: {e}")
+            logger.error((("[MainScreen] Hotkey settings not available: " + "{e}").format(e=(e))))
             self.dialogs.show_message(
-                f"Hotkey settings not available!\n\nError: {e}\n"
-                "Access via: MENU → Tools → Hotkey Settings",
+                (("Hotkey settings not available!\n\nError: " + "{e}" + "\nAccess via: MENU → Tools → Hotkey Settings").format(e=(e))),
                 type="error",
                 timeout=3
             )
         except Exception as e:
-            logger.error(f"[MainScreen] Error opening hotkey settings: {e}")
+            logger.error((("[MainScreen] Error opening hotkey settings: " + "{e}").format(e=(e))))
             self.show_error("Hotkey settings", e)
 
     def show_error(self, context, error):
         """Show user-friendly error message with logging"""
         error_msg = str(error)
-        logger.error(f"[MainScreen] Error in {context}: {error_msg}")
+        logger.error((("[MainScreen] Error in " + "{context}" + ": " + "{error_msg}").format(context=(context), error_msg=(error_msg))))
         
         if "Permission denied" in error_msg:
-            user_msg = f"{context}: Permission denied. Check file permissions."
+            user_msg = (("{context}" + ": Permission denied. Check file permissions.").format(context=(context)))
         elif "No space left" in error_msg:
-            user_msg = f"{context}: Disk full. Free up space and try again."
+            user_msg = (("{context}" + ": Disk full. Free up space and try again.").format(context=(context)))
         elif "No such file" in error_msg:
-            user_msg = f"{context}: File not found. It may have been moved or deleted."
+            user_msg = (("{context}" + ": File not found. It may have been moved or deleted.").format(context=(context)))
         elif "Device or resource busy" in error_msg:
-            user_msg = f"{context}: Device busy. Try again later."
+            user_msg = (("{context}" + ": Device busy. Try again later.").format(context=(context)))
         else:
-            user_msg = f"{context}: {error_msg[:100]}"
+            user_msg = (("{context}" + ": " + "{_a0}").format(context=(context), _a0=(error_msg[:100])))
         
         self.dialogs.show_message(user_msg, type="error")
 
@@ -1993,7 +2107,7 @@ class WGFileManagerMain(Screen):
             
             logger.info("[MainScreen] Cleanup completed")
         except Exception as e:
-            logger.error(f"[MainScreen] Cleanup error: {e}")
+            logger.error((("[MainScreen] Cleanup error: " + "{e}").format(e=(e))))
 
     def close(self):
         """Handle exit and save paths if configured - SINGLE UNIFIED CLOSE METHOD"""
@@ -2013,7 +2127,7 @@ class WGFileManagerMain(Screen):
                     if current_left:
                         p.left_path.value = current_left
                         p.left_path.save()
-                        logger.debug(f"[MainScreen] Saved left path: {current_left}")
+                        logger.debug((("[MainScreen] Saved left path: " + "{current_left}").format(current_left=(current_left))))
             
             if p.save_right_on_exit.value == "yes":
                 if hasattr(self, 'right_pane'):
@@ -2021,7 +2135,7 @@ class WGFileManagerMain(Screen):
                     if current_right:
                         p.right_path.value = current_right
                         p.right_path.save()
-                        logger.debug(f"[MainScreen] Saved right path: {current_right}")
+                        logger.debug((("[MainScreen] Saved right path: " + "{current_right}").format(current_right=(current_right))))
             
             # Commit to /etc/enigma2/settings
             configfile.save()
@@ -2029,7 +2143,7 @@ class WGFileManagerMain(Screen):
             logger.info("[MainScreen] WGFileManager: Paths saved on exit.")
             
         except Exception as e:
-            logger.error(f"[MainScreen] Error during shutdown: {e}")
+            logger.error((("[MainScreen] Error during shutdown: " + "{e}").format(e=(e))))
         
         # IMPORTANT: Always call parent Screen.close() at the end
         Screen.close(self)

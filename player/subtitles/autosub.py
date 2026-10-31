@@ -231,11 +231,37 @@ def auto_subtitle_async(screen, gen):
     t.start()
 
 
+def _try_vidy(screen, gen, title, item_url):
+    """[NovaPlay port] Arabic, else English, from Movy's subtitle index
+    (subtitles.vidy.st). True when one was applied. No API key, no daily
+    limit — tried before SubSource so the user gets subtitles even
+    without configuring a SubSource key."""
+    try:
+        from .engine import vidy_search, vidy_download
+        ok, err, results = vidy_search(title, item_url)
+        if not ok or not results:
+            _dbg("autosub: movy subs - %s" % ((err or "none")[:60]))
+            return False
+        for r in [x for x in results if x.get("rank", 2) < 2][:4]:
+            ok2, _e, path = vidy_download(r.get("id"), title)
+            if ok2 and path:
+                _apply(screen, gen, path, item_url, str(r.get("language") or ""))
+                return True
+    except Exception as e:
+        _dbg("autosub: movy subs error: %s" % e)
+    return False
+
+
 def _worker(screen, gen):
     try:
         title = _clean_title(getattr(screen, "title", ""))
         item_url = getattr(screen, "_item_url", "")
         if not title:
+            return
+        # [NovaPlay port] Movy's subtitle index first: no key, no daily
+        # limit, matched by TMDB id. Falls through to SubSource if Movy
+        # has nothing (or the title has no TMDB id pattern in its URL).
+        if _try_vidy(screen, gen, title, item_url):
             return
         api_key = _cfg("subsource_api_key", "").strip()
         if not api_key:

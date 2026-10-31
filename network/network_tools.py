@@ -45,17 +45,7 @@ class NetworkToolsScreen(Screen):
         w, h = getDesktop(0).size().width(), getDesktop(0).size().height()
         
         # Create skin
-        self.skin = f"""
-        <screen name="NetworkToolsScreen" position="0,0" size="{w},{h}" backgroundColor="#1a1a1a" flags="wfNoBorder">
-            <eLabel position="0,0" size="{w},80" backgroundColor="#3a1a5a" />
-            <eLabel text="🌐 Network Tools" position="20,10" size="{w-40},60" font="Regular;36" halign="center" valign="center" transparent="1" foregroundColor="#ffffff" />
-            
-            <widget name="menu" position="100,120" size="{w-200},{h-250}" scrollbarMode="showOnDemand" backgroundColor="#2a2a2a" foregroundColor="#ffffff" selectionBackground="#1976d2" />
-            
-            <eLabel position="0,{h-120}" size="{w},120" backgroundColor="#1a1a1a" />
-            <widget name="status" position="20,{h-110}" size="{w-40},50" font="Regular;22" halign="center" valign="center" transparent="1" foregroundColor="#00ff00" />
-            <widget name="help" position="20,{h-55}" size="{w-40},40" font="Regular;18" halign="center" valign="center" transparent="1" foregroundColor="#aaaaaa" />
-        </screen>"""
+        self.skin = (("\n        <screen name=\"NetworkToolsScreen\" position=\"0,0\" size=\"" + "{w}" + "," + "{h}" + "\" backgroundColor=\"#1a1a1a\" flags=\"wfNoBorder\">\n            <eLabel position=\"0,0\" size=\"" + "{_a0}" + ",80\" backgroundColor=\"#3a1a5a\" />\n            <eLabel text=\"🌐 Network Tools\" position=\"20,10\" size=\"" + "{_a1}" + ",60\" font=\"Regular;36\" halign=\"center\" valign=\"center\" transparent=\"1\" foregroundColor=\"#ffffff\" />\n            \n            <widget name=\"menu\" position=\"100,120\" size=\"" + "{_a2}" + "," + "{_a3}" + "\" scrollbarMode=\"showOnDemand\" backgroundColor=\"#2a2a2a\" foregroundColor=\"#ffffff\" selectionBackground=\"#1976d2\" />\n            \n            <eLabel position=\"0," + "{_a4}" + "\" size=\"" + "{_a5}" + ",120\" backgroundColor=\"#1a1a1a\" />\n            <widget name=\"status\" position=\"20," + "{_a6}" + "\" size=\"" + "{_a7}" + ",50\" font=\"Regular;22\" halign=\"center\" valign=\"center\" transparent=\"1\" foregroundColor=\"#00ff00\" />\n            <widget name=\"help\" position=\"20," + "{_a8}" + "\" size=\"" + "{_a9}" + ",40\" font=\"Regular;18\" halign=\"center\" valign=\"center\" transparent=\"1\" foregroundColor=\"#aaaaaa\" />\n        </screen>").format(w=(w), h=(h), _a0=(w), _a1=(w-40), _a2=(w-200), _a3=(h-250), _a4=(h-120), _a5=(w), _a6=(h-110), _a7=(w-40), _a8=(h-55), _a9=(w-40)))
         
         # Create widgets
         self["menu"] = MenuList([])
@@ -131,7 +121,7 @@ class NetworkToolsScreen(Screen):
                         timeout=3
                     )
                     status = "✅" if result.returncode == 0 else "❌"
-                    results.append(f"{status} {name} ({ip})")
+                    results.append((("{status}" + " " + "{name}" + " (" + "{ip}" + ")").format(status=(status), name=(name), ip=(ip))))
                 
                 # Show results
                 msg = "🌐 Internet Connection Test\n\n"
@@ -147,7 +137,7 @@ class NetworkToolsScreen(Screen):
                 self["status"].setText("Ready")
                 
             except Exception as e:
-                logger.error(f"Internet check error: {e}")
+                logger.error((("Internet check error: " + "{e}").format(e=(e))))
                 self["status"].setText("Error checking internet")
         
         threading.Thread(target=check_thread, daemon=True).start()
@@ -178,17 +168,7 @@ class NetworkScannerScreen(Screen):
         
         w, h = getDesktop(0).size().width(), getDesktop(0).size().height()
         
-        self.skin = f"""
-        <screen name="NetworkScannerScreen" position="0,0" size="{w},{h}" backgroundColor="#1a1a1a" flags="wfNoBorder">
-            <eLabel position="0,0" size="{w},80" backgroundColor="#3a1a5a" />
-            <eLabel text="Hosts that responded to &quot;ping&quot;" position="20,10" size="{w-40},60" font="Regular;32" halign="center" valign="center" transparent="1" foregroundColor="#ffffff" />
-            
-            <widget name="results" position="100,120" size="{w-200},{h-250}" scrollbarMode="showOnDemand" backgroundColor="#2a2a2a" foregroundColor="#ffffff" selectionBackground="#1976d2" />
-            
-            <eLabel position="0,{h-120}" size="{w},120" backgroundColor="#1a1a1a" />
-            <widget name="status" position="20,{h-110}" size="{w-40},50" font="Regular;22" halign="center" valign="center" transparent="1" foregroundColor="#00ff00" />
-            <widget name="help" position="20,{h-55}" size="{w-40},40" font="Regular;18" halign="center" valign="center" transparent="1" foregroundColor="#aaaaaa" />
-        </screen>"""
+        self.skin = (("\n        <screen name=\"NetworkScannerScreen\" position=\"0,0\" size=\"" + "{w}" + "," + "{h}" + "\" backgroundColor=\"#1a1a1a\" flags=\"wfNoBorder\">\n            <eLabel position=\"0,0\" size=\"" + "{_a0}" + ",80\" backgroundColor=\"#3a1a5a\" />\n            <eLabel text=\"Hosts that responded to &quot;ping&quot;\" position=\"20,10\" size=\"" + "{_a1}" + ",60\" font=\"Regular;32\" halign=\"center\" valign=\"center\" transparent=\"1\" foregroundColor=\"#ffffff\" />\n            \n            <widget name=\"results\" position=\"100,120\" size=\"" + "{_a2}" + "," + "{_a3}" + "\" scrollbarMode=\"showOnDemand\" backgroundColor=\"#2a2a2a\" foregroundColor=\"#ffffff\" selectionBackground=\"#1976d2\" />\n            \n            <eLabel position=\"0," + "{_a4}" + "\" size=\"" + "{_a5}" + ",120\" backgroundColor=\"#1a1a1a\" />\n            <widget name=\"status\" position=\"20," + "{_a6}" + "\" size=\"" + "{_a7}" + ",50\" font=\"Regular;22\" halign=\"center\" valign=\"center\" transparent=\"1\" foregroundColor=\"#00ff00\" />\n            <widget name=\"help\" position=\"20," + "{_a8}" + "\" size=\"" + "{_a9}" + ",40\" font=\"Regular;18\" halign=\"center\" valign=\"center\" transparent=\"1\" foregroundColor=\"#aaaaaa\" />\n        </screen>").format(w=(w), h=(h), _a0=(w), _a1=(w-40), _a2=(w-200), _a3=(h-250), _a4=(h-120), _a5=(w), _a6=(h-110), _a7=(w-40), _a8=(h-55), _a9=(w-40)))
         
         self["results"] = MenuList([])
         self["status"] = Label("⏳ Scanning network...")
@@ -241,17 +221,17 @@ class NetworkScannerScreen(Screen):
                         label = "Gateway" if i == 1 else ("Own" if i == 27 else "")
                         
                         active_hosts.append((
-                            f"{ip:<17} {label:<8} | {mac}",
+                            (("{ip:<17}" + " " + "{label:<8}" + " | " + "{mac}").format(ip=(ip), label=(label), mac=(mac))),
                             {"ip": ip, "mac": mac, "label": label}
                         ))
                         
                         # Update display
                         self["results"].setList(active_hosts)
-                        self["status"].setText(f"Found {len(active_hosts)} devices...")
+                        self["status"].setText((("Found " + "{_a0}" + " devices...").format(_a0=(len(active_hosts)))))
                 
                 # Scan complete
                 if active_hosts:
-                    self["status"].setText(f"✅ Scan complete: {len(active_hosts)} devices found")
+                    self["status"].setText((("✅ Scan complete: " + "{_a0}" + " devices found").format(_a0=(len(active_hosts)))))
                 else:
                     self["status"].setText("❌ No devices found")
                     self["results"].setList([("No devices found", None)])
@@ -260,8 +240,8 @@ class NetworkScannerScreen(Screen):
                 self.scanning = False
                 
             except Exception as e:
-                logger.error(f"Scan error: {e}")
-                self["status"].setText(f"❌ Scan failed: {e}")
+                logger.error((("Scan error: " + "{e}").format(e=(e))))
+                self["status"].setText((("❌ Scan failed: " + "{e}").format(e=(e))))
                 self.scanning = False
         
         threading.Thread(target=scan_thread, daemon=True).start()
@@ -300,9 +280,9 @@ class NetworkScannerScreen(Screen):
         device = current[1]
         
         msg = "🌐 DEVICE DETAILS\n\n"
-        msg += f"IP Address: {device['ip']}\n"
-        msg += f"MAC Address: {device['mac']}\n"
-        msg += f"Type: {device['label'] if device['label'] else 'Unknown'}\n\n"
+        msg += (("IP Address: " + "{_a0}" + "\n").format(_a0=(device['ip'])))
+        msg += (("MAC Address: " + "{_a0}" + "\n").format(_a0=(device['mac'])))
+        msg += (("Type: " + "{_a0}" + "\n\n").format(_a0=(device['label'] if device['label'] else 'Unknown')))
         msg += "Options:\n"
         msg += "• Scan ports\n"
         msg += "• Ping test\n"
@@ -319,17 +299,7 @@ class PortScannerScreen(Screen):
         
         w, h = getDesktop(0).size().width(), getDesktop(0).size().height()
         
-        self.skin = f"""
-        <screen name="PortScannerScreen" position="0,0" size="{w},{h}" backgroundColor="#1a1a1a" flags="wfNoBorder">
-            <eLabel position="0,0" size="{w},80" backgroundColor="#3a1a5a" />
-            <eLabel text="🔍 Select host to scan" position="20,10" size="{w-40},60" font="Regular;32" halign="center" valign="center" transparent="1" foregroundColor="#ffffff" />
-            
-            <widget name="hostlist" position="100,120" size="{w-200},{h-250}" scrollbarMode="showOnDemand" backgroundColor="#2a2a2a" foregroundColor="#ffffff" selectionBackground="#1976d2" />
-            
-            <eLabel position="0,{h-120}" size="{w},120" backgroundColor="#1a1a1a" />
-            <widget name="status" position="20,{h-110}" size="{w-40},50" font="Regular;22" halign="center" valign="center" transparent="1" foregroundColor="#00ff00" />
-            <widget name="help" position="20,{h-55}" size="{w-40},40" font="Regular;18" halign="center" valign="center" transparent="1" foregroundColor="#aaaaaa" />
-        </screen>"""
+        self.skin = (("\n        <screen name=\"PortScannerScreen\" position=\"0,0\" size=\"" + "{w}" + "," + "{h}" + "\" backgroundColor=\"#1a1a1a\" flags=\"wfNoBorder\">\n            <eLabel position=\"0,0\" size=\"" + "{_a0}" + ",80\" backgroundColor=\"#3a1a5a\" />\n            <eLabel text=\"🔍 Select host to scan\" position=\"20,10\" size=\"" + "{_a1}" + ",60\" font=\"Regular;32\" halign=\"center\" valign=\"center\" transparent=\"1\" foregroundColor=\"#ffffff\" />\n            \n            <widget name=\"hostlist\" position=\"100,120\" size=\"" + "{_a2}" + "," + "{_a3}" + "\" scrollbarMode=\"showOnDemand\" backgroundColor=\"#2a2a2a\" foregroundColor=\"#ffffff\" selectionBackground=\"#1976d2\" />\n            \n            <eLabel position=\"0," + "{_a4}" + "\" size=\"" + "{_a5}" + ",120\" backgroundColor=\"#1a1a1a\" />\n            <widget name=\"status\" position=\"20," + "{_a6}" + "\" size=\"" + "{_a7}" + ",50\" font=\"Regular;22\" halign=\"center\" valign=\"center\" transparent=\"1\" foregroundColor=\"#00ff00\" />\n            <widget name=\"help\" position=\"20," + "{_a8}" + "\" size=\"" + "{_a9}" + ",40\" font=\"Regular;18\" halign=\"center\" valign=\"center\" transparent=\"1\" foregroundColor=\"#aaaaaa\" />\n        </screen>").format(w=(w), h=(h), _a0=(w), _a1=(w-40), _a2=(w-200), _a3=(h-250), _a4=(h-120), _a5=(w), _a6=(h-110), _a7=(w-40), _a8=(h-55), _a9=(w-40)))
         
         self["hostlist"] = MenuList([])
         self["status"] = Label("Select a host to scan for open ports")
@@ -360,7 +330,7 @@ class PortScannerScreen(Screen):
             return
         
         ip = current[1]
-        self["status"].setText(f"⏳ Scanning {ip}...")
+        self["status"].setText((("⏳ Scanning " + "{ip}" + "...").format(ip=(ip))))
         
         def scan_thread():
             try:
@@ -389,24 +359,24 @@ class PortScannerScreen(Screen):
                         sock.close()
                         
                         if result == 0:
-                            open_ports.append(f"{port} ({service})")
+                            open_ports.append((("{port}" + " (" + "{service}" + ")").format(port=(port), service=(service))))
                     except:
                         pass
                 
                 # Show results
                 if open_ports:
-                    msg = f"🔍 Port Scan Results\n\n"
-                    msg += f"Host: {ip}\n\n"
-                    msg += f"Open Ports ({len(open_ports)}):\n"
-                    msg += "\n".join(f"  • {port}" for port in open_ports)
+                    msg = "🔍 Port Scan Results\n\n"
+                    msg += (("Host: " + "{ip}" + "\n\n").format(ip=(ip)))
+                    msg += (("Open Ports (" + "{_a0}" + "):\n").format(_a0=(len(open_ports))))
+                    msg += "\n".join((("  • " + "{port}").format(port=(port))) for port in open_ports)
                 else:
-                    msg = f"No open ports found on {ip}"
+                    msg = (("No open ports found on " + "{ip}").format(ip=(ip)))
                 
                 self.session.open(MessageBox, msg, MessageBox.TYPE_INFO)
                 self["status"].setText("Ready")
                 
             except Exception as e:
-                logger.error(f"Port scan error: {e}")
+                logger.error((("Port scan error: " + "{e}").format(e=(e))))
                 self["status"].setText("Scan failed")
         
         threading.Thread(target=scan_thread, daemon=True).start()
@@ -420,17 +390,7 @@ class DeviceDetectionScreen(Screen):
         
         w, h = getDesktop(0).size().width(), getDesktop(0).size().height()
         
-        self.skin = f"""
-        <screen name="DeviceDetectionScreen" position="0,0" size="{w},{h}" backgroundColor="#1a1a1a" flags="wfNoBorder">
-            <eLabel position="0,0" size="{w},80" backgroundColor="#3a1a5a" />
-            <eLabel text="📱 Network Devices" position="20,10" size="{w-40},60" font="Regular;32" halign="center" valign="center" transparent="1" foregroundColor="#ffffff" />
-            
-            <widget name="message" position="200,{h//2-100}" size="{w-400},200" font="Regular;28" halign="center" valign="center" backgroundColor="#2a2a2a" foregroundColor="#ffffff" />
-            
-            <eLabel position="0,{h-120}" size="{w},120" backgroundColor="#1a1a1a" />
-            <widget name="status" position="20,{h-110}" size="{w-40},50" font="Regular;22" halign="center" valign="center" transparent="1" foregroundColor="#00ff00" />
-            <widget name="help" position="20,{h-55}" size="{w-40},40" font="Regular;18" halign="center" valign="center" transparent="1" foregroundColor="#aaaaaa" />
-        </screen>"""
+        self.skin = (("\n        <screen name=\"DeviceDetectionScreen\" position=\"0,0\" size=\"" + "{w}" + "," + "{h}" + "\" backgroundColor=\"#1a1a1a\" flags=\"wfNoBorder\">\n            <eLabel position=\"0,0\" size=\"" + "{_a0}" + ",80\" backgroundColor=\"#3a1a5a\" />\n            <eLabel text=\"📱 Network Devices\" position=\"20,10\" size=\"" + "{_a1}" + ",60\" font=\"Regular;32\" halign=\"center\" valign=\"center\" transparent=\"1\" foregroundColor=\"#ffffff\" />\n            \n            <widget name=\"message\" position=\"200," + "{_a2}" + "\" size=\"" + "{_a3}" + ",200\" font=\"Regular;28\" halign=\"center\" valign=\"center\" backgroundColor=\"#2a2a2a\" foregroundColor=\"#ffffff\" />\n            \n            <eLabel position=\"0," + "{_a4}" + "\" size=\"" + "{_a5}" + ",120\" backgroundColor=\"#1a1a1a\" />\n            <widget name=\"status\" position=\"20," + "{_a6}" + "\" size=\"" + "{_a7}" + ",50\" font=\"Regular;22\" halign=\"center\" valign=\"center\" transparent=\"1\" foregroundColor=\"#00ff00\" />\n            <widget name=\"help\" position=\"20," + "{_a8}" + "\" size=\"" + "{_a9}" + ",40\" font=\"Regular;18\" halign=\"center\" valign=\"center\" transparent=\"1\" foregroundColor=\"#aaaaaa\" />\n        </screen>").format(w=(w), h=(h), _a0=(w), _a1=(w-40), _a2=(h//2-100), _a3=(w-400), _a4=(h-120), _a5=(w), _a6=(h-110), _a7=(w-40), _a8=(h-55), _a9=(w-40)))
         
         self["message"] = Label("No devices found !\n\nScan network ?")
         self["status"] = Label("Press GREEN to scan")
@@ -465,24 +425,24 @@ class DeviceDetectionScreen(Screen):
                             if len(parts) >= 4:
                                 ip = parts[1].strip('()')
                                 mac = parts[3]
-                                devices.append(f"{ip} ({mac})")
+                                devices.append((("{ip}" + " (" + "{mac}" + ")").format(ip=(ip), mac=(mac))))
                 
                 # Show results
                 if devices:
-                    msg = f"Found {len(devices)} devices:\n\n"
-                    msg += "\n".join(f"• {dev}" for dev in devices[:10])
+                    msg = (("Found " + "{_a0}" + " devices:\n\n").format(_a0=(len(devices))))
+                    msg += "\n".join((("• " + "{dev}").format(dev=(dev))) for dev in devices[:10])
                     if len(devices) > 10:
-                        msg += f"\n... and {len(devices)-10} more"
+                        msg += (("\n... and " + "{_a0}" + " more").format(_a0=(len(devices)-10)))
                     
                     self["message"].setText(msg)
-                    self["status"].setText(f"✅ {len(devices)} devices detected")
+                    self["status"].setText((("✅ " + "{_a0}" + " devices detected").format(_a0=(len(devices)))))
                 else:
                     self["message"].setText("No devices found in ARP table")
                     self["status"].setText("Try scanning network first")
                 
             except Exception as e:
-                logger.error(f"Device detection error: {e}")
-                self["message"].setText(f"Detection failed:\n{e}")
+                logger.error((("Device detection error: " + "{e}").format(e=(e))))
+                self["message"].setText((("Detection failed:\n" + "{e}").format(e=(e))))
                 self["status"].setText("Error")
         
         threading.Thread(target=scan_thread, daemon=True).start()
@@ -496,17 +456,7 @@ class NetworkMapScreen(Screen):
         
         w, h = getDesktop(0).size().width(), getDesktop(0).size().height()
         
-        self.skin = f"""
-        <screen name="NetworkMapScreen" position="0,0" size="{w},{h}" backgroundColor="#1a1a1a" flags="wfNoBorder">
-            <eLabel position="0,0" size="{w},80" backgroundColor="#3a1a5a" />
-            <eLabel text="🗺️ Network Map" position="20,10" size="{w-40},60" font="Regular;32" halign="center" valign="center" transparent="1" foregroundColor="#ffffff" />
-            
-            <widget name="map" position="100,120" size="{w-200},{h-250}" font="Regular;20" halign="left" valign="top" transparent="1" foregroundColor="#ffffff" />
-            
-            <eLabel position="0,{h-120}" size="{w},120" backgroundColor="#1a1a1a" />
-            <widget name="status" position="20,{h-110}" size="{w-40},50" font="Regular;22" halign="center" valign="center" transparent="1" foregroundColor="#00ff00" />
-            <widget name="help" position="20,{h-55}" size="{w-40},40" font="Regular;18" halign="center" valign="center" transparent="1" foregroundColor="#aaaaaa" />
-        </screen>"""
+        self.skin = (("\n        <screen name=\"NetworkMapScreen\" position=\"0,0\" size=\"" + "{w}" + "," + "{h}" + "\" backgroundColor=\"#1a1a1a\" flags=\"wfNoBorder\">\n            <eLabel position=\"0,0\" size=\"" + "{_a0}" + ",80\" backgroundColor=\"#3a1a5a\" />\n            <eLabel text=\"🗺️ Network Map\" position=\"20,10\" size=\"" + "{_a1}" + ",60\" font=\"Regular;32\" halign=\"center\" valign=\"center\" transparent=\"1\" foregroundColor=\"#ffffff\" />\n            \n            <widget name=\"map\" position=\"100,120\" size=\"" + "{_a2}" + "," + "{_a3}" + "\" font=\"Regular;20\" halign=\"left\" valign=\"top\" transparent=\"1\" foregroundColor=\"#ffffff\" />\n            \n            <eLabel position=\"0," + "{_a4}" + "\" size=\"" + "{_a5}" + ",120\" backgroundColor=\"#1a1a1a\" />\n            <widget name=\"status\" position=\"20," + "{_a6}" + "\" size=\"" + "{_a7}" + ",50\" font=\"Regular;22\" halign=\"center\" valign=\"center\" transparent=\"1\" foregroundColor=\"#00ff00\" />\n            <widget name=\"help\" position=\"20," + "{_a8}" + "\" size=\"" + "{_a9}" + ",40\" font=\"Regular;18\" halign=\"center\" valign=\"center\" transparent=\"1\" foregroundColor=\"#aaaaaa\" />\n        </screen>").format(w=(w), h=(h), _a0=(w), _a1=(w-40), _a2=(w-200), _a3=(h-250), _a4=(h-120), _a5=(w), _a6=(h-110), _a7=(w-40), _a8=(h-55), _a9=(w-40)))
         
         self["map"] = Label("")
         self["status"] = Label("Building network map...")
@@ -540,7 +490,7 @@ class NetworkMapScreen(Screen):
                 self["status"].setText("✅ Map generated")
                 
             except Exception as e:
-                logger.error(f"Map error: {e}")
+                logger.error((("Map error: " + "{e}").format(e=(e))))
                 self["status"].setText("Map generation failed")
         
         threading.Thread(target=map_thread, daemon=True).start()
@@ -554,17 +504,7 @@ class SMBShareScannerScreen(Screen):
         
         w, h = getDesktop(0).size().width(), getDesktop(0).size().height()
         
-        self.skin = f"""
-        <screen name="SMBShareScannerScreen" position="0,0" size="{w},{h}" backgroundColor="#1a1a1a" flags="wfNoBorder">
-            <eLabel position="0,0" size="{w},80" backgroundColor="#3a1a5a" />
-            <eLabel text="🗄️ CIFS/SMB Share Scanner" position="20,10" size="{w-40},60" font="Regular;32" halign="center" valign="center" transparent="1" foregroundColor="#ffffff" />
-            
-            <widget name="host_list" position="100,120" size="{w-200},{h-250}" scrollbarMode="showOnDemand" backgroundColor="#2a2a2a" foregroundColor="#ffffff" selectionBackground="#1976d2" />
-            
-            <eLabel position="0,{h-120}" size="{w},120" backgroundColor="#1a1a1a" />
-            <widget name="status" position="20,{h-110}" size="{w-40},50" font="Regular;22" halign="center" valign="center" transparent="1" foregroundColor="#00ff00" />
-            <widget name="help" position="20,{h-55}" size="{w-40},40" font="Regular;18" halign="center" valign="center" transparent="1" foregroundColor="#aaaaaa" />
-        </screen>"""
+        self.skin = (("\n        <screen name=\"SMBShareScannerScreen\" position=\"0,0\" size=\"" + "{w}" + "," + "{h}" + "\" backgroundColor=\"#1a1a1a\" flags=\"wfNoBorder\">\n            <eLabel position=\"0,0\" size=\"" + "{_a0}" + ",80\" backgroundColor=\"#3a1a5a\" />\n            <eLabel text=\"🗄️ CIFS/SMB Share Scanner\" position=\"20,10\" size=\"" + "{_a1}" + ",60\" font=\"Regular;32\" halign=\"center\" valign=\"center\" transparent=\"1\" foregroundColor=\"#ffffff\" />\n            \n            <widget name=\"host_list\" position=\"100,120\" size=\"" + "{_a2}" + "," + "{_a3}" + "\" scrollbarMode=\"showOnDemand\" backgroundColor=\"#2a2a2a\" foregroundColor=\"#ffffff\" selectionBackground=\"#1976d2\" />\n            \n            <eLabel position=\"0," + "{_a4}" + "\" size=\"" + "{_a5}" + ",120\" backgroundColor=\"#1a1a1a\" />\n            <widget name=\"status\" position=\"20," + "{_a6}" + "\" size=\"" + "{_a7}" + ",50\" font=\"Regular;22\" halign=\"center\" valign=\"center\" transparent=\"1\" foregroundColor=\"#00ff00\" />\n            <widget name=\"help\" position=\"20," + "{_a8}" + "\" size=\"" + "{_a9}" + ",40\" font=\"Regular;18\" halign=\"center\" valign=\"center\" transparent=\"1\" foregroundColor=\"#aaaaaa\" />\n        </screen>").format(w=(w), h=(h), _a0=(w), _a1=(w-40), _a2=(w-200), _a3=(h-250), _a4=(h-120), _a5=(w), _a6=(h-110), _a7=(w-40), _a8=(h-55), _a9=(w-40)))
         
         self["host_list"] = MenuList([])
         self["status"] = Label("⏳ Scanning for SMB/CIFS hosts...")
@@ -607,7 +547,7 @@ class SMBShareScannerScreen(Screen):
                 ])
                 self["help"].setText("RED:Manual Entry  EXIT:Back")
         except Exception as e:
-            logger.error(f"Dependency check error: {e}")
+            logger.error((("Dependency check error: " + "{e}").format(e=(e))))
             self["status"].setText("Error checking dependencies")
     
     def auto_scan(self):
@@ -647,11 +587,11 @@ class SMBShareScannerScreen(Screen):
                                 name = line.split()[0].strip()
                                 if name not in [h[1]['name'] for h in smb_hosts if h[1]]:
                                     smb_hosts.append((
-                                        f"🗄️ {name:<15} ({current_ip})",
+                                        (("🗄️ " + "{name:<15}" + " (" + "{current_ip}" + ")").format(name=(name), current_ip=(current_ip))),
                                         {'ip': current_ip, 'name': name, 'method': 'nmblookup'}
                                     ))
                 except Exception as e:
-                    logger.debug(f"nmblookup failed: {e}")
+                    logger.debug((("nmblookup failed: " + "{e}").format(e=(e))))
                 
                 # Method 2: Scan common SMB IPs (445/139)
                 if len(smb_hosts) == 0:
@@ -664,14 +604,14 @@ class SMBShareScannerScreen(Screen):
                         # Check if SMB port is open
                         if self.check_smb_port(ip):
                             smb_hosts.append((
-                                f"🗄️ SMB Host at {ip}",
-                                {'ip': ip, 'name': f"host-{i}", 'method': 'port_scan'}
+                                (("🗄️ SMB Host at " + "{ip}").format(ip=(ip))),
+                                {'ip': ip, 'name': (("host-" + "{i}").format(i=(i))), 'method': 'port_scan'}
                             ))
                 
                 # Update display
                 if smb_hosts:
                     self["host_list"].setList(smb_hosts)
-                    self["status"].setText(f"✅ Found {len(smb_hosts)} SMB/CIFS hosts")
+                    self["status"].setText((("✅ Found " + "{_a0}" + " SMB/CIFS hosts").format(_a0=(len(smb_hosts)))))
                 else:
                     self["host_list"].setList([
                         ("❌ No SMB hosts found", None),
@@ -686,8 +626,8 @@ class SMBShareScannerScreen(Screen):
                 self.scanning = False
                 
             except Exception as e:
-                logger.error(f"Auto scan error: {e}")
-                self["status"].setText(f"Scan failed: {str(e)[:50]}")
+                logger.error((("Auto scan error: " + "{e}").format(e=(e))))
+                self["status"].setText((("Scan failed: " + "{_a0}").format(_a0=(str(e)[:50]))))
                 self.scanning = False
         
         threading.Thread(target=scan_thread, daemon=True).start()
@@ -733,7 +673,7 @@ class SMBShareScannerScreen(Screen):
         
         # Add to list and scan
         self.discovered_hosts = [(
-            f"🗄️ Manual: {server}",
+            (("🗄️ Manual: " + "{server}").format(server=(server))),
             {'ip': server, 'name': server, 'method': 'manual'}
         )]
         
@@ -751,7 +691,7 @@ class SMBShareScannerScreen(Screen):
     
     def scan_shares(self, server):
         """Scan for shares on server"""
-        self["status"].setText(f"⏳ Scanning shares on {server}...")
+        self["status"].setText((("⏳ Scanning shares on " + "{server}" + "...").format(server=(server))))
         
         def scan_thread():
             try:
@@ -806,7 +746,7 @@ class SMBShareScannerScreen(Screen):
                                             })
                 
                 except Exception as e:
-                    logger.error(f"smbclient scan error: {e}")
+                    logger.error((("smbclient scan error: " + "{e}").format(e=(e))))
                 
                 # Show results
                 if shares:
@@ -817,8 +757,8 @@ class SMBShareScannerScreen(Screen):
                     )
                 else:
                     # Show error/auth required message
-                    msg = f"🗄️ SMB SCAN RESULTS\n\n"
-                    msg += f"Server: {server}\n\n"
+                    msg = "🗄️ SMB SCAN RESULTS\n\n"
+                    msg += (("Server: " + "{server}" + "\n\n").format(server=(server)))
                     msg += "No shares found or access denied.\n\n"
                     msg += "Possible reasons:\n"
                     msg += "• Server requires authentication\n"
@@ -832,8 +772,8 @@ class SMBShareScannerScreen(Screen):
                 self["status"].setText("Scan complete")
                 
             except Exception as e:
-                logger.error(f"Share scan error: {e}")
-                self["status"].setText(f"Scan failed: {str(e)[:50]}")
+                logger.error((("Share scan error: " + "{e}").format(e=(e))))
+                self["status"].setText((("Scan failed: " + "{_a0}").format(_a0=(str(e)[:50]))))
         
         threading.Thread(target=scan_thread, daemon=True).start()
 
@@ -849,20 +789,10 @@ class SMBShareDetailsScreen(Screen):
         
         w, h = getDesktop(0).size().width(), getDesktop(0).size().height()
         
-        self.skin = f"""
-        <screen name="SMBShareDetailsScreen" position="0,0" size="{w},{h}" backgroundColor="#1a1a1a" flags="wfNoBorder">
-            <eLabel position="0,0" size="{w},80" backgroundColor="#3a1a5a" />
-            <eLabel text="📁 Available Shares" position="20,10" size="{w-40},60" font="Regular;32" halign="center" valign="center" transparent="1" foregroundColor="#ffffff" />
-            
-            <widget name="share_list" position="100,120" size="{w-200},{h-250}" scrollbarMode="showOnDemand" backgroundColor="#2a2a2a" foregroundColor="#ffffff" selectionBackground="#1976d2" />
-            
-            <eLabel position="0,{h-120}" size="{w},120" backgroundColor="#1a1a1a" />
-            <widget name="status" position="20,{h-110}" size="{w-40},50" font="Regular;22" halign="center" valign="center" transparent="1" foregroundColor="#00ff00" />
-            <widget name="help" position="20,{h-55}" size="{w-40},40" font="Regular;18" halign="center" valign="center" transparent="1" foregroundColor="#aaaaaa" />
-        </screen>"""
+        self.skin = (("\n        <screen name=\"SMBShareDetailsScreen\" position=\"0,0\" size=\"" + "{w}" + "," + "{h}" + "\" backgroundColor=\"#1a1a1a\" flags=\"wfNoBorder\">\n            <eLabel position=\"0,0\" size=\"" + "{_a0}" + ",80\" backgroundColor=\"#3a1a5a\" />\n            <eLabel text=\"📁 Available Shares\" position=\"20,10\" size=\"" + "{_a1}" + ",60\" font=\"Regular;32\" halign=\"center\" valign=\"center\" transparent=\"1\" foregroundColor=\"#ffffff\" />\n            \n            <widget name=\"share_list\" position=\"100,120\" size=\"" + "{_a2}" + "," + "{_a3}" + "\" scrollbarMode=\"showOnDemand\" backgroundColor=\"#2a2a2a\" foregroundColor=\"#ffffff\" selectionBackground=\"#1976d2\" />\n            \n            <eLabel position=\"0," + "{_a4}" + "\" size=\"" + "{_a5}" + ",120\" backgroundColor=\"#1a1a1a\" />\n            <widget name=\"status\" position=\"20," + "{_a6}" + "\" size=\"" + "{_a7}" + ",50\" font=\"Regular;22\" halign=\"center\" valign=\"center\" transparent=\"1\" foregroundColor=\"#00ff00\" />\n            <widget name=\"help\" position=\"20," + "{_a8}" + "\" size=\"" + "{_a9}" + ",40\" font=\"Regular;18\" halign=\"center\" valign=\"center\" transparent=\"1\" foregroundColor=\"#aaaaaa\" />\n        </screen>").format(w=(w), h=(h), _a0=(w), _a1=(w-40), _a2=(w-200), _a3=(h-250), _a4=(h-120), _a5=(w), _a6=(h-110), _a7=(w-40), _a8=(h-55), _a9=(w-40)))
         
         self["share_list"] = MenuList([])
-        self["status"] = Label(f"Server: {server} - {len(shares)} shares found")
+        self["status"] = Label((("Server: " + "{server}" + " - " + "{_a0}" + " shares found").format(server=(server), _a0=(len(shares)))))
         self["help"] = Label("OK:Mount  YELLOW:Browse  BLUE:Add Favorite  INFO:Details  EXIT:Back")
         
         self["actions"] = ActionMap(["OkCancelActions", "ColorActions", "EPGSelectActions"], {
@@ -881,9 +811,9 @@ class SMBShareDetailsScreen(Screen):
         
         for share in self.shares:
             desc = share.get('description', '')
-            display = f"📁 {share['name']:<20}"
+            display = (("📁 " + "{_a0:<20}").format(_a0=(share['name'])))
             if desc:
-                display += f" - {desc[:30]}"
+                display += ((" - " + "{_a0}").format(_a0=(desc[:30])))
             
             share_items.append((display, share))
         
@@ -938,13 +868,13 @@ class SMBShareDetailsScreen(Screen):
                 json.dump(favorites, f, indent=2)
             
             self.session.open(MessageBox,
-                            f"⭐ Added to favorites!\n\n{self.server}/{share['name']}",
+                            (("⭐ Added to favorites!\n\n" + "{_a0}" + "/" + "{_a1}").format(_a0=(self.server), _a1=(share['name']))),
                             MessageBox.TYPE_INFO, timeout=2)
             
         except Exception as e:
-            logger.error(f"Add to favorites error: {e}")
+            logger.error((("Add to favorites error: " + "{e}").format(e=(e))))
             self.session.open(MessageBox,
-                            f"Failed to add to favorites:\n{str(e)[:100]}",
+                            (("Failed to add to favorites:\n" + "{_a0}").format(_a0=(str(e)[:100]))),
                             MessageBox.TYPE_ERROR)
     
     def show_share_info(self):
@@ -956,15 +886,15 @@ class SMBShareDetailsScreen(Screen):
         share = current[1]
         
         msg = "📁 SHARE DETAILS\n\n"
-        msg += f"Server: {self.server}\n"
-        msg += f"Share Name: {share['name']}\n"
-        msg += f"Type: {share.get('type', 'Unknown')}\n"
+        msg += (("Server: " + "{_a0}" + "\n").format(_a0=(self.server)))
+        msg += (("Share Name: " + "{_a0}" + "\n").format(_a0=(share['name'])))
+        msg += (("Type: " + "{_a0}" + "\n").format(_a0=(share.get('type', 'Unknown'))))
         
         if share.get('description'):
-            msg += f"Description: {share['description']}\n"
+            msg += (("Description: " + "{_a0}" + "\n").format(_a0=(share['description'])))
         
-        msg += f"\nUNC Path:\n"
-        msg += f"//{self.server}/{share['name']}\n\n"
+        msg += "\nUNC Path:\n"
+        msg += (("//" + "{_a0}" + "/" + "{_a1}" + "\n\n").format(_a0=(self.server), _a1=(share['name'])))
         msg += "Press OK to mount this share"
         
         self.session.open(MessageBox, msg, MessageBox.TYPE_INFO)
@@ -978,11 +908,11 @@ class SMBShareDetailsScreen(Screen):
         share = current[1]
         
         # Show mount options
-        msg = f"Mount Share?\n\n"
-        msg += f"Server: {self.server}\n"
-        msg += f"Share: {share['name']}\n\n"
-        msg += f"Mount point:\n"
-        msg += f"/media/net/{share['name']}\n\n"
+        msg = "Mount Share?\n\n"
+        msg += (("Server: " + "{_a0}" + "\n").format(_a0=(self.server)))
+        msg += (("Share: " + "{_a0}" + "\n\n").format(_a0=(share['name'])))
+        msg += "Mount point:\n"
+        msg += (("/media/net/" + "{_a0}" + "\n\n").format(_a0=(share['name'])))
         msg += "This will mount the share with guest access.\n"
         msg += "Use manual mount for authentication."
         
@@ -1002,7 +932,7 @@ class SMBShareDetailsScreen(Screen):
         
         def mount_thread():
             try:
-                mount_point = f"/media/net/{share['name']}"
+                mount_point = (("/media/net/" + "{_a0}").format(_a0=(share['name'])))
                 
                 # Create mount point
                 os.makedirs(mount_point, exist_ok=True)
@@ -1010,7 +940,7 @@ class SMBShareDetailsScreen(Screen):
                 # Mount command
                 mount_cmd = [
                     "mount", "-t", "cifs",
-                    f"//{self.server}/{share['name']}",
+                    (("//" + "{_a0}" + "/" + "{_a1}").format(_a0=(self.server), _a1=(share['name']))),
                     mount_point,
                     "-o", "guest,vers=3.0,iocharset=utf8"
                 ]
@@ -1023,8 +953,8 @@ class SMBShareDetailsScreen(Screen):
                 )
                 
                 if result.returncode == 0:
-                    msg = f"✅ Share Mounted!\n\n"
-                    msg += f"Location: {mount_point}\n\n"
+                    msg = "✅ Share Mounted!\n\n"
+                    msg += (("Location: " + "{mount_point}" + "\n\n").format(mount_point=(mount_point)))
                     msg += "You can now access the share in WGFileManager"
                     
                     self.session.open(MessageBox, msg, MessageBox.TYPE_INFO, timeout=5)
@@ -1034,9 +964,9 @@ class SMBShareDetailsScreen(Screen):
                     for version in ["2.0", "1.0"]:
                         mount_cmd = [
                             "mount", "-t", "cifs",
-                            f"//{self.server}/{share['name']}",
+                            (("//" + "{_a0}" + "/" + "{_a1}").format(_a0=(self.server), _a1=(share['name']))),
                             mount_point,
-                            "-o", f"guest,vers={version},iocharset=utf8"
+                            "-o", (("guest,vers=" + "{version}" + ",iocharset=utf8").format(version=(version)))
                         ]
                         
                         result = subprocess.run(
@@ -1046,8 +976,8 @@ class SMBShareDetailsScreen(Screen):
                         )
                         
                         if result.returncode == 0:
-                            msg = f"✅ Share Mounted (SMB {version})!\n\n"
-                            msg += f"Location: {mount_point}"
+                            msg = (("✅ Share Mounted (SMB " + "{version}" + ")!\n\n").format(version=(version)))
+                            msg += (("Location: " + "{mount_point}").format(mount_point=(mount_point)))
                             
                             self.session.open(MessageBox, msg, MessageBox.TYPE_INFO, timeout=5)
                             self["status"].setText("✅ Mount successful")
@@ -1055,8 +985,8 @@ class SMBShareDetailsScreen(Screen):
                     
                     # All mount attempts failed
                     error = result.stderr[:200] if result.stderr else "Unknown error"
-                    msg = f"❌ Mount Failed\n\n"
-                    msg += f"Error: {error}\n\n"
+                    msg = "❌ Mount Failed\n\n"
+                    msg += (("Error: " + "{error}" + "\n\n").format(error=(error)))
                     msg += "Try:\n"
                     msg += "• Check network connectivity\n"
                     msg += "• Verify share permissions\n"
@@ -1066,8 +996,8 @@ class SMBShareDetailsScreen(Screen):
                     self["status"].setText("❌ Mount failed")
                 
             except Exception as e:
-                logger.error(f"Mount error: {e}")
-                self["status"].setText(f"Mount error: {str(e)[:50]}")
+                logger.error((("Mount error: " + "{e}").format(e=(e))))
+                self["status"].setText((("Mount error: " + "{_a0}").format(_a0=(str(e)[:50]))))
         
         threading.Thread(target=mount_thread, daemon=True).start()
 
@@ -1080,17 +1010,7 @@ class FavoriteSharesScreen(Screen):
         
         w, h = getDesktop(0).size().width(), getDesktop(0).size().height()
         
-        self.skin = f"""
-        <screen name="FavoriteSharesScreen" position="0,0" size="{w},{h}" backgroundColor="#1a1a1a" flags="wfNoBorder">
-            <eLabel position="0,0" size="{w},80" backgroundColor="#3a1a5a" />
-            <eLabel text="⭐ Favorite Shares" position="20,10" size="{w-40},60" font="Regular;32" halign="center" valign="center" transparent="1" foregroundColor="#ffffff" />
-            
-            <widget name="favorites_list" position="100,120" size="{w-200},{h-250}" scrollbarMode="showOnDemand" backgroundColor="#2a2a2a" foregroundColor="#ffffff" selectionBackground="#1976d2" />
-            
-            <eLabel position="0,{h-120}" size="{w},120" backgroundColor="#1a1a1a" />
-            <widget name="status" position="20,{h-110}" size="{w-40},50" font="Regular;22" halign="center" valign="center" transparent="1" foregroundColor="#00ff00" />
-            <widget name="help" position="20,{h-55}" size="{w-40},40" font="Regular;18" halign="center" valign="center" transparent="1" foregroundColor="#aaaaaa" />
-        </screen>"""
+        self.skin = (("\n        <screen name=\"FavoriteSharesScreen\" position=\"0,0\" size=\"" + "{w}" + "," + "{h}" + "\" backgroundColor=\"#1a1a1a\" flags=\"wfNoBorder\">\n            <eLabel position=\"0,0\" size=\"" + "{_a0}" + ",80\" backgroundColor=\"#3a1a5a\" />\n            <eLabel text=\"⭐ Favorite Shares\" position=\"20,10\" size=\"" + "{_a1}" + ",60\" font=\"Regular;32\" halign=\"center\" valign=\"center\" transparent=\"1\" foregroundColor=\"#ffffff\" />\n            \n            <widget name=\"favorites_list\" position=\"100,120\" size=\"" + "{_a2}" + "," + "{_a3}" + "\" scrollbarMode=\"showOnDemand\" backgroundColor=\"#2a2a2a\" foregroundColor=\"#ffffff\" selectionBackground=\"#1976d2\" />\n            \n            <eLabel position=\"0," + "{_a4}" + "\" size=\"" + "{_a5}" + ",120\" backgroundColor=\"#1a1a1a\" />\n            <widget name=\"status\" position=\"20," + "{_a6}" + "\" size=\"" + "{_a7}" + ",50\" font=\"Regular;22\" halign=\"center\" valign=\"center\" transparent=\"1\" foregroundColor=\"#00ff00\" />\n            <widget name=\"help\" position=\"20," + "{_a8}" + "\" size=\"" + "{_a9}" + ",40\" font=\"Regular;18\" halign=\"center\" valign=\"center\" transparent=\"1\" foregroundColor=\"#aaaaaa\" />\n        </screen>").format(w=(w), h=(h), _a0=(w), _a1=(w-40), _a2=(w-200), _a3=(h-250), _a4=(h-120), _a5=(w), _a6=(h-110), _a7=(w-40), _a8=(h-55), _a9=(w-40)))
         
         self["favorites_list"] = MenuList([])
         self["status"] = Label("")
@@ -1120,13 +1040,13 @@ class FavoriteSharesScreen(Screen):
             if self.favorites:
                 items = []
                 for fav in self.favorites:
-                    display = f"⭐ {fav['server']}/{fav['share']}"
+                    display = (("⭐ " + "{_a0}" + "/" + "{_a1}").format(_a0=(fav['server']), _a1=(fav['share'])))
                     if fav.get('description'):
-                        display += f" - {fav['description'][:20]}"
+                        display += ((" - " + "{_a0}").format(_a0=(fav['description'][:20])))
                     items.append((display, fav))
                 
                 self["favorites_list"].setList(items)
-                self["status"].setText(f"{len(self.favorites)} favorite shares")
+                self["status"].setText((("{_a0}" + " favorite shares").format(_a0=(len(self.favorites)))))
             else:
                 self["favorites_list"].setList([
                     ("No favorite shares saved", None),
@@ -1137,7 +1057,7 @@ class FavoriteSharesScreen(Screen):
                 self["status"].setText("No favorites")
         
         except Exception as e:
-            logger.error(f"Load favorites error: {e}")
+            logger.error((("Load favorites error: " + "{e}").format(e=(e))))
             self["status"].setText("Error loading favorites")
     
     def save_favorites(self):
@@ -1149,7 +1069,7 @@ class FavoriteSharesScreen(Screen):
                 json.dump(self.favorites, f, indent=2)
             return True
         except Exception as e:
-            logger.error(f"Save favorites error: {e}")
+            logger.error((("Save favorites error: " + "{e}").format(e=(e))))
             return False
     
     def mount_favorite(self):
@@ -1160,10 +1080,10 @@ class FavoriteSharesScreen(Screen):
         
         fav = current[1]
         
-        msg = f"Quick Mount?\n\n"
-        msg += f"Server: {fav['server']}\n"
-        msg += f"Share: {fav['share']}\n"
-        msg += f"Mount: /media/net/{fav['share']}\n\n"
+        msg = "Quick Mount?\n\n"
+        msg += (("Server: " + "{_a0}" + "\n").format(_a0=(fav['server'])))
+        msg += (("Share: " + "{_a0}" + "\n").format(_a0=(fav['share'])))
+        msg += (("Mount: /media/net/" + "{_a0}" + "\n\n").format(_a0=(fav['share'])))
         msg += "This will mount with guest access."
         
         self.session.openWithCallback(
@@ -1182,12 +1102,12 @@ class FavoriteSharesScreen(Screen):
         
         def mount_thread():
             try:
-                mount_point = f"/media/net/{fav['share']}"
+                mount_point = (("/media/net/" + "{_a0}").format(_a0=(fav['share'])))
                 os.makedirs(mount_point, exist_ok=True)
                 
                 result = subprocess.run(
                     ["mount", "-t", "cifs",
-                     f"//{fav['server']}/{fav['share']}",
+                     (("//" + "{_a0}" + "/" + "{_a1}").format(_a0=(fav['server']), _a1=(fav['share']))),
                      mount_point,
                      "-o", "guest,vers=3.0,iocharset=utf8"],
                     capture_output=True,
@@ -1196,13 +1116,13 @@ class FavoriteSharesScreen(Screen):
                 
                 if result.returncode == 0:
                     self.session.open(MessageBox, 
-                                    f"✅ Mounted!\n\n{mount_point}",
+                                    (("✅ Mounted!\n\n" + "{mount_point}").format(mount_point=(mount_point))),
                                     MessageBox.TYPE_INFO, timeout=3)
                     self["status"].setText("✅ Mount successful")
                 else:
                     self["status"].setText("❌ Mount failed")
             except Exception as e:
-                logger.error(f"Mount error: {e}")
+                logger.error((("Mount error: " + "{e}").format(e=(e))))
                 self["status"].setText("Mount error")
         
         threading.Thread(target=mount_thread, daemon=True).start()
@@ -1224,8 +1144,8 @@ class FavoriteSharesScreen(Screen):
         
         fav = current[1]
         
-        msg = f"Remove from favorites?\n\n"
-        msg += f"{fav['server']}/{fav['share']}"
+        msg = "Remove from favorites?\n\n"
+        msg += (("{_a0}" + "/" + "{_a1}").format(_a0=(fav['server']), _a1=(fav['share'])))
         
         self.session.openWithCallback(
             lambda res: self._execute_delete(res, fav) if res else None,
@@ -1250,7 +1170,7 @@ class FavoriteSharesScreen(Screen):
             
             self["status"].setText("Removed from favorites")
         except Exception as e:
-            logger.error(f"Delete favorite error: {e}")
+            logger.error((("Delete favorite error: " + "{e}").format(e=(e))))
             self["status"].setText("Delete failed")
 
 
@@ -1266,19 +1186,9 @@ class SMBShareBrowserScreen(Screen):
         
         w, h = getDesktop(0).size().width(), getDesktop(0).size().height()
         
-        self.skin = f"""
-        <screen name="SMBShareBrowserScreen" position="0,0" size="{w},{h}" backgroundColor="#1a1a1a" flags="wfNoBorder">
-            <eLabel position="0,0" size="{w},80" backgroundColor="#3a1a5a" />
-            <widget name="title" position="20,10" size="{w-40},60" font="Regular;28" halign="center" valign="center" transparent="1" foregroundColor="#ffffff" />
-            
-            <widget name="file_list" position="100,120" size="{w-200},{h-250}" scrollbarMode="showOnDemand" backgroundColor="#2a2a2a" foregroundColor="#ffffff" selectionBackground="#1976d2" />
-            
-            <eLabel position="0,{h-120}" size="{w},120" backgroundColor="#1a1a1a" />
-            <widget name="status" position="20,{h-110}" size="{w-40},50" font="Regular;22" halign="center" valign="center" transparent="1" foregroundColor="#00ff00" />
-            <widget name="help" position="20,{h-55}" size="{w-40},40" font="Regular;18" halign="center" valign="center" transparent="1" foregroundColor="#aaaaaa" />
-        </screen>"""
+        self.skin = (("\n        <screen name=\"SMBShareBrowserScreen\" position=\"0,0\" size=\"" + "{w}" + "," + "{h}" + "\" backgroundColor=\"#1a1a1a\" flags=\"wfNoBorder\">\n            <eLabel position=\"0,0\" size=\"" + "{_a0}" + ",80\" backgroundColor=\"#3a1a5a\" />\n            <widget name=\"title\" position=\"20,10\" size=\"" + "{_a1}" + ",60\" font=\"Regular;28\" halign=\"center\" valign=\"center\" transparent=\"1\" foregroundColor=\"#ffffff\" />\n            \n            <widget name=\"file_list\" position=\"100,120\" size=\"" + "{_a2}" + "," + "{_a3}" + "\" scrollbarMode=\"showOnDemand\" backgroundColor=\"#2a2a2a\" foregroundColor=\"#ffffff\" selectionBackground=\"#1976d2\" />\n            \n            <eLabel position=\"0," + "{_a4}" + "\" size=\"" + "{_a5}" + ",120\" backgroundColor=\"#1a1a1a\" />\n            <widget name=\"status\" position=\"20," + "{_a6}" + "\" size=\"" + "{_a7}" + ",50\" font=\"Regular;22\" halign=\"center\" valign=\"center\" transparent=\"1\" foregroundColor=\"#00ff00\" />\n            <widget name=\"help\" position=\"20," + "{_a8}" + "\" size=\"" + "{_a9}" + ",40\" font=\"Regular;18\" halign=\"center\" valign=\"center\" transparent=\"1\" foregroundColor=\"#aaaaaa\" />\n        </screen>").format(w=(w), h=(h), _a0=(w), _a1=(w-40), _a2=(w-200), _a3=(h-250), _a4=(h-120), _a5=(w), _a6=(h-110), _a7=(w-40), _a8=(h-55), _a9=(w-40)))
         
-        self["title"] = Label(f"📁 Browsing: //{server}/{share}")
+        self["title"] = Label((("📁 Browsing: //" + "{server}" + "/" + "{share}").format(server=(server), share=(share))))
         self["file_list"] = MenuList([])
         self["status"] = Label("⏳ Loading...")
         self["help"] = Label("OK:Enter  BACK:Parent  GREEN:Mount  EXIT:Close")
@@ -1295,12 +1205,12 @@ class SMBShareBrowserScreen(Screen):
     def browse_directory(self, path=""):
         """Browse directory in share"""
         self.current_path = path
-        self["status"].setText(f"⏳ Loading {path if path else 'root'}...")
+        self["status"].setText((("⏳ Loading " + "{_a0}" + "...").format(_a0=(path if path else 'root'))))
         
         def browse_thread():
             try:
                 # Use smbclient to list directory
-                smb_path = f"//{self.server}/{self.share}/{path}"
+                smb_path = (("//" + "{_a0}" + "/" + "{_a1}" + "/" + "{path}").format(_a0=(self.server), _a1=(self.share), path=(path)))
                 
                 result = subprocess.run(
                     ["smbclient", smb_path, "-N", "-c", "ls"],
@@ -1329,7 +1239,7 @@ class SMBShareBrowserScreen(Screen):
                             icon = "📁" if is_dir else "📄"
                             
                             items.append((
-                                f"{icon} {name}",
+                                (("{icon}" + " " + "{name}").format(icon=(icon), name=(name))),
                                 {'name': name, 'is_dir': is_dir, 'size': size}
                             ))
                     
@@ -1338,8 +1248,8 @@ class SMBShareBrowserScreen(Screen):
                         items.insert(0, ("📂 [..]  (Parent Directory)", {'name': '..', 'is_dir': True}))
                     
                     self["file_list"].setList(items if items else [("(Empty directory)", None)])
-                    self["status"].setText(f"📁 {len(items)} items")
-                    self["title"].setText(f"📁 //{self.server}/{self.share}/{path}")
+                    self["status"].setText((("📁 " + "{_a0}" + " items").format(_a0=(len(items)))))
+                    self["title"].setText((("📁 //" + "{_a0}" + "/" + "{_a1}" + "/" + "{path}").format(_a0=(self.server), _a1=(self.share), path=(path))))
                 else:
                     self["file_list"].setList([
                         ("❌ Cannot browse share", None),
@@ -1349,8 +1259,8 @@ class SMBShareBrowserScreen(Screen):
                     self["status"].setText("Browse failed")
                 
             except Exception as e:
-                logger.error(f"Browse error: {e}")
-                self["status"].setText(f"Error: {str(e)[:50]}")
+                logger.error((("Browse error: " + "{e}").format(e=(e))))
+                self["status"].setText((("Error: " + "{_a0}").format(_a0=(str(e)[:50]))))
         
         threading.Thread(target=browse_thread, daemon=True).start()
     
@@ -1366,14 +1276,14 @@ class SMBShareBrowserScreen(Screen):
             if item['name'] == '..':
                 self.parent_directory()
             else:
-                new_path = f"{self.current_path}/{item['name']}" if self.current_path else item['name']
+                new_path = (("{_a0}" + "/" + "{_a1}").format(_a0=(self.current_path), _a1=(item['name']))) if self.current_path else item['name']
                 self.browse_directory(new_path)
         else:
             # Show file info
-            msg = f"📄 FILE INFO\n\n"
-            msg += f"Name: {item['name']}\n"
-            msg += f"Size: {item['size']}\n"
-            msg += f"Path: //{self.server}/{self.share}/{self.current_path}\n\n"
+            msg = "📄 FILE INFO\n\n"
+            msg += (("Name: " + "{_a0}" + "\n").format(_a0=(item['name'])))
+            msg += (("Size: " + "{_a0}" + "\n").format(_a0=(item['size'])))
+            msg += (("Path: //" + "{_a0}" + "/" + "{_a1}" + "/" + "{_a2}" + "\n\n").format(_a0=(self.server), _a1=(self.share), _a2=(self.current_path)))
             msg += "Mount share to access this file"
             
             self.session.open(MessageBox, msg, MessageBox.TYPE_INFO)
@@ -1401,10 +1311,10 @@ class SMBShareBrowserScreen(Screen):
     
     def mount_share(self):
         """Mount the share"""
-        msg = f"Mount Share?\n\n"
-        msg += f"//{self.server}/{self.share}\n\n"
-        msg += f"Mount point:\n"
-        msg += f"/media/net/{self.share}\n\n"
+        msg = "Mount Share?\n\n"
+        msg += (("//" + "{_a0}" + "/" + "{_a1}" + "\n\n").format(_a0=(self.server), _a1=(self.share)))
+        msg += "Mount point:\n"
+        msg += (("/media/net/" + "{_a0}" + "\n\n").format(_a0=(self.share)))
         msg += "Guest access will be used."
         
         self.session.openWithCallback(
@@ -1423,12 +1333,12 @@ class SMBShareBrowserScreen(Screen):
         
         def mount_thread():
             try:
-                mount_point = f"/media/net/{self.share}"
+                mount_point = (("/media/net/" + "{_a0}").format(_a0=(self.share)))
                 os.makedirs(mount_point, exist_ok=True)
                 
                 result = subprocess.run(
                     ["mount", "-t", "cifs",
-                     f"//{self.server}/{self.share}",
+                     (("//" + "{_a0}" + "/" + "{_a1}").format(_a0=(self.server), _a1=(self.share))),
                      mount_point,
                      "-o", "guest,vers=3.0,iocharset=utf8"],
                     capture_output=True,
@@ -1437,13 +1347,13 @@ class SMBShareBrowserScreen(Screen):
                 
                 if result.returncode == 0:
                     self.session.open(MessageBox,
-                                    f"✅ Mounted!\n\n{mount_point}",
+                                    (("✅ Mounted!\n\n" + "{mount_point}").format(mount_point=(mount_point))),
                                     MessageBox.TYPE_INFO, timeout=3)
                     self["status"].setText("✅ Mounted")
                 else:
                     self["status"].setText("❌ Mount failed")
             except Exception as e:
-                logger.error(f"Mount error: {e}")
+                logger.error((("Mount error: " + "{e}").format(e=(e))))
                 self["status"].setText("Mount error")
         
         threading.Thread(target=mount_thread, daemon=True).start()

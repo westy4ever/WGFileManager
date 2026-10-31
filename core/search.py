@@ -19,7 +19,7 @@ class SearchEngine:
             validate_path(directory)
             
             if not os.path.isdir(directory):
-                raise FileOperationError(f"Not a directory: {directory}")
+                raise FileOperationError((("Not a directory: " + "{directory}").format(directory=(directory))))
             
             self._stop_search.clear()
             results = []
@@ -91,7 +91,7 @@ class SearchEngine:
             return results
             
         except Exception as e:
-            raise FileOperationError(f"File search failed: {e}")
+            raise FileOperationError((("File search failed: " + "{e}").format(e=(e))))
     
     def search_content(self, directory, text, file_pattern="*", recursive=True, max_results=50):
         """Search for text inside files using grep"""
@@ -99,7 +99,7 @@ class SearchEngine:
             validate_path(directory)
             
             if not os.path.isdir(directory):
-                raise FileOperationError(f"Not a directory: {directory}")
+                raise FileOperationError((("Not a directory: " + "{directory}").format(directory=(directory))))
             
             self._stop_search.clear()
             
@@ -156,17 +156,17 @@ class SearchEngine:
                 elif result.returncode == 1:
                     return []
                 else:
-                    raise FileOperationError(f"grep error: {result.stderr[:100]}")
+                    raise FileOperationError((("grep error: " + "{_a0}").format(_a0=(result.stderr[:100]))))
                     
             except subprocess.TimeoutExpired:
                 raise FileOperationError("Search timed out")
             except Exception as e:
-                raise FileOperationError(f"Content search failed: {e}")
+                raise FileOperationError((("Content search failed: " + "{e}").format(e=(e))))
             
         except Exception as e:
             if isinstance(e, FileOperationError):
                 raise
-            raise FileOperationError(f"Content search failed: {e}")
+            raise FileOperationError((("Content search failed: " + "{e}").format(e=(e))))
     
     def find_large_files(self, directory, min_size_mb=100, max_results=50):
         """Find files larger than specified size"""
@@ -174,7 +174,7 @@ class SearchEngine:
             validate_path(directory)
             
             if not os.path.isdir(directory):
-                raise FileOperationError(f"Not a directory: {directory}")
+                raise FileOperationError((("Not a directory: " + "{directory}").format(directory=(directory))))
             
             min_size = min_size_mb * 1024 * 1024
             results = []
@@ -209,7 +209,7 @@ class SearchEngine:
             return results
             
         except Exception as e:
-            raise FileOperationError(f"Find large files failed: {e}")
+            raise FileOperationError((("Find large files failed: " + "{e}").format(e=(e))))
     
     def find_duplicates(self, directory, max_results=50):
         """Find duplicate files by size and name"""
@@ -217,7 +217,7 @@ class SearchEngine:
             validate_path(directory)
             
             if not os.path.isdir(directory):
-                raise FileOperationError(f"Not a directory: {directory}")
+                raise FileOperationError((("Not a directory: " + "{directory}").format(directory=(directory))))
             
             file_map = {}
             duplicates = []
@@ -233,7 +233,7 @@ class SearchEngine:
                     full_path = os.path.join(root, name)
                     try:
                         size = os.path.getsize(full_path)
-                        key = f"{name}_{size}"
+                        key = (("{name}" + "_" + "{size}").format(name=(name), size=(size)))
                         
                         if key in file_map:
                             file_map[key].append(full_path)
@@ -257,7 +257,7 @@ class SearchEngine:
             return duplicates
             
         except Exception as e:
-            raise FileOperationError(f"Find duplicates failed: {e}")
+            raise FileOperationError((("Find duplicates failed: " + "{e}").format(e=(e))))
     
     def stop_search(self):
         """Stop current search operation"""

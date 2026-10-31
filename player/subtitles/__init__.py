@@ -51,10 +51,13 @@ _STRING_TYPES = (str, _UNICODE)
 
 _SUB_EXTS = (".srt", ".ass", ".ssa", ".sub", ".txt")
 
-# Guide §10: Studio ON by default in the player port (the vendored
-# engine's own default is OFF). Written once on first run.
+# FIX (merge): Studio mode OFF by default. The overlay dialog it
+# creates (a full-screen transparent Screen with no ActionMap) blocks
+# the player's color-button key dispatch on some Enigma2 images
+# (confirmed on Vu+ / OpenATV). The user can turn it on in Subtitle
+# Settings → Studio if they want the live-styled renderer.
 if str(_cfg("substudio_mode", "")).strip() == "":
-    _cfg_set("substudio_mode", "true")
+    _cfg_set("substudio_mode", "false")
 
 
 def show_subtitle_settings(session, **kwargs):
@@ -200,7 +203,13 @@ class SubtitleManager(object):
         if not service:
             self._sync_attrs()
             return
-        self._ensure_overlay()
+        # FIX (merge): only create the overlay when Studio mode is on.
+        # The overlay is a full-screen transparent dialog that can
+        # block the player's key dispatch on some images. When Studio
+        # is off (the new default), the player's color buttons work
+        # normally; subtitles render through the service layer instead.
+        if _cfg_bool("substudio_mode", False):
+            self._ensure_overlay()
         self._scan_embedded()
         self._scan_sidecars()
 

@@ -29,39 +29,7 @@ class AudioPlaylistPlayer(Screen):
         self.is_paused = False
         
         # Create skin
-        self.skin = f"""
-        <screen name="AudioPlaylistPlayer" position="0,0" size="{w},{h}" backgroundColor="#0d1117" flags="wfNoBorder">
-            <eLabel position="0,0" size="{w},100" backgroundColor="#161b22" />
-            <eLabel position="0,88" size="{w},2" backgroundColor="#1976d2" />
-            
-            <eLabel text=" Audio Player" position="0,20" size="{w},60" font="Regular;48" halign="center" valign="center" transparent="1" foregroundColor="#58a6ff" shadowColor="#000000" shadowOffset="-2,-2" />
-            
-            <widget name="track_info" position="50,150" size="{w-100},50" font="Regular;32" halign="center" foregroundColor="#00ff00" transparent="1" />
-            <widget name="track_number" position="50,210" size="{w-100},40" font="Regular;26" halign="center" foregroundColor="#ffaa00" transparent="1" />
-            
-            <widget name="album_art" position="{(w-400)//2},280" size="400,400" alphatest="on" />
-            
-            <widget name="time_current" position="100,720" size="200,40" font="Regular;28" halign="left" foregroundColor="#ffffff" transparent="1" />
-            <widget name="progress_bar" position="320,730" size="{w-640},20" backgroundColor="#333333" foregroundColor="#00aaff" borderWidth="2" borderColor="#aaaaaa" />
-            <widget name="time_total" position="{w-300},720" size="200,40" font="Regular;28" halign="right" foregroundColor="#ffffff" transparent="1" />
-            
-            <widget name="status" position="50,780" size="{w-100},40" font="Regular;28" halign="center" foregroundColor="#ffff00" transparent="1" />
-            
-            <eLabel position="0,{h-150}" size="{w},2" backgroundColor="#30363d" />
-            <eLabel position="0,{h-148}" size="{w},150" backgroundColor="#010409" />
-            
-            <widget name="controls_help" position="50,{h-130}" size="{w-100},40" font="Regular;24" halign="center" foregroundColor="#aaaaaa" transparent="1" />
-            
-            <eLabel position="100,{h-80}" size="180,50" backgroundColor="#7d1818" />
-            <eLabel position="330,{h-80}" size="180,50" backgroundColor="#1e5128" />
-            <eLabel position="560,{h-80}" size="180,50" backgroundColor="#1976d2" />
-            <eLabel position="790,{h-80}" size="180,50" backgroundColor="#9e6a03" />
-            
-            <eLabel text="Exit" position="110,{h-75}" size="160,40" zPosition="1" font="Regular;26" halign="center" valign="center" transparent="1" foregroundColor="#ffffff" />
-            <eLabel text="Prev" position="340,{h-75}" size="160,40" zPosition="1" font="Regular;26" halign="center" valign="center" transparent="1" foregroundColor="#ffffff" />
-            <eLabel text="Play/Pause" position="570,{h-75}" size="160,40" zPosition="1" font="Regular;26" halign="center" valign="center" transparent="1" foregroundColor="#ffffff" />
-            <eLabel text="Next" position="800,{h-75}" size="160,40" zPosition="1" font="Regular;26" halign="center" valign="center" transparent="1" foregroundColor="#ffffff" />
-        </screen>"""
+        self.skin = (("\n        <screen name=\"AudioPlaylistPlayer\" position=\"0,0\" size=\"" + "{w}" + "," + "{h}" + "\" backgroundColor=\"#0d1117\" flags=\"wfNoBorder\">\n            <eLabel position=\"0,0\" size=\"" + "{_a0}" + ",100\" backgroundColor=\"#161b22\" />\n            <eLabel position=\"0,88\" size=\"" + "{_a1}" + ",2\" backgroundColor=\"#1976d2\" />\n            \n            <eLabel text=\" Audio Player\" position=\"0,20\" size=\"" + "{_a2}" + ",60\" font=\"Regular;48\" halign=\"center\" valign=\"center\" transparent=\"1\" foregroundColor=\"#58a6ff\" shadowColor=\"#000000\" shadowOffset=\"-2,-2\" />\n            \n            <widget name=\"track_info\" position=\"50,150\" size=\"" + "{_a3}" + ",50\" font=\"Regular;32\" halign=\"center\" foregroundColor=\"#00ff00\" transparent=\"1\" />\n            <widget name=\"track_number\" position=\"50,210\" size=\"" + "{_a4}" + ",40\" font=\"Regular;26\" halign=\"center\" foregroundColor=\"#ffaa00\" transparent=\"1\" />\n            \n            <widget name=\"album_art\" position=\"" + "{_a5}" + ",280\" size=\"400,400\" alphatest=\"on\" />\n            \n            <widget name=\"time_current\" position=\"100,720\" size=\"200,40\" font=\"Regular;28\" halign=\"left\" foregroundColor=\"#ffffff\" transparent=\"1\" />\n            <widget name=\"progress_bar\" position=\"320,730\" size=\"" + "{_a6}" + ",20\" backgroundColor=\"#333333\" foregroundColor=\"#00aaff\" borderWidth=\"2\" borderColor=\"#aaaaaa\" />\n            <widget name=\"time_total\" position=\"" + "{_a7}" + ",720\" size=\"200,40\" font=\"Regular;28\" halign=\"right\" foregroundColor=\"#ffffff\" transparent=\"1\" />\n            \n            <widget name=\"status\" position=\"50,780\" size=\"" + "{_a8}" + ",40\" font=\"Regular;28\" halign=\"center\" foregroundColor=\"#ffff00\" transparent=\"1\" />\n            \n            <eLabel position=\"0," + "{_a9}" + "\" size=\"" + "{_a10}" + ",2\" backgroundColor=\"#30363d\" />\n            <eLabel position=\"0," + "{_a11}" + "\" size=\"" + "{_a12}" + ",150\" backgroundColor=\"#010409\" />\n            \n            <widget name=\"controls_help\" position=\"50," + "{_a13}" + "\" size=\"" + "{_a14}" + ",40\" font=\"Regular;24\" halign=\"center\" foregroundColor=\"#aaaaaa\" transparent=\"1\" />\n            \n            <eLabel position=\"100," + "{_a15}" + "\" size=\"180,50\" backgroundColor=\"#7d1818\" />\n            <eLabel position=\"330," + "{_a16}" + "\" size=\"180,50\" backgroundColor=\"#1e5128\" />\n            <eLabel position=\"560," + "{_a17}" + "\" size=\"180,50\" backgroundColor=\"#1976d2\" />\n            <eLabel position=\"790," + "{_a18}" + "\" size=\"180,50\" backgroundColor=\"#9e6a03\" />\n            \n            <eLabel text=\"Exit\" position=\"110," + "{_a19}" + "\" size=\"160,40\" zPosition=\"1\" font=\"Regular;26\" halign=\"center\" valign=\"center\" transparent=\"1\" foregroundColor=\"#ffffff\" />\n            <eLabel text=\"Prev\" position=\"340," + "{_a20}" + "\" size=\"160,40\" zPosition=\"1\" font=\"Regular;26\" halign=\"center\" valign=\"center\" transparent=\"1\" foregroundColor=\"#ffffff\" />\n            <eLabel text=\"Play/Pause\" position=\"570," + "{_a21}" + "\" size=\"160,40\" zPosition=\"1\" font=\"Regular;26\" halign=\"center\" valign=\"center\" transparent=\"1\" foregroundColor=\"#ffffff\" />\n            <eLabel text=\"Next\" position=\"800," + "{_a22}" + "\" size=\"160,40\" zPosition=\"1\" font=\"Regular;26\" halign=\"center\" valign=\"center\" transparent=\"1\" foregroundColor=\"#ffffff\" />\n        </screen>").format(w=(w), h=(h), _a0=(w), _a1=(w), _a2=(w), _a3=(w-100), _a4=(w-100), _a5=((w-400)//2), _a6=(w-640), _a7=(w-300), _a8=(w-100), _a9=(h-150), _a10=(w), _a11=(h-148), _a12=(w), _a13=(h-130), _a14=(w-100), _a15=(h-80), _a16=(h-80), _a17=(h-80), _a18=(h-80), _a19=(h-75), _a20=(h-75), _a21=(h-75), _a22=(h-75)))
         
         # Create widgets
         self["track_info"] = Label("")
@@ -120,7 +88,7 @@ class AudioPlaylistPlayer(Screen):
             # Update display
             track_name = os.path.basename(current_track)
             self["track_info"].setText(track_name)
-            self["track_number"].setText(f"Track {self.current_index + 1} of {len(self.playlist)}")
+            self["track_number"].setText((("Track " + "{_a0}" + " of " + "{_a1}").format(_a0=(self.current_index + 1), _a1=(len(self.playlist)))))
             
             # Create service reference
             ref = eServiceReference(4097, 0, current_track)
@@ -138,11 +106,11 @@ class AudioPlaylistPlayer(Screen):
             # Get total duration
             self.update_position()
             
-            logger.info(f"Playing track {self.current_index + 1}/{len(self.playlist)}: {track_name}")
+            logger.info((("Playing track " + "{_a0}" + "/" + "{_a1}" + ": " + "{track_name}").format(_a0=(self.current_index + 1), _a1=(len(self.playlist)), track_name=(track_name))))
             
         except Exception as e:
-            logger.error(f"Error starting playback: {e}")
-            self.session.open(MessageBox, f"Playback error:\n{e}", MessageBox.TYPE_ERROR)
+            logger.error((("Error starting playback: " + "{e}").format(e=(e))))
+            self.session.open(MessageBox, (("Playback error:\n" + "{e}").format(e=(e))), MessageBox.TYPE_ERROR)
     
     def update_position(self):
         """Update playback position"""
@@ -179,14 +147,14 @@ class AudioPlaylistPlayer(Screen):
                         self.track_finished()
             
         except Exception as e:
-            logger.debug(f"Position update error: {e}")
+            logger.debug((("Position update error: " + "{e}").format(e=(e))))
     
     def format_time(self, seconds):
         """Format seconds to MM:SS"""
         try:
             minutes = int(seconds / 60)
             secs = int(seconds % 60)
-            return f"{minutes:02d}:{secs:02d}"
+            return (("{minutes:02d}" + ":" + "{secs:02d}").format(minutes=(minutes), secs=(secs)))
         except:
             return "00:00"
     
@@ -207,7 +175,7 @@ class AudioPlaylistPlayer(Screen):
                 self.start_playback()
                 self["status"].setText("▶ Looped to start")
         except Exception as e:
-            logger.error(f"Error playing next track: {e}")
+            logger.error((("Error playing next track: " + "{e}").format(e=(e))))
     
     def previous_track(self):
         """Play previous track in playlist"""
@@ -221,7 +189,7 @@ class AudioPlaylistPlayer(Screen):
                 self.start_playback()
                 self["status"].setText("▶ Looped to end")
         except Exception as e:
-            logger.error(f"Error playing previous track: {e}")
+            logger.error((("Error playing previous track: " + "{e}").format(e=(e))))
     
     def toggle_play_pause(self):
         """Toggle play/pause"""
@@ -245,7 +213,7 @@ class AudioPlaylistPlayer(Screen):
                     self["status"].setText(" Paused")
                     self.position_timer.stop()
         except Exception as e:
-            logger.error(f"Error toggling play/pause: {e}")
+            logger.error((("Error toggling play/pause: " + "{e}").format(e=(e))))
     
     def stop_playback(self):
         """Stop playback"""
@@ -256,7 +224,7 @@ class AudioPlaylistPlayer(Screen):
             self["status"].setText(" Stopped")
             self.position_timer.stop()
         except Exception as e:
-            logger.error(f"Error stopping playback: {e}")
+            logger.error((("Error stopping playback: " + "{e}").format(e=(e))))
     
     def seek_forward(self):
         """Seek forward 10 seconds"""
@@ -272,7 +240,7 @@ class AudioPlaylistPlayer(Screen):
                         seek.seekTo(new_position)
                         self["status"].setText(" +10s")
         except Exception as e:
-            logger.error(f"Seek forward error: {e}")
+            logger.error((("Seek forward error: " + "{e}").format(e=(e))))
     
     def seek_backward(self):
         """Seek backward 10 seconds"""
@@ -288,7 +256,7 @@ class AudioPlaylistPlayer(Screen):
                         seek.seekTo(new_position)
                         self["status"].setText(" -10s")
         except Exception as e:
-            logger.error(f"Seek backward error: {e}")
+            logger.error((("Seek backward error: " + "{e}").format(e=(e))))
     
     def volume_up(self):
         """Increase volume"""
@@ -333,5 +301,5 @@ class AudioPlaylistPlayer(Screen):
                 
                 self.close()
             except Exception as e:
-                logger.error(f"Exit error: {e}")
+                logger.error((("Exit error: " + "{e}").format(e=(e))))
                 self.close()

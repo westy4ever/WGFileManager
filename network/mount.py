@@ -20,11 +20,11 @@ class MountManager:
         try:
             # Validate inputs
             if not validate_ip(server) and not validate_hostname(server):
-                return False, f"Invalid server address: {server}"
+                return False, (("Invalid server address: " + "{server}").format(server=(server)))
             
             # SECURITY FIX: Validate share name
             if not re.match(r'^[a-zA-Z0-9_\-.$]+$', share):
-                return False, f"Invalid share name: {share}"
+                return False, (("Invalid share name: " + "{share}").format(share=(share)))
             
             # Validate mount point
             if not os.path.isabs(mount_point):
@@ -45,14 +45,14 @@ class MountManager:
                 creds_fd, creds_file = tempfile.mkstemp(prefix='wgfilemanager_', suffix='.creds', dir='/tmp')
                 try:
                     with os.fdopen(creds_fd, 'w') as f:
-                        f.write(f"username={username}\n")
+                        f.write((("username=" + "{username}" + "\n").format(username=(username))))
                         if password:
-                            f.write(f"password={password}\n")
+                            f.write((("password=" + "{password}" + "\n").format(password=(password))))
                         if domain:
-                            f.write(f"domain={domain}\n")
+                            f.write((("domain=" + "{domain}" + "\n").format(domain=(domain))))
                     # Secure permissions (owner read/write only)
                     os.chmod(creds_file, 0o600)
-                    mount_options.append(f"credentials={creds_file}")
+                    mount_options.append((("credentials=" + "{creds_file}").format(creds_file=(creds_file))))
                 except Exception:
                     if creds_file and os.path.exists(creds_file):
                         os.unlink(creds_file)
@@ -60,7 +60,7 @@ class MountManager:
             else:
                 mount_options.append("guest")
             
-            mount_options.append(f"vers={DEFAULT_CIFS_VERSION}")
+            mount_options.append((("vers=" + "{DEFAULT_CIFS_VERSION}").format(DEFAULT_CIFS_VERSION=(DEFAULT_CIFS_VERSION))))
             mount_options.append("rw")
             mount_options.append("iocharset=utf8")
             
@@ -74,7 +74,7 @@ class MountManager:
             # Build mount command with proper quoting
             mount_cmd = [
                 "mount", "-t", "cifs",
-                f"//{server}/{share}",
+                (("//" + "{server}" + "/" + "{share}").format(server=(server), share=(share))),
                 mount_point,
                 "-o", ",".join(mount_options)
             ]
@@ -98,7 +98,7 @@ class MountManager:
                     'share': share,
                     'options': mount_options
                 }
-                return True, f"Mounted //{server}/{share} to {mount_point}"
+                return True, (("Mounted //" + "{server}" + "/" + "{share}" + " to " + "{mount_point}").format(server=(server), share=(share), mount_point=(mount_point)))
             else:
                 error = result.stderr.strip() or result.stdout.strip()
                 
@@ -108,18 +108,18 @@ class MountManager:
                     if username:
                         creds_fd, creds_file = tempfile.mkstemp(prefix='wgfilemanager_', suffix='.creds', dir='/tmp')
                         with os.fdopen(creds_fd, 'w') as f:
-                            f.write(f"username={username}\n")
+                            f.write((("username=" + "{username}" + "\n").format(username=(username))))
                             if password:
-                                f.write(f"password={password}\n")
+                                f.write((("password=" + "{password}" + "\n").format(password=(password))))
                             if domain:
-                                f.write(f"domain={domain}\n")
+                                f.write((("domain=" + "{domain}" + "\n").format(domain=(domain))))
                         os.chmod(creds_file, 0o600)
                     
                     # Update version in options
-                    new_options = [opt if not opt.startswith('vers=') else f'vers={version}' for opt in mount_options]
+                    new_options = [opt if not opt.startswith('vers=') else (("vers=" + "{version}").format(version=(version))) for opt in mount_options]
                     mount_cmd = [
                         "mount", "-t", "cifs",
-                        f"//{server}/{share}",
+                        (("//" + "{server}" + "/" + "{share}").format(server=(server), share=(share))),
                         mount_point,
                         "-o", ",".join(new_options)
                     ]
@@ -143,9 +143,9 @@ class MountManager:
                             'share': share,
                             'options': new_options
                         }
-                        return True, f"Mounted with vers={version}"
+                        return True, (("Mounted with vers=" + "{version}").format(version=(version)))
                 
-                return False, f"Mount failed: {error[:200]}"
+                return False, (("Mount failed: " + "{_a0}").format(_a0=(error[:200])))
                 
         except subprocess.TimeoutExpired:
             if creds_file and os.path.exists(creds_file):
@@ -154,7 +154,7 @@ class MountManager:
         except Exception as e:
             if creds_file and os.path.exists(creds_file):
                 os.unlink(creds_file)
-            return False, f"Mount error: {e}"
+            return False, (("Mount error: " + "{e}").format(e=(e)))
     
     def umount(self, mount_point, force=False, lazy=False):
         """Unmount filesystem"""
@@ -162,7 +162,7 @@ class MountManager:
             sanitize_string(mount_point)
             
             if not os.path.ismount(mount_point):
-                return True, f"{mount_point} is not mounted"
+                return True, (("{mount_point}" + " is not mounted").format(mount_point=(mount_point)))
             
             # Build umount command
             umount_cmd = ["umount"]
@@ -184,13 +184,13 @@ class MountManager:
             if result.returncode == 0:
                 if mount_point in self.mount_points:
                     del self.mount_points[mount_point]
-                return True, f"Unmounted {mount_point}"
+                return True, (("Unmounted " + "{mount_point}").format(mount_point=(mount_point)))
             else:
                 error = result.stderr.strip() or result.stdout.strip()
-                return False, f"Unmount failed: {error[:200]}"
+                return False, (("Unmount failed: " + "{_a0}").format(_a0=(error[:200])))
                 
         except Exception as e:
-            return False, f"Unmount error: {e}"
+            return False, (("Unmount error: " + "{e}").format(e=(e)))
     
     def list_mounts(self):
         """List all mounts"""
@@ -212,7 +212,7 @@ class MountManager:
                 return False, "Failed to list mounts"
                 
         except Exception as e:
-            return False, f"List mounts error: {e}"
+            return False, (("List mounts error: " + "{e}").format(e=(e)))
     
     def is_mounted(self, mount_point):
         """Check if path is mounted"""
@@ -326,7 +326,7 @@ class MountManager:
         """Ping host to test connectivity"""
         try:
             if not validate_ip(host) and not validate_hostname(host):
-                return False, f"Invalid host: {host}"
+                return False, (("Invalid host: " + "{host}").format(host=(host)))
             
             result = subprocess.run(
                 ["ping", "-c", "2", "-W", "2", host],
@@ -343,7 +343,7 @@ class MountManager:
         except subprocess.TimeoutExpired:
             return False, "Ping timeout"
         except Exception as e:
-            return False, f"Ping error: {e}"
+            return False, (("Ping error: " + "{e}").format(e=(e)))
     
     def get_available_mount_points(self):
         """Get list of available mount points"""
@@ -396,7 +396,7 @@ class MountManager:
                             self.umount(mount_point, force=True, lazy=True)
                             cleaned += 1
             
-            return True, f"Cleaned {cleaned} stale mounts"
+            return True, (("Cleaned " + "{cleaned}" + " stale mounts").format(cleaned=(cleaned)))
             
         except Exception as e:
-            return False, f"Cleanup mounts error: {e}"
+            return False, (("Cleanup mounts error: " + "{e}").format(e=(e)))

@@ -89,7 +89,7 @@ try:
     from .player.custom_media_player import CustomMediaPlayer  # noqa: F401
     logger.info("Player module imported successfully")
 except ImportError as e:
-    logger.error(f"Error importing player module: {e}")
+    logger.error((("Error importing player module: " + "{e}").format(e=(e))))
     CustomMediaPlayer = None
 
 from Components.config import config, ConfigSubsection
@@ -159,33 +159,25 @@ def main(session, **kwargs):
         return None
 
 def _verify_subtitle_config():
-    """Verify subtitle configuration exists"""
+    """Verify the plugin's config subsection is registered.
+
+    BUG-5 fix: the standalone CustomMediaPlayer no longer reads any
+    subtitle_* config keys (subtitle_delay / subtitle_font_size /
+    subtitle_font_color / subtitle_position / subtitle_encoding /
+    subtitle_auto_load / subtitle_preferred_lang). They were leftovers
+    from the vendored subtitle engine and were removed from
+    core/config.py. So this function no longer audits those keys; it
+    just ensures config.plugins.wgfilemanager exists so the player
+    and the settings screen can register their own keys at import
+    time. The misleading "subtitle config verified" log line is gone.
+    """
     try:
         if not hasattr(config.plugins, 'wgfilemanager'):
             config.plugins.wgfilemanager = ConfigSubsection()
             logger.info("Created wgfilemanager config subsection")
-        
-        p = config.plugins.wgfilemanager
-        
-        # Check for essential subtitle configs
-        essential_configs = [
-            'subtitle_delay', 'subtitle_auto_load', 'subtitle_encoding',
-            'subtitle_font_size', 'subtitle_font_color', 'subtitle_position'
-        ]
-        
-        missing_configs = []
-        for config_name in essential_configs:
-            if not hasattr(p, config_name):
-                missing_configs.append(config_name)
-        
-        if missing_configs:
-            logger.warning(f"Missing subtitle configs: {missing_configs}")
-            logger.info("Subtitle settings are handled in the player (YELLOW/TEXT)")
-        
-        logger.info("✓ Subtitle configuration verified")
-        
+        logger.info("Plugin config subsection registered")
     except Exception as e:
-        logger.error(f"Error verifying subtitle config: {e}")
+        logger.error((("Error verifying plugin config: " + "{e}").format(e=(e))))
 
 def menu(menuid, **kwargs):
     """Plugin menu integration"""
@@ -296,15 +288,15 @@ if __name__ == "__main__":
     for module_name, import_path in test_modules:
         try:
             # Try absolute import
-            exec(f"import {import_path.replace('/', '.')}")
-            print(f"✓ {module_name:20} - Import successful")
+            exec((("import " + "{_a0}").format(_a0=(import_path.replace('/', '.')))))
+            print((("✓ " + "{module_name:20}" + " - Import successful").format(module_name=(module_name))))
         except ImportError:
             try:
                 # Try relative import
-                exec(f"from .{import_path} import *")
-                print(f"✓ {module_name:20} - Relative import successful")
+                exec((("from ." + "{import_path}" + " import *").format(import_path=(import_path))))
+                print((("✓ " + "{module_name:20}" + " - Relative import successful").format(module_name=(module_name))))
             except ImportError as e:
-                print(f"✗ {module_name:20} - Import failed: {e}")
+                print((("✗ " + "{module_name:20}" + " - Import failed: " + "{e}").format(module_name=(module_name), e=(e))))
                 all_imports_ok = False
     
     print("-" * 40)

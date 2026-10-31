@@ -28,16 +28,16 @@ try:
         except TypeError as e:
             if "%d format" in str(e) or "real number is required" in str(e):
                 # StackTrace formatting error - run target directly
-                logger.warning(f"StackTrace formatting error in thread {self.name}: {e}")
+                logger.warning((("StackTrace formatting error in thread " + "{_a0}" + ": " + "{e}").format(_a0=(self.name), e=(e))))
                 if hasattr(self, '_target') and self._target:
                     try:
                         self._target(*self._args, **self._kwargs)
                     except Exception as target_error:
-                        logger.error(f"Thread target error: {target_error}")
+                        logger.error((("Thread target error: " + "{target_error}").format(target_error=(target_error))))
             else:
                 raise
         except Exception as thread_error:
-            logger.error(f"Thread error in {self.name}: {thread_error}")
+            logger.error((("Thread error in " + "{_a0}" + ": " + "{thread_error}").format(_a0=(self.name), thread_error=(thread_error))))
             # Try to run target anyway
             if hasattr(self, '_target') and self._target:
                 try:
@@ -49,7 +49,7 @@ try:
     logger.info("Threading patch applied successfully")
     
 except Exception as patch_error:
-    logger.error(f"Failed to apply threading patch: {patch_error}")
+    logger.error((("Failed to apply threading patch: " + "{patch_error}").format(patch_error=(patch_error))))
 
 # ============================================================================
 
@@ -142,7 +142,7 @@ class ContextMenuHandler:
             self.HOTKEY_SUPPORT_AVAILABLE = True
         except ImportError as e:
             self.HOTKEY_SUPPORT_AVAILABLE = False
-            logger.warning(f"HotkeySetupScreen not available: {e}")
+            logger.warning((("HotkeySetupScreen not available: " + "{e}").format(e=(e))))
     # ============================================================================
 
     def show_context_menu(self):
@@ -158,8 +158,8 @@ class ContextMenuHandler:
                 else:
                     self.show_item_context_menu()
         except Exception as e:
-            logger.error(f"Error showing context menu: {e}")
-            self.dialogs.show_message(f"Context menu error: {e}", type="error")
+            logger.error((("Error showing context menu: " + "{e}").format(e=(e))))
+            self.dialogs.show_message((("Context menu error: " + "{e}").format(e=(e))), type="error")
     
     def show_general_context_menu(self):
         """Show context menu for current directory"""
@@ -183,12 +183,12 @@ class ContextMenuHandler:
             self.main.session.openWithCallback(
                 lambda choice: self.smart_callback(choice, self.handle_general_context_menu, current_dir),
                 ChoiceBox,
-                title=f" Context: {os.path.basename(current_dir) or 'Root'}",
+                title=((" Context: " + "{_a0}").format(_a0=(os.path.basename(current_dir) or 'Root'))),
                 list=menu_items
             )
         except Exception as e:
-            logger.error(f"Error: {e}")
-            self.main.session.open(MessageBox, f"Error: {e}", MessageBox.TYPE_ERROR)
+            logger.error((("Error: " + "{e}").format(e=(e))))
+            self.main.session.open(MessageBox, (("Error: " + "{e}").format(e=(e))), MessageBox.TYPE_ERROR)
 
     def handle_general_context_menu(self, choice, current_dir):
         action = choice[1]
@@ -218,8 +218,8 @@ class ContextMenuHandler:
                 # Use existing file info method instead of non-existent show_folder_settings
                 self.main.show_file_info()
         except Exception as e:
-            logger.error(f"Error handling general context menu: {e}")
-            self.dialogs.show_message(f"Action error: {e}", type="error")
+            logger.error((("Error handling general context menu: " + "{e}").format(e=(e))))
+            self.dialogs.show_message((("Action error: " + "{e}").format(e=(e))), type="error")
     
     def show_item_context_menu(self):
         """Show context menu for selected item"""
@@ -275,12 +275,12 @@ class ContextMenuHandler:
             self.main.session.openWithCallback(
                 lambda choice: self.smart_callback(choice, self.handle_item_context_menu, item_path, is_dir, item_name),
                 ChoiceBox,
-                title=f" {item_name}",
+                title=((" " + "{item_name}").format(item_name=(item_name))),
                 list=menu_items
             )
         except Exception as e:
-            logger.error(f"Error showing item context menu: {e}")
-            self.main.session.open(MessageBox, f"Error: {e}", MessageBox.TYPE_ERROR)
+            logger.error((("Error showing item context menu: " + "{e}").format(e=(e))))
+            self.main.session.open(MessageBox, (("Error: " + "{e}").format(e=(e))), MessageBox.TYPE_ERROR)
     
     def handle_item_context_menu(self, choice, item_path, is_dir, item_name):
         """Handle item context menu selection"""
@@ -324,8 +324,8 @@ class ContextMenuHandler:
                 files = [x[0][0] for x in self.main.active_pane.list if x[0][3]]
                 self.main.dialogs.show_archive_dialog(files, self.main.archive_mgr, self.main.active_pane.getCurrentDirectory())
         except Exception as e:
-            logger.error(f"Error handling item context menu: {e}")
-            self.dialogs.show_message(f"Action error: {e}", type="error")
+            logger.error((("Error handling item context menu: " + "{e}").format(e=(e))))
+            self.dialogs.show_message((("Action error: " + "{e}").format(e=(e))), type="error")
     
     def show_multi_selection_context_menu(self, marked_items):
         """Show context menu for multiple selected items"""
@@ -345,12 +345,12 @@ class ContextMenuHandler:
             self.main.session.openWithCallback(
                 lambda choice: self.smart_callback(choice, self.handle_multi_selection_menu, marked_items),
                 ChoiceBox,
-                title=f" {len(marked_items)} Selected Items",
+                title=((" " + "{_a0}" + " Selected Items").format(_a0=(len(marked_items)))),
                 list=menu_items
             )
         except Exception as e:
-            logger.error(f"Error showing multi-selection context menu: {e}")
-            self.main.session.open(MessageBox, f"Error: {e}", MessageBox.TYPE_ERROR)
+            logger.error((("Error showing multi-selection context menu: " + "{e}").format(e=(e))))
+            self.main.session.open(MessageBox, (("Error: " + "{e}").format(e=(e))), MessageBox.TYPE_ERROR)
     
     def handle_multi_selection_menu(self, choice, marked_items):
         """Handle multi-selection menu action"""
@@ -365,13 +365,13 @@ class ContextMenuHandler:
                 self.main.clipboard = file_paths
                 self.main.clipboard_mode = "copy"
                 self.main.update_ui()
-                self.main.dialogs.show_message(f"[OK] Copied {len(file_paths)} items to clipboard", 
+                self.main.dialogs.show_message((("[OK] Copied " + "{_a0}" + " items to clipboard").format(_a0=(len(file_paths)))), 
                                               type="info", timeout=2)
             elif action == "cut_multi":
                 self.main.clipboard = file_paths
                 self.main.clipboard_mode = "cut"
                 self.main.update_ui()
-                self.main.dialogs.show_message(f"[OK] Cut {len(file_paths)} items to clipboard", 
+                self.main.dialogs.show_message((("[OK] Cut " + "{_a0}" + " items to clipboard").format(_a0=(len(file_paths)))), 
                                               type="info", timeout=2)
             elif action == "delete_multi":
                 self.delete_multiple_items(file_paths)
@@ -387,8 +387,8 @@ class ContextMenuHandler:
                 dest_dir = self.main.inactive_pane.getCurrentDirectory()
                 self.main.execute_transfer("cp", file_paths, dest_dir)
         except Exception as e:
-            logger.error(f"Error handling multi-selection menu: {e}")
-            self.main.dialogs.show_message(f"Action error: {e}", type="error")
+            logger.error((("Error handling multi-selection menu: " + "{e}").format(e=(e))))
+            self.main.dialogs.show_message((("Action error: " + "{e}").format(e=(e))), type="error")
     
     def show_tools_menu(self):
         """Show tools menu"""
@@ -472,8 +472,8 @@ class ContextMenuHandler:
                 list=tools
             )
         except Exception as e:
-            logger.error(f"Error showing tools menu: {e}")
-            self.dialogs.show_message(f"Tools menu error: {e}", type="error")
+            logger.error((("Error showing tools menu: " + "{e}").format(e=(e))))
+            self.dialogs.show_message((("Tools menu error: " + "{e}").format(e=(e))), type="error")
     
     def tools_callback(self, answer):
         """Handle tools menu selection - FIXED EXIT/BACK LOGIC"""
@@ -541,7 +541,7 @@ class ContextMenuHandler:
                         from Plugins.Extensions.WGFileManager.ui.setup_screen import WGFileManagerSetup
                         self.main.session.open(WGFileManagerSetup, self.config)
                     except Exception as e:
-                        logger.error(f"Cannot import settings screen: {e}")
+                        logger.error((("Cannot import settings screen: " + "{e}").format(e=(e))))
                         self.dialogs.show_message("Settings screen unavailable", type="error")
 
             elif mode == "bookmarks":
@@ -614,10 +614,10 @@ class ContextMenuHandler:
                         spec.loader.exec_module(network_tools)
                         self.main.session.open(network_tools.NetworkToolsScreen)
                     else:
-                        self.dialogs.show_message(f"Network tools not found!\n\nExpected: {network_file}", type="error")
+                        self.dialogs.show_message((("Network tools not found!\n\nExpected: " + "{network_file}").format(network_file=(network_file))), type="error")
                 except Exception as e:
-                    logger.error(f"Network tools error: {e}")
-                    self.dialogs.show_message(f"Network tools error: {str(e)}", type="error")
+                    logger.error((("Network tools error: " + "{e}").format(e=(e))))
+                    self.dialogs.show_message((("Network tools error: " + "{_a0}").format(_a0=(str(e)))), type="error")
 
             elif mode == "cloud":
                 self.current_menu_level = 1
@@ -678,8 +678,8 @@ class ContextMenuHandler:
                 self.main.show_storage_selector()
 
         except Exception as e:
-            logger.error(f"Error in tools callback: {e}")
-            self.dialogs.show_message(f"Tools error: {e}", type="error")
+            logger.error((("Error in tools callback: " + "{e}").format(e=(e))))
+            self.dialogs.show_message((("Tools error: " + "{e}").format(e=(e))), type="error")
     
     def _return_to_tools_after_delay(self, delay_seconds):
         """Return to tools menu after a delay"""
@@ -713,8 +713,8 @@ class ContextMenuHandler:
                 list=choices
             )
         except Exception as e:
-            logger.error(f"Error showing cloud sync menu: {e}")
-            self.dialogs.show_message(f"Cloud sync menu error: {e}", type="error")
+            logger.error((("Error showing cloud sync menu: " + "{e}").format(e=(e))))
+            self.dialogs.show_message((("Cloud sync menu error: " + "{e}").format(e=(e))), type="error")
     
     def handle_cloud_menu(self, choice):
         """Handle cloud sync menu with proper back navigation - FIXED"""
@@ -746,8 +746,8 @@ class ContextMenuHandler:
                 self.dialogs.show_message("List remotes: Run 'rclone listremotes' in SSH", type="info")
                 self._return_to_submenu_after_delay(self.show_cloud_sync_menu, 3)
         except Exception as e:
-            logger.error(f"Error handling cloud menu: {e}")
-            self.dialogs.show_message(f"Cloud action error: {e}", type="error")
+            logger.error((("Error handling cloud menu: " + "{e}").format(e=(e))))
+            self.dialogs.show_message((("Cloud action error: " + "{e}").format(e=(e))), type="error")
             self._return_to_submenu_after_delay(self.show_cloud_sync_menu, 3)
     
     def _check_rclone_installed(self, show_menu_after=False):
@@ -777,8 +777,8 @@ class ContextMenuHandler:
                         lambda res: self._install_rclone(res, show_menu_after) if res else None
                     )
             except Exception as e:
-                logger.error(f"Error checking rclone: {e}")
-                self.dialogs.show_message(f"Error checking rclone: {str(e)}", type="error")
+                logger.error((("Error checking rclone: " + "{e}").format(e=(e))))
+                self.dialogs.show_message((("Error checking rclone: " + "{_a0}").format(_a0=(str(e)))), type="error")
         
         # Run in background thread
         thread = threading.Thread(target=check_and_install, daemon=True)
@@ -823,7 +823,7 @@ class ContextMenuHandler:
             except subprocess.TimeoutExpired:
                 self.dialogs.show_message("[X] rclone installation timed out (2 minutes)", type="error")
             except Exception as e:
-                self.dialogs.show_message(f"[X] Installation error: {str(e)}", type="error")
+                self.dialogs.show_message((("[X] Installation error: " + "{_a0}").format(_a0=(str(e)))), type="error")
             
             # Return to appropriate menu
             if show_menu_after:
@@ -864,8 +864,8 @@ class ContextMenuHandler:
                 list=choices
             )
         except Exception as e:
-            logger.error(f"Error showing repair menu: {e}")
-            self.dialogs.show_message(f"Repair menu error: {e}", type="error")
+            logger.error((("Error showing repair menu: " + "{e}").format(e=(e))))
+            self.dialogs.show_message((("Repair menu error: " + "{e}").format(e=(e))), type="error")
     
     def handle_repair_menu(self, choice):
         """Handle repair menu with proper back navigation - FIXED"""
@@ -916,8 +916,8 @@ class ContextMenuHandler:
                     self.main.update_ui
                 )
         except Exception as e:
-            logger.error(f"Error handling repair menu: {e}")
-            self.dialogs.show_message(f"Repair action error: {e}", type="error")
+            logger.error((("Error handling repair menu: " + "{e}").format(e=(e))))
+            self.dialogs.show_message((("Repair action error: " + "{e}").format(e=(e))), type="error")
             self._return_to_submenu_after_delay(self.show_repair_menu, 3)
     
     def analyze_dependencies(self):
@@ -946,8 +946,8 @@ class ContextMenuHandler:
                             else:
                                 missing_in_category.append(package)
                         except Exception as e:
-                            logger.error(f"Error checking package {package}: {e}")
-                            missing_in_category.append(f"{package} (check error)")
+                            logger.error((("Error checking package " + "{package}" + ": " + "{e}").format(package=(package), e=(e))))
+                            missing_in_category.append((("{package}" + " (check error)").format(package=(package))))
                     
                     if missing_in_category:
                         missing_deps[category] = missing_in_category
@@ -960,22 +960,22 @@ class ContextMenuHandler:
                 
                 # Show installed dependencies
                 total_installed = sum(len(pkgs) for pkgs in installed_deps.values())
-                message += f"[OK] INSTALLED: {total_installed} packages\n"
+                message += (("[OK] INSTALLED: " + "{total_installed}" + " packages\n").format(total_installed=(total_installed)))
                 
                 for category, packages in installed_deps.items():
                     if packages:
-                        message += f" {category.replace('_', ' ')}:\n"
+                        message += ((" " + "{_a0}" + ":\n").format(_a0=(category.replace('_', ' '))))
                         for pkg in packages[:5]:  # Show first 5
-                            message += f"  • {pkg}\n"
+                            message += (("  • " + "{pkg}" + "\n").format(pkg=(pkg)))
                         if len(packages) > 5:
-                            message += f"  ... and {len(packages) - 5} more\n"
+                            message += (("  ... and " + "{_a0}" + " more\n").format(_a0=(len(packages) - 5)))
                 
                 message += "\n" + "═" * 40 + "\n\n"
                 
                 # Show missing dependencies
                 total_missing = sum(len(pkgs) for pkgs in missing_deps.values())
                 if total_missing > 0:
-                    message += f"[X] MISSING: {total_missing} packages\n\n"
+                    message += (("[X] MISSING: " + "{total_missing}" + " packages\n\n").format(total_missing=(total_missing)))
                     
                     # Highlight critical network dependencies
                     if "NETWORK_FEATURES" in missing_deps:
@@ -983,22 +983,22 @@ class ContextMenuHandler:
                         message += "[!] CRITICAL NETWORK FEATURES MISSING:\n"
                         for pkg in network_missing:
                             if pkg == "rclone":
-                                message += f" • {pkg} - Required for Cloud Sync\n"
+                                message += ((" • " + "{pkg}" + " - Required for Cloud Sync\n").format(pkg=(pkg)))
                             elif pkg == "cifs-utils":
-                                message += f" • {pkg} - Required for SMB/CIFS mounts\n"
+                                message += ((" • " + "{pkg}" + " - Required for SMB/CIFS mounts\n").format(pkg=(pkg)))
                             elif pkg == "python3-paramiko":
-                                message += f" • {pkg} - Required for SFTP connections\n"
+                                message += ((" • " + "{pkg}" + " - Required for SFTP connections\n").format(pkg=(pkg)))
                             else:
-                                message += f"  • {pkg}\n"
+                                message += (("  • " + "{pkg}" + "\n").format(pkg=(pkg)))
                         message += "\n"
                     
                     for category, packages in missing_deps.items():
                         if category != "NETWORK_FEATURES":  # Already shown above
-                            message += f" {category.replace('_', ' ')}:\n"
+                            message += ((" " + "{_a0}" + ":\n").format(_a0=(category.replace('_', ' '))))
                             for pkg in packages[:5]:  # Show first 5
-                                message += f"  • {pkg}\n"
+                                message += (("  • " + "{pkg}" + "\n").format(pkg=(pkg)))
                             if len(packages) > 5:
-                                message += f"  ... and {len(packages) - 5} more\n"
+                                message += (("  ... and " + "{_a0}" + " more\n").format(_a0=(len(packages) - 5)))
                             message += "\n"
                     
                     message += "\n" + "═" * 40 + "\n\n"
@@ -1018,8 +1018,8 @@ class ContextMenuHandler:
                     self._return_to_submenu_after_delay(self.show_repair_menu, 3)
                 
             except Exception as e:
-                logger.error(f"Error in dependency analysis thread: {e}")
-                self.dialogs.show_message(f"Dependency analysis failed:\n{str(e)}", type="error")
+                logger.error((("Error in dependency analysis thread: " + "{e}").format(e=(e))))
+                self.dialogs.show_message((("Dependency analysis failed:\n" + "{_a0}").format(_a0=(str(e)))), type="error")
                 self._return_to_submenu_after_delay(self.show_repair_menu, 3)
         
         # Start analysis in background thread
@@ -1093,9 +1093,7 @@ class ContextMenuHandler:
                 # Show installation progress
                 total = len(packages_to_install)
                 self.dialogs.show_message(
-                    f" Installing {total} dependencies...\n\n"
-                    f"This may take several minutes.\n"
-                    f"Please wait...",
+                    ((" Installing " + "{total}" + " dependencies...\n\nThis may take several minutes.\nPlease wait...").format(total=(total))),
                     type="info", timeout=3
                 )
                 
@@ -1108,12 +1106,12 @@ class ContextMenuHandler:
                         # Check again if already installed (in case of parallel operations)
                         if self._is_package_installed(package):
                             skipped.append(package)
-                            logger.info(f"Package already installed: {package}")
+                            logger.info((("Package already installed: " + "{package}").format(package=(package))))
                             continue
                         
                         # Show progress
-                        progress_msg = f"Installing: {package}\n\n"
-                        progress_msg += f"Progress: {i}/{total}\n"
+                        progress_msg = (("Installing: " + "{package}" + "\n\n").format(package=(package)))
+                        progress_msg += (("Progress: " + "{i}" + "/" + "{total}" + "\n").format(i=(i), total=(total)))
                         
                         # Determine installation command
                         if package.startswith("python3-"):
@@ -1126,7 +1124,7 @@ class ContextMenuHandler:
                             install_cmd = ["opkg", "install", package]
                             timeout = 120  # Longer timeout for system packages
                         
-                        logger.info(f"Installing {package} with command: {' '.join(install_cmd)}")
+                        logger.info((("Installing " + "{package}" + " with command: " + "{_a0}").format(package=(package), _a0=(' '.join(install_cmd)))))
                         
                         result = subprocess.run(
                             install_cmd,
@@ -1137,45 +1135,45 @@ class ContextMenuHandler:
                         
                         if result.returncode == 0:
                             installed.append(package)
-                            logger.info(f"[OK] Successfully installed: {package}")
+                            logger.info((("[OK] Successfully installed: " + "{package}").format(package=(package))))
                         else:
                             error_msg = result.stderr[:200] if result.stderr else result.stdout[:200] if result.stdout else "Unknown error"
-                            failed.append(f"{package}: {error_msg}")
-                            logger.error(f"[X] Failed to install {package}: {error_msg}")
+                            failed.append((("{package}" + ": " + "{error_msg}").format(package=(package), error_msg=(error_msg))))
+                            logger.error((("[X] Failed to install " + "{package}" + ": " + "{error_msg}").format(package=(package), error_msg=(error_msg))))
                             
                     except subprocess.TimeoutExpired:
-                        failed.append(f"{package}: Installation timeout")
-                        logger.error(f"[X] Timeout installing {package}")
+                        failed.append((("{package}" + ": Installation timeout").format(package=(package))))
+                        logger.error((("[X] Timeout installing " + "{package}").format(package=(package))))
                     except Exception as e:
-                        failed.append(f"{package}: {str(e)[:100]}")
-                        logger.error(f"[X] Error installing {package}: {e}")
+                        failed.append((("{package}" + ": " + "{_a0}").format(package=(package), _a0=(str(e)[:100]))))
+                        logger.error((("[X] Error installing " + "{package}" + ": " + "{e}").format(package=(package), e=(e))))
                 
                 # Show final results
                 message = " DEPENDENCY INSTALLATION RESULTS\n\n"
                 message += "═" * 40 + "\n\n"
                 
                 if installed:
-                    message += f"[OK] SUCCESSFULLY INSTALLED ({len(installed)}):\n"
+                    message += (("[OK] SUCCESSFULLY INSTALLED (" + "{_a0}" + "):\n").format(_a0=(len(installed))))
                     for pkg in installed[:10]:  # Show first 10
-                        message += f"  • {pkg}\n"
+                        message += (("  • " + "{pkg}" + "\n").format(pkg=(pkg)))
                     if len(installed) > 10:
-                        message += f"  ... and {len(installed) - 10} more\n"
+                        message += (("  ... and " + "{_a0}" + " more\n").format(_a0=(len(installed) - 10)))
                     message += "\n"
                 
                 if skipped:
-                    message += f" ALREADY INSTALLED ({len(skipped)}):\n"
+                    message += ((" ALREADY INSTALLED (" + "{_a0}" + "):\n").format(_a0=(len(skipped))))
                     for pkg in skipped[:5]:
-                        message += f"  • {pkg}\n"
+                        message += (("  • " + "{pkg}" + "\n").format(pkg=(pkg)))
                     if len(skipped) > 5:
-                        message += f"  ... and {len(skipped) - 5} more\n"
+                        message += (("  ... and " + "{_a0}" + " more\n").format(_a0=(len(skipped) - 5)))
                     message += "\n"
                 
                 if failed:
-                    message += f"[X] FAILED ({len(failed)}):\n"
+                    message += (("[X] FAILED (" + "{_a0}" + "):\n").format(_a0=(len(failed))))
                     for fail in failed[:5]:  # Show first 5 failures
-                        message += f"  • {fail}\n"
+                        message += (("  • " + "{fail}" + "\n").format(fail=(fail)))
                     if len(failed) > 5:
-                        message += f"  ... and {len(failed) - 5} more\n"
+                        message += (("  ... and " + "{_a0}" + " more\n").format(_a0=(len(failed) - 5)))
                     message += "\n"
                 
                 # Add network-specific notes
@@ -1199,8 +1197,8 @@ class ContextMenuHandler:
                 self._return_to_submenu_after_delay(self.show_repair_menu, 5)
                 
             except Exception as e:
-                logger.error(f"Error in dependency installation thread: {e}")
-                self.dialogs.show_message(f"Installation failed:\n{str(e)}", type="error")
+                logger.error((("Error in dependency installation thread: " + "{e}").format(e=(e))))
+                self.dialogs.show_message((("Installation failed:\n" + "{_a0}").format(_a0=(str(e)))), type="error")
                 self._return_to_submenu_after_delay(self.show_repair_menu, 3)
         
         # Start installation in background thread
@@ -1226,18 +1224,18 @@ class ContextMenuHandler:
                 text=current_name  # Force folder name
         )
         except Exception as e:
-            logger.error(f"Error renaming folder: {e}")
-            self.dialogs.show_message(f"Rename error: {e}", type="error")
+            logger.error((("Error renaming folder: " + "{e}").format(e=(e))))
+            self.dialogs.show_message((("Rename error: " + "{e}").format(e=(e))), type="error")
     
     def execute_rename_folder(self, old_path, new_name):
         """Execute folder rename"""
         try:
             new_path = self.file_ops.rename(old_path, new_name)
             self._force_refresh_pane()
-            self.main.dialogs.show_message(f"[OK] Folder renamed to: {new_name}", type="info")
+            self.main.dialogs.show_message((("[OK] Folder renamed to: " + "{new_name}").format(new_name=(new_name))), type="info")
         except Exception as e:
-            logger.error(f"Error executing folder rename: {e}")
-            self.main.dialogs.show_message(f"Rename failed:\n{e}", type="error")
+            logger.error((("Error executing folder rename: " + "{e}").format(e=(e))))
+            self.main.dialogs.show_message((("Rename failed:\n" + "{e}").format(e=(e))), type="error")
     
     def rename_item(self, item_path):
         """Rename selected item - CRITICAL FIX: Force filename load"""
@@ -1258,18 +1256,18 @@ class ContextMenuHandler:
                 text=current_name  # Force filename
             )
         except Exception as e:
-            logger.error(f"Error renaming item: {e}")
-            self.dialogs.show_message(f"Rename error: {e}", type="error")
+            logger.error((("Error renaming item: " + "{e}").format(e=(e))))
+            self.dialogs.show_message((("Rename error: " + "{e}").format(e=(e))), type="error")
     
     def execute_rename_item(self, old_path, new_name):
         """Execute item rename"""
         try:
             new_path = self.file_ops.rename(old_path, new_name)
             self._force_refresh_pane()
-            self.main.dialogs.show_message(f"[OK] Renamed to: {new_name}", type="info")
+            self.main.dialogs.show_message((("[OK] Renamed to: " + "{new_name}").format(new_name=(new_name))), type="info")
         except Exception as e:
-            logger.error(f"Error executing item rename: {e}")
-            self.main.dialogs.show_message(f"Rename failed:\n{e}", type="error")
+            logger.error((("Error executing item rename: " + "{e}").format(e=(e))))
+            self.main.dialogs.show_message((("Rename failed:\n" + "{e}").format(e=(e))), type="error")
     
     def delete_item(self, item_path, is_dir, item_name):
         """Delete selected item"""
@@ -1277,12 +1275,12 @@ class ContextMenuHandler:
             item_type = "folder" if is_dir else "file"
             
             self.main.dialogs.show_confirmation(
-                f"Delete {item_type} '{item_name}'?\n\nThis cannot be undone!",
+                (("Delete " + "{item_type}" + " '" + "{item_name}" + "'?\n\nThis cannot be undone!").format(item_type=(item_type), item_name=(item_name))),
                 lambda res: self.execute_delete_item(res, item_path, item_name, item_type)
             )
         except Exception as e:
-            logger.error(f"Error deleting item: {e}")
-            self.dialogs.show_message(f"Delete error: {e}", type="error")
+            logger.error((("Error deleting item: " + "{e}").format(e=(e))))
+            self.dialogs.show_message((("Delete error: " + "{e}").format(e=(e))), type="error")
     
     def execute_delete_item(self, confirmed, item_path, item_name, item_type):
         """Execute item deletion"""
@@ -1294,14 +1292,14 @@ class ContextMenuHandler:
             self._force_refresh_pane()
             
             if self.config.plugins.wgfilemanager.trash_enabled.value == "yes":
-                msg = f"[OK] Moved to trash: {item_name}"
+                msg = (("[OK] Moved to trash: " + "{item_name}").format(item_name=(item_name)))
             else:
-                msg = f"[OK] Permanently deleted: {item_name}"
+                msg = (("[OK] Permanently deleted: " + "{item_name}").format(item_name=(item_name)))
             
             self.main.dialogs.show_message(msg, type="info")
         except Exception as e:
-            logger.error(f"Error executing item deletion: {e}")
-            self.main.dialogs.show_message(f"Delete failed:\n{e}", type="error")
+            logger.error((("Error executing item deletion: " + "{e}").format(e=(e))))
+            self.main.dialogs.show_message((("Delete failed:\n" + "{e}").format(e=(e))), type="error")
     
     def delete_multiple_items(self, file_paths):
         """Delete multiple selected items"""
@@ -1309,12 +1307,12 @@ class ContextMenuHandler:
             item_type = "items"
             
             self.main.dialogs.show_confirmation(
-                f"Delete {len(file_paths)} {item_type}?\n\nThis cannot be undone!",
+                (("Delete " + "{_a0}" + " " + "{item_type}" + "?\n\nThis cannot be undone!").format(_a0=(len(file_paths)), item_type=(item_type))),
                 lambda res: self.execute_delete_multiple(res, file_paths) if res else None
             )
         except Exception as e:
-            logger.error(f"Error deleting multiple items: {e}")
-            self.dialogs.show_message(f"Delete error: {e}", type="error")
+            logger.error((("Error deleting multiple items: " + "{e}").format(e=(e))))
+            self.dialogs.show_message((("Delete error: " + "{e}").format(e=(e))), type="error")
     
     def execute_delete_multiple(self, confirmed, file_paths):
         """Execute deletion of multiple items"""
@@ -1330,20 +1328,20 @@ class ContextMenuHandler:
                     self.file_ops.delete(item_path)
                     success += 1
                 except Exception as e:
-                    errors.append(f"{os.path.basename(item_path)}: {str(e)[:30]}")
+                    errors.append((("{_a0}" + ": " + "{_a1}").format(_a0=(os.path.basename(item_path)), _a1=(str(e)[:30]))))
             
-            msg = f"[OK] Deleted: {success} items\n"
+            msg = (("[OK] Deleted: " + "{success}" + " items\n").format(success=(success)))
             if errors:
-                msg += f"\n[X] Failed: {len(errors)}\n"
+                msg += (("\n[X] Failed: " + "{_a0}" + "\n").format(_a0=(len(errors))))
                 msg += "\n".join(errors[:3])
                 if len(errors) > 3:
-                    msg += f"\n... and {len(errors) - 3} more"
+                    msg += (("\n... and " + "{_a0}" + " more").format(_a0=(len(errors) - 3)))
             
             self._force_refresh_pane()
             self.main.dialogs.show_message(msg, type="info")
         except Exception as e:
-            logger.error(f"Error executing multiple deletion: {e}")
-            self.main.dialogs.show_message(f"Delete multiple failed:\n{e}", type="error")
+            logger.error((("Error executing multiple deletion: " + "{e}").format(e=(e))))
+            self.main.dialogs.show_message((("Delete multiple failed:\n" + "{e}").format(e=(e))), type="error")
     
     def copy_item(self, item_path):
         """Copy item to clipboard"""
@@ -1351,11 +1349,11 @@ class ContextMenuHandler:
             self.main.clipboard = [item_path]
             self.main.clipboard_mode = "copy"
             self.main.update_ui()
-            self.main.dialogs.show_message(f"[OK] Copied to clipboard: {os.path.basename(item_path)}", 
+            self.main.dialogs.show_message((("[OK] Copied to clipboard: " + "{_a0}").format(_a0=(os.path.basename(item_path)))), 
                                           type="info", timeout=2)
         except Exception as e:
-            logger.error(f"Error copying item: {e}")
-            self.dialogs.show_message(f"Copy error: {e}", type="error")
+            logger.error((("Error copying item: " + "{e}").format(e=(e))))
+            self.dialogs.show_message((("Copy error: " + "{e}").format(e=(e))), type="error")
     
     def cut_item(self, item_path):
         """Cut item to clipboard"""
@@ -1363,11 +1361,11 @@ class ContextMenuHandler:
             self.main.clipboard = [item_path]
             self.main.clipboard_mode = "cut"
             self.main.update_ui()
-            self.main.dialogs.show_message(f"[OK] Cut to clipboard: {os.path.basename(item_path)}", 
+            self.main.dialogs.show_message((("[OK] Cut to clipboard: " + "{_a0}").format(_a0=(os.path.basename(item_path)))), 
                                           type="info", timeout=2)
         except Exception as e:
-            logger.error(f"Error cutting item: {e}")
-            self.dialogs.show_message(f"Cut error: {e}", type="error")
+            logger.error((("Error cutting item: " + "{e}").format(e=(e))))
+            self.dialogs.show_message((("Cut error: " + "{e}").format(e=(e))), type="error")
     
     def copy_to_other_pane(self, item_path):
         """Copy item to other pane"""
@@ -1375,12 +1373,12 @@ class ContextMenuHandler:
             dest_dir = self.main.inactive_pane.getCurrentDirectory()
             
             self.main.dialogs.show_confirmation(
-                f"Copy to:\n{dest_dir}?",
+                (("Copy to:\n" + "{dest_dir}" + "?").format(dest_dir=(dest_dir))),
                 lambda res: self.main.execute_transfer("cp", [item_path], dest_dir) if res else None
             )
         except Exception as e:
-            logger.error(f"Error copying to other pane: {e}")
-            self.dialogs.show_message(f"Copy error: {e}", type="error")
+            logger.error((("Error copying to other pane: " + "{e}").format(e=(e))))
+            self.dialogs.show_message((("Copy error: " + "{e}").format(e=(e))), type="error")
     
     def move_to_other_pane(self, item_path):
         """Move item to other pane"""
@@ -1388,12 +1386,12 @@ class ContextMenuHandler:
             dest_dir = self.main.inactive_pane.getCurrentDirectory()
             
             self.main.dialogs.show_confirmation(
-                f"Move to:\n{dest_dir}?",
+                (("Move to:\n" + "{dest_dir}" + "?").format(dest_dir=(dest_dir))),
                 lambda res: self.main.execute_transfer("mv", [item_path], dest_dir) if res else None
             )
         except Exception as e:
-            logger.error(f"Error moving to other pane: {e}")
-            self.dialogs.show_message(f"Move error: {e}", type="error")
+            logger.error((("Error moving to other pane: " + "{e}").format(e=(e))))
+            self.dialogs.show_message((("Move error: " + "{e}").format(e=(e))), type="error")
     
     def edit_text_file(self, file_path):
         """Edit text file"""
@@ -1401,7 +1399,7 @@ class ContextMenuHandler:
             with open(file_path, 'r', encoding='utf-8', errors='ignore') as f:
                 content = f.read(5000)
             
-            preview = f" Edit: {os.path.basename(file_path)}\n\n"
+            preview = ((" Edit: " + "{_a0}" + "\n\n").format(_a0=(os.path.basename(file_path))))
             preview += content[:2000]
             if len(content) > 2000:
                 preview += "\n\n... (file truncated)"
@@ -1410,8 +1408,8 @@ class ContextMenuHandler:
             
             self.main.dialogs.show_message(preview, type="info")
         except Exception as e:
-            logger.error(f"Error editing text file: {e}")
-            self.main.dialogs.show_message(f"Cannot edit file:\n{e}", type="error")
+            logger.error((("Error editing text file: " + "{e}").format(e=(e))))
+            self.main.dialogs.show_message((("Cannot edit file:\n" + "{e}").format(e=(e))), type="error")
     
     def create_shortcut(self, item_path):
         """Create shortcut to item"""
@@ -1422,8 +1420,8 @@ class ContextMenuHandler:
                 type="info"
             )
         except Exception as e:
-            logger.error(f"Error creating shortcut: {e}")
-            self.dialogs.show_message(f"Shortcut error: {e}", type="error")
+            logger.error((("Error creating shortcut: " + "{e}").format(e=(e))))
+            self.dialogs.show_message((("Shortcut error: " + "{e}").format(e=(e))), type="error")
     
     def show_smart_context_menu(self, file_path):
         """Show smart context menu based on file type"""
@@ -1453,8 +1451,8 @@ class ContextMenuHandler:
                 # Fallback to regular item context menu
                 self.show_item_context_menu()
         except Exception as e:
-            logger.error(f"Error showing smart context menu: {e}")
-            self.dialogs.show_message(f"Smart menu error: {e}", type="error")
+            logger.error((("Error showing smart context menu: " + "{e}").format(e=(e))))
+            self.dialogs.show_message((("Smart menu error: " + "{e}").format(e=(e))), type="error")
     
     def _show_script_menu(self, file_path, filename):
         """Context menu for shell scripts"""
@@ -1477,8 +1475,8 @@ class ContextMenuHandler:
                 list=menu_items
             )
         except Exception as e:
-            logger.error(f"Error showing script menu: {e}")
-            self.dialogs.show_message(f"Script menu error: {e}", type="error")
+            logger.error((("Error showing script menu: " + "{e}").format(e=(e))))
+            self.dialogs.show_message((("Script menu error: " + "{e}").format(e=(e))), type="error")
     
     def _handle_script_action(self, choice, file_path, filename):
         """Handle script menu action"""
@@ -1514,8 +1512,8 @@ class ContextMenuHandler:
                 except Exception as e:
                     self.main.dialogs.show_message("Failed to make executable: " + str(e), type="error")
         except Exception as e:
-            logger.error(f"Error handling script action: {e}")
-            self.dialogs.show_message(f"Script action error: {e}", type="error")
+            logger.error((("Error handling script action: " + "{e}").format(e=(e))))
+            self.dialogs.show_message((("Script action error: " + "{e}").format(e=(e))), type="error")
     
     def _execute_script(self, file_path, param, background):
         """Execute shell script - FIXED with better error handling"""
@@ -1538,16 +1536,16 @@ class ContextMenuHandler:
                         
                         # Store PID for potential management
                         script_pid = result.pid
-                        logger.info(f"Script started in background with PID: {script_pid}")
+                        logger.info((("Script started in background with PID: " + "{script_pid}").format(script_pid=(script_pid))))
                         
                         self.main.dialogs.show_message(
-                            f"Script started in background\n\nPID: {script_pid}",
+                            (("Script started in background\n\nPID: " + "{script_pid}").format(script_pid=(script_pid))),
                             type="info", timeout=3
                         )
                     except Exception as e:
-                        logger.error(f"Background script execution error: {e}")
+                        logger.error((("Background script execution error: " + "{e}").format(e=(e))))
                         self.main.dialogs.show_message(
-                            f"Failed to start script in background: {str(e)}",
+                            (("Failed to start script in background: " + "{_a0}").format(_a0=(str(e)))),
                             type="error"
                         )
                 else:
@@ -1579,7 +1577,7 @@ class ContextMenuHandler:
                                 display_output += "\n\n... (output truncated)"
                             
                             self.main.dialogs.show_message(
-                                f"Script Output (Exit code: {exit_code}):\n\n{display_output}",
+                                (("Script Output (Exit code: " + "{exit_code}" + "):\n\n" + "{display_output}").format(exit_code=(exit_code), display_output=(display_output))),
                                 type="info" if exit_code == 0 else "error"
                             )
                         else:
@@ -1589,26 +1587,26 @@ class ContextMenuHandler:
                             )
                             
                     except subprocess.TimeoutExpired:
-                        logger.warning(f"Script execution timed out: {file_path}")
+                        logger.warning((("Script execution timed out: " + "{file_path}").format(file_path=(file_path))))
                         self.main.dialogs.show_message(
                             "Script execution timed out (120 seconds)\n\nThe script may still be running in background.",
                             type="error"
                         )
                     except Exception as e:
-                        logger.error(f"Foreground script execution error: {e}")
-                        self.main.dialogs.show_message(f"Script error: {str(e)}", type="error")
+                        logger.error((("Foreground script execution error: " + "{e}").format(e=(e))))
+                        self.main.dialogs.show_message((("Script error: " + "{_a0}").format(_a0=(str(e)))), type="error")
                         
             except Exception as e:
-                logger.error(f"Script execution error: {e}")
-                self.main.dialogs.show_message(f"Script setup error: {str(e)}", type="error")
+                logger.error((("Script execution error: " + "{e}").format(e=(e))))
+                self.main.dialogs.show_message((("Script setup error: " + "{_a0}").format(_a0=(str(e)))), type="error")
         
         # Start script execution in separate thread
         try:
             script_thread = threading.Thread(target=run_script, daemon=True)
             script_thread.start()
         except Exception as e:
-            logger.error(f"Failed to start script thread: {e}")
-            self.main.dialogs.show_message(f"Failed to start script thread: {str(e)}", type="error")
+            logger.error((("Failed to start script thread: " + "{e}").format(e=(e))))
+            self.main.dialogs.show_message((("Failed to start script thread: " + "{_a0}").format(_a0=(str(e)))), type="error")
     
     def _show_archive_menu(self, file_path, filename):
         """Context menu for archive files"""
@@ -1627,8 +1625,8 @@ class ContextMenuHandler:
                 list=menu_items
             )
         except Exception as e:
-            logger.error(f"Error showing archive menu: {e}")
-            self.dialogs.show_message(f"Archive menu error: {e}", type="error")
+            logger.error((("Error showing archive menu: " + "{e}").format(e=(e))))
+            self.dialogs.show_message((("Archive menu error: " + "{e}").format(e=(e))), type="error")
     
     def _handle_archive_action(self, choice, file_path, filename):
         """Handle archive menu action"""
@@ -1659,8 +1657,8 @@ class ContextMenuHandler:
                     self.main.update_ui
                 )
         except Exception as e:
-            logger.error(f"Error handling archive action: {e}")
-            self.dialogs.show_message(f"Archive action error: {e}", type="error")
+            logger.error((("Error handling archive action: " + "{e}").format(e=(e))))
+            self.dialogs.show_message((("Archive action error: " + "{e}").format(e=(e))), type="error")
     
     def _show_package_menu(self, file_path, filename):
         """Context menu for IPK packages"""
@@ -1680,8 +1678,8 @@ class ContextMenuHandler:
                 list=menu_items
             )
         except Exception as e:
-            logger.error(f"Error showing package menu: {e}")
-            self.dialogs.show_message(f"Package menu error: {e}", type="error")
+            logger.error((("Error showing package menu: " + "{e}").format(e=(e))))
+            self.dialogs.show_message((("Package menu error: " + "{e}").format(e=(e))), type="error")
     
     def _handle_package_action(self, choice, file_path, filename):
         """Handle package menu action"""
@@ -1722,8 +1720,8 @@ class ContextMenuHandler:
                     lambda res: self._install_package(res, file_path) if res else None
                 )
         except Exception as e:
-            logger.error(f"Error handling package action: {e}")
-            self.dialogs.show_message(f"Package action error: {e}", type="error")
+            logger.error((("Error handling package action: " + "{e}").format(e=(e))))
+            self.dialogs.show_message((("Package action error: " + "{e}").format(e=(e))), type="error")
     
     def _install_package(self, confirmed, file_path):
         """Install IPK package - IMPROVED WITH BETTER TIMEOUT HANDLING"""
@@ -1736,7 +1734,7 @@ class ContextMenuHandler:
         def install():
             try:
                 # Use absolute path for opkg with increased timeout (180 seconds)
-                logger.info(f"Installing package: {file_path}")
+                logger.info((("Installing package: " + "{file_path}").format(file_path=(file_path))))
                 
                 result = subprocess.run(
                     ["opkg", "install", file_path],
@@ -1751,7 +1749,7 @@ class ContextMenuHandler:
                     success_msg = "Package installed successfully!"
                     if result.stdout:
                         success_msg += "\n\n" + result.stdout[:500]
-                    logger.info(f"Package installation successful: {file_path}")
+                    logger.info((("Package installation successful: " + "{file_path}").format(file_path=(file_path))))
                     self.main.dialogs.show_message(success_msg, type="info")
                 else:
                     error_msg = "Installation failed!"
@@ -1759,11 +1757,11 @@ class ContextMenuHandler:
                         error_msg += "\n\n" + result.stderr[:500]
                     elif result.stdout:
                         error_msg += "\n\n" + result.stdout[:500]
-                    logger.error(f"Package installation failed: {file_path} - {error_msg}")
+                    logger.error((("Package installation failed: " + "{file_path}" + " - " + "{error_msg}").format(file_path=(file_path), error_msg=(error_msg))))
                     self.main.dialogs.show_message(error_msg, type="error")
                     
             except subprocess.TimeoutExpired:
-                logger.error(f"Package installation timeout: {file_path}")
+                logger.error((("Package installation timeout: " + "{file_path}").format(file_path=(file_path))))
                 self.main.dialogs.show_message(
                     "Installation timed out (180 seconds)\n\nThe package might still be installing.",
                     type="error"
@@ -1775,12 +1773,12 @@ class ContextMenuHandler:
                     type="error"
                 )
             except Exception as e:
-                logger.error(f"Installation error: {e}")
-                self.main.dialogs.show_message(f"Installation error: {str(e)}", type="error")
+                logger.error((("Installation error: " + "{e}").format(e=(e))))
+                self.main.dialogs.show_message((("Installation error: " + "{_a0}").format(_a0=(str(e)))), type="error")
         
         # Show progress message
         self.main.dialogs.show_message(
-            f"Installing package: {os.path.basename(file_path)}\n\nThis may take several minutes...",
+            (("Installing package: " + "{_a0}" + "\n\nThis may take several minutes...").format(_a0=(os.path.basename(file_path)))),
             type="info",
             timeout=3
         )
@@ -1808,8 +1806,8 @@ class ContextMenuHandler:
                 list=menu_items
             )
         except Exception as e:
-            logger.error(f"Error showing media menu: {e}")
-            self.dialogs.show_message(f"Media menu error: {e}", type="error")
+            logger.error((("Error showing media menu: " + "{e}").format(e=(e))))
+            self.dialogs.show_message((("Media menu error: " + "{e}").format(e=(e))), type="error")
     
     def _show_audio_menu(self, file_path, filename):
         """Context menu for audio files - IMPROVED"""
@@ -1831,9 +1829,9 @@ class ContextMenuHandler:
                             if any(item.lower().endswith(ext) for ext in audio_extensions):
                                 audio_files.append(item_path)
                     
-                    logger.info(f"Found {len(audio_files)} audio files in {directory}")
+                    logger.info((("Found " + "{_a0}" + " audio files in " + "{directory}").format(_a0=(len(audio_files)), directory=(directory))))
             except Exception as e:
-                logger.error(f"Error scanning directory for audio files: {e}")
+                logger.error((("Error scanning directory for audio files: " + "{e}").format(e=(e))))
             
             # Build menu items
             menu_items = [
@@ -1857,12 +1855,12 @@ class ContextMenuHandler:
             self.main.session.openWithCallback(
                 lambda choice: self._handle_audio_action(choice, file_path, filename, audio_files) if choice and choice[1] else None,
                 ChoiceBox,
-                title=f" Audio: {filename}",
+                title=((" Audio: " + "{filename}").format(filename=(filename))),
                 list=menu_items
             )
         except Exception as e:
-            logger.error(f"Error showing audio menu: {e}")
-            self.dialogs.show_message(f"Audio menu error: {e}", type="error")
+            logger.error((("Error showing audio menu: " + "{e}").format(e=(e))))
+            self.dialogs.show_message((("Audio menu error: " + "{e}").format(e=(e))), type="error")
     
     def _handle_audio_action(self, choice, file_path, filename, audio_files):
         """Handle audio menu action - ENHANCED with playlist player"""
@@ -1885,7 +1883,7 @@ class ContextMenuHandler:
                         self.main     # Pass main screen reference
                     )
                 except ImportError as e:
-                    logger.error(f"Cannot import AudioPlaylistPlayer: {e}")
+                    logger.error((("Cannot import AudioPlaylistPlayer: " + "{e}").format(e=(e))))
                     # Fallback to old method
                     self.main.preview_media()
 
@@ -1910,7 +1908,7 @@ class ContextMenuHandler:
                             self.main      # Pass main screen reference
                         )
                     except ImportError as e:
-                        logger.error(f"Cannot import AudioPlaylistPlayer: {e}")
+                        logger.error((("Cannot import AudioPlaylistPlayer: " + "{e}").format(e=(e))))
                         self.dialogs.show_message(
                             "Audio player not available!\n\nPlease ensure audio_player.py is installed.",
                             type="error"
@@ -1928,8 +1926,8 @@ class ContextMenuHandler:
                 self.move_to_other_pane(file_path)
                 
         except Exception as e:
-            logger.error(f"Error handling audio action: {e}")
-            self.dialogs.show_message(f"Audio action error: {e}", type="error")
+            logger.error((("Error handling audio action: " + "{e}").format(e=(e))))
+            self.dialogs.show_message((("Audio action error: " + "{e}").format(e=(e))), type="error")
     
     
     def _handle_media_action(self, choice, file_path, filename):
@@ -1949,8 +1947,8 @@ class ContextMenuHandler:
             elif action == "move_other":
                 self.move_to_other_pane(file_path)
         except Exception as e:
-            logger.error(f"Error handling media action: {e}")
-            self.dialogs.show_message(f"Media action error: {e}", type="error")
+            logger.error((("Error handling media action: " + "{e}").format(e=(e))))
+            self.dialogs.show_message((("Media action error: " + "{e}").format(e=(e))), type="error")
     
     def _show_image_menu(self, file_path, filename):
         """Context menu for image files"""
@@ -1970,8 +1968,8 @@ class ContextMenuHandler:
                 list=menu_items
             )
         except Exception as e:
-            logger.error(f"Error showing image menu: {e}")
-            self.dialogs.show_message(f"Image menu error: {e}", type="error")
+            logger.error((("Error showing image menu: " + "{e}").format(e=(e))))
+            self.dialogs.show_message((("Image menu error: " + "{e}").format(e=(e))), type="error")
     
     def _handle_image_action(self, choice, file_path, filename):
         """Handle image menu action"""
@@ -1988,8 +1986,8 @@ class ContextMenuHandler:
             elif action == "copy_other":
                 self.copy_to_other_pane(file_path)
         except Exception as e:
-            logger.error(f"Error handling image action: {e}")
-            self.dialogs.show_message(f"Image action error: {e}", type="error")
+            logger.error((("Error handling image action: " + "{e}").format(e=(e))))
+            self.dialogs.show_message((("Image action error: " + "{e}").format(e=(e))), type="error")
     
     def _show_text_menu(self, file_path, filename):
         """Context menu for text files"""
@@ -2009,8 +2007,8 @@ class ContextMenuHandler:
                 list=menu_items
             )
         except Exception as e:
-            logger.error(f"Error showing text menu: {e}")
-            self.dialogs.show_message(f"Text menu error: {e}", type="error")
+            logger.error((("Error showing text menu: " + "{e}").format(e=(e))))
+            self.dialogs.show_message((("Text menu error: " + "{e}").format(e=(e))), type="error")
     
     def _handle_text_action(self, choice, file_path, filename):
         """Handle text menu action"""
@@ -2027,8 +2025,8 @@ class ContextMenuHandler:
             elif action == "copy_other":
                 self.copy_to_other_pane(file_path)
         except Exception as e:
-            logger.error(f"Error handling text action: {e}")
-            self.dialogs.show_message(f"Text action error: {e}", type="error")
+            logger.error((("Error handling text action: " + "{e}").format(e=(e))))
+            self.dialogs.show_message((("Text action error: " + "{e}").format(e=(e))), type="error")
     
     def _force_refresh_pane(self):
         """Force refresh the active pane - NEW METHOD ADDED"""
@@ -2055,7 +2053,7 @@ class ContextMenuHandler:
                     pass
                     
         except Exception as e:
-            logger.error(f"Error forcing refresh: {e}")
+            logger.error((("Error forcing refresh: " + "{e}").format(e=(e))))
 
     def add_subtitle_options(self, menu_items, file_path):
         """Add subtitle options to context menu for video files"""
@@ -2074,7 +2072,7 @@ class ContextMenuHandler:
                     (" Sync Subtitles", lambda: self._sync_subtitles(file_path)),
                 ])
         except Exception as e:
-            logger.error(f"Error adding subtitle options: {e}")
+            logger.error((("Error adding subtitle options: " + "{e}").format(e=(e))))
     
     def _play_video(self, file_path, with_subtitles=True):
         """Play video with subtitle option"""
@@ -2089,8 +2087,8 @@ class ContextMenuHandler:
             
             self.parent.play_media_file(file_path)
         except Exception as e:
-            logger.error(f"Error playing video: {e}")
-            self.parent.dialogs.show_message(f"Playback error: {e}", type="error")
+            logger.error((("Error playing video: " + "{e}").format(e=(e))))
+            self.parent.dialogs.show_message((("Playback error: " + "{e}").format(e=(e))), type="error")
     
     def _open_subtitle_settings(self, file_path):
         """Open subtitle settings for video"""
@@ -2103,14 +2101,14 @@ class ContextMenuHandler:
                     type="warning"
                 )
         except Exception as e:
-            logger.error(f"Error opening subtitle settings: {e}")
+            logger.error((("Error opening subtitle settings: " + "{e}").format(e=(e))))
     
     def _download_subtitles(self, file_path):
         """Download subtitles for video"""
         try:
             self.parent.dialogs.show_subtitle_download_dialog(file_path, self._handle_download_choice)
         except Exception as e:
-            logger.error(f"Error downloading subtitles: {e}")
+            logger.error((("Error downloading subtitles: " + "{e}").format(e=(e))))
     
     def _handle_download_choice(self, method, video_path):
         """Handle subtitle download choice"""
@@ -2124,7 +2122,7 @@ class ContextMenuHandler:
             elif method == "local":
                 self._browse_local(video_path)
         except Exception as e:
-            logger.error(f"Error handling download choice: {e}")
+            logger.error((("Error handling download choice: " + "{e}").format(e=(e))))
     
     def _find_subtitles(self, file_path):
         """Find existing subtitle files"""
@@ -2141,7 +2139,7 @@ class ContextMenuHandler:
                     type="warning"
                 )
         except Exception as e:
-            logger.error(f"Error finding subtitles: {e}")
+            logger.error((("Error finding subtitles: " + "{e}").format(e=(e))))
     
     def _handle_subtitle_selection(self, subtitle_path):
         """Handle subtitle selection"""
@@ -2149,19 +2147,19 @@ class ContextMenuHandler:
             if subtitle_path and self.parent.subtitle_manager:
                 self.parent.subtitle_manager.load_subtitle(subtitle_path)
                 self.parent.dialogs.show_message(
-                    f"Loaded subtitle:\n{os.path.basename(subtitle_path)}",
+                    (("Loaded subtitle:\n" + "{_a0}").format(_a0=(os.path.basename(subtitle_path)))),
                     type="info",
                     timeout=2
                 )
         except Exception as e:
-            logger.error(f"Error loading subtitle: {e}")
+            logger.error((("Error loading subtitle: " + "{e}").format(e=(e))))
     
     def _sync_subtitles(self, file_path):
         """Sync subtitle timing"""
         try:
             self.parent.dialogs.show_subtitle_delay_dialog(0, self._apply_subtitle_delay)
         except Exception as e:
-            logger.error(f"Error syncing subtitles: {e}")
+            logger.error((("Error syncing subtitles: " + "{e}").format(e=(e))))
     
     def _apply_subtitle_delay(self, delay_ms):
         """Apply subtitle delay"""
@@ -2169,9 +2167,9 @@ class ContextMenuHandler:
             if self.parent.subtitle_manager:
                 # This would apply delay to current subtitle
                 self.parent.dialogs.show_message(
-                    f"Subtitle delay applied: {delay_ms}ms",
+                    (("Subtitle delay applied: " + "{delay_ms}" + "ms").format(delay_ms=(delay_ms))),
                     type="info",
                     timeout=2
                 )
         except Exception as e:
-            logger.error(f"Error applying delay: {e}")        
+            logger.error((("Error applying delay: " + "{e}").format(e=(e))))

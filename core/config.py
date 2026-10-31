@@ -105,7 +105,7 @@ class WGFileManagerConfig:
                     return {str(k): v for k, v in bookmarks.items()
                             if isinstance(v, str) and os.path.isabs(v)}
         except Exception as e:
-            logger.error(f"Error loading bookmarks: {e}")
+            logger.error((("Error loading bookmarks: " + "{e}").format(e=(e))))
         return {}
 
     def save_bookmarks(self, bookmarks):
@@ -118,7 +118,7 @@ class WGFileManagerConfig:
                 json.dump(bookmarks, f, indent=2)
             return True
         except Exception as e:
-            logger.error(f"Error saving bookmarks: {e}")
+            logger.error((("Error saving bookmarks: " + "{e}").format(e=(e))))
             return False
 
     def load_remote_connections(self):
@@ -136,7 +136,7 @@ class WGFileManagerConfig:
                             valid_connections[name] = conn
                     return valid_connections
         except Exception as e:
-            logger.error(f"Error loading remote connections: {e}")
+            logger.error((("Error loading remote connections: " + "{e}").format(e=(e))))
         return {}
 
     def save_remote_connections(self, connections):
@@ -158,7 +158,7 @@ class WGFileManagerConfig:
                 json.dump(validated, f, indent=2)
             return True
         except Exception as e:
-            logger.error(f"Error saving remote connections: {e}")
+            logger.error((("Error saving remote connections: " + "{e}").format(e=(e))))
             return False
 
     def validate_config(self):
@@ -172,7 +172,7 @@ class WGFileManagerConfig:
             import re
             ip_pattern = r'^((25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)\.){3}(25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)$'
             if p.remote_ip.value and not re.match(ip_pattern, p.remote_ip.value):
-                issues.append(f"Invalid IP format: {p.remote_ip.value}")
+                issues.append((("Invalid IP format: " + "{_a0}").format(_a0=(p.remote_ip.value))))
             
             if issues: return False, issues
             return True, []
@@ -220,42 +220,24 @@ class WGFileManagerConfig:
             config.save()
             return True
         except Exception as e:
-            logger.error(f"Error resetting to defaults: {e}")
+            logger.error((("Error resetting to defaults: " + "{e}").format(e=(e))))
             return False
 
 # ========================================================================
-# round-10 fix pack: corrected config key types
-# round-9 registered these with generic types, which SHADOWED the richer
-# definitions SubtitleManager._init_config() wanted to install. Types below
-# mirror the manager's own definitions so both agree. subt_* keys stay
-# generic (only the subtitle menu uses them; nothing else registers them).
+# BUG-5 fix: the standalone CustomMediaPlayer no longer reads any of
+# the subtitle_* config keys (subtitle_delay / subtitle_font_size /
+# subtitle_font_color / subtitle_position / subtitle_encoding /
+# subtitle_auto_load / subtitle_preferred_lang). They were leftovers
+# from the vendored subtitle engine and were never consumed by the
+# in-file SubtitleHandler, which stores per-file state in .ajp files.
+#
+# Keeping them registered:
+#   - adds dead weight to config.plugins.wgfilemanager;
+#   - causes plugin.py's _verify_subtitle_config() to give a misleading
+#     "subtitle config verified" message for keys nothing reads;
+#   - can confuse users browsing the settings screen (if any UI ever
+#     surfaced them).
+#
+# The whole registration block has been removed. If you later swap back
+# to the vendored subtitle engine, restore this block from git history.
 # ========================================================================
-if not hasattr(config.plugins, 'wgfilemanager'):
-    config.plugins.wgfilemanager = ConfigSubsection()
-_wg_p = config.plugins.wgfilemanager
-
-
-if not hasattr(_wg_p, 'subtitle_delay'):
-    _wg_p.subtitle_delay = ConfigInteger(default=0, limits=(-3600000, 3600000))
-if not hasattr(_wg_p, 'subtitle_font_size'):
-    _wg_p.subtitle_font_size = ConfigSelection(default="24", choices=[
-        ("20", "Small (20)"), ("24", "Medium (24)"), ("28", "Large (28)"),
-        ("32", "Extra Large (32)"), ("36", "Huge (36)")])
-if not hasattr(_wg_p, 'subtitle_font_color'):
-    _wg_p.subtitle_font_color = ConfigSelection(default="#FFFFFF", choices=[
-        ("#FFFFFF", "White"), ("#FFFF00", "Yellow"), ("#00FFFF", "Cyan"),
-        ("#00FF00", "Green"), ("#FF0000", "Red"), ("#FF00FF", "Magenta"),
-        ("#FFA500", "Orange"), ("#ADD8E6", "Light Blue")])
-if not hasattr(_wg_p, 'subtitle_position'):
-    _wg_p.subtitle_position = ConfigSelection(default="bottom", choices=[
-        ("top", "Top"), ("center_top", "Center Top"), ("center", "Center"),
-        ("center_bottom", "Center Bottom"), ("bottom", "Bottom")])
-if not hasattr(_wg_p, 'subtitle_encoding'):
-    _wg_p.subtitle_encoding = ConfigSelection(default="utf-8", choices=[
-        ("utf-8", "UTF-8"), ("latin-1", "Latin-1"), ("cp1252", "Western (CP1252)"),
-        ("cp1256", "Arabic (CP1256)"), ("cp1251", "Cyrillic (CP1251)"),
-        ("gbk", "Chinese GBK"), ("big5", "Traditional Chinese")])
-if not hasattr(_wg_p, 'subtitle_auto_load'):
-    _wg_p.subtitle_auto_load = ConfigYesNo(default=True)
-if not hasattr(_wg_p, 'subtitle_preferred_lang'):
-    _wg_p.subtitle_preferred_lang = ConfigText(default="", fixed_size=False)

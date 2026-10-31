@@ -54,6 +54,14 @@ class SubtitleStudioOverlay(Screen):
         Screen.__init__(self, session)
         for n in _LABELS_BG + _LABELS_SHADOW + _LABELS_TXT:
             self[n] = Label("")
+        # FIX (merge): empty ActionMap so the overlay never blocks the
+        # player's key dispatch. Without this, the overlay dialog sits
+        # on top of the dialog stack and can swallow color-button /
+        # arrow key events on some Enigma2 images (confirmed on Vu+ /
+        # OpenATV). An empty ActionMap with no actions lets all keys
+        # pass through to the player screen below.
+        from Components.ActionMap import ActionMap as _AM
+        self["actions"] = _AM([], {}, -1)
         self._timer = eTimer()
         try:
             self._timer.timeout.connect(self._tick)

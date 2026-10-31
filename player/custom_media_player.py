@@ -84,6 +84,22 @@ except ImportError:
     import logging
     logger = logging.getLogger(__name__)
 
+# FIX (r95 / MERGE): the ORIGINAL subtitle engine is vendored under
+# player/subtitles/ (engine / studio / autosub / config / http /
+# thread / menu / screens — verbatim from the working plugin) plus
+# glue (__init__ adapter, overlay, studio_settings). NOTE:
+# SubtitleMenuScreen is menu.py's helper object, NOT a Screen —
+# construct it, never session.open it.
+try:
+    from .subtitles import (SubtitleManager, SubtitleMenuScreen,
+                            StudioSettingsScreen)
+except ImportError:
+    try:
+        from subtitles import (SubtitleManager, SubtitleMenuScreen,
+                               StudioSettingsScreen)
+    except ImportError:
+        SubtitleManager = SubtitleMenuScreen = StudioSettingsScreen = None
+
 
 # ============================================================================
 # Timer helper
@@ -1082,6 +1098,14 @@ class _CustomMediaPlayerBase(Screen):
         self._delay_total = 0
         self._osd_visible = False
 
+        # FIX (r95 / MERGE): attributes the vendored engine reads off the
+        # player (autosub worker, menu, browser): display title, per-file
+        # key, and the auto-subtitle generation counter (stale background
+        # workers bail out when it changes).
+        self.title = ""
+        self._item_url = ""
+        self._autosub_gen = 0
+
         # PlayerBar slide state
         self.playerBarVisible = False
         self.slideTimer = eTimer()
@@ -1100,11 +1124,16 @@ class _CustomMediaPlayerBase(Screen):
             self.barVisibleY = scaleY(5)
             self.barHiddenY = -bar_height - scaleY(10)
 
-        # FIX (r88): hand the screen to the handler so the widget form of
-        # enableSubtitles() can pass a real widget instance.
-        # FIX (r96): the in-file legacy handler is the ONLY backend - no
-        # external subpackage, nothing that can fail at import time.
-        self.subtitleHandler = SubtitleHandler(session, self)
+        # FIX (r95 / MERGE): the ORIGINAL subtitle engine (vendored under
+        # player/subtitles/) replaces the in-file SubtitleHandler. Same
+        # attribute name ('subtitleHandler'), so hotkey_manager's resolver
+        # and every existing player call keep working. The in-file
+        # SubtitleHandler (defined above) stays as the fallback when the
+        # subpackage import fails.
+        if SubtitleManager is not None:
+            self.subtitleHandler = SubtitleManager(session, self)
+        else:
+            self.subtitleHandler = SubtitleHandler(session, self)
 
         # FIX (r93): remember what was on screen BEFORE the player was
         # opened (normally the live TV service). On exit the player
@@ -1182,6 +1211,11 @@ class _CustomMediaPlayerBase(Screen):
         self._hold_dir = 0
         self._hold_count = 0
         self._hold_last_t = 0.0
+
+        # [NovaPlay port] aspect / PEP state
+        self._aspect_idx = 0
+        self._pic_extra = None
+        self._pic_extra_list = []
 
         # ---- action maps ----
         self["playerColorActions"] = ActionMap(["CustomMediaPlayerColorActions"], {
@@ -1721,6 +1755,8 @@ class _CustomMediaPlayerBase(Screen):
         self._applyColors()
         self._applyPanelPixmaps()
         self._buildProgressPixmaps()
+        # [NovaPlay port] re-apply saved PEP (brightness/contrast/colour)
+        self._reapplySavedPep()
         self.playCurrent()
         self.updateTimer.start(500, False)
         self.saveTimer.start(30000, False)
@@ -1751,6 +1787,8 @@ class _CustomMediaPlayerBase(Screen):
         # which is already None by then - the restored TV service can
         # never be killed here.
         self._restoreLastService()
+        # [NovaPlay port] restore PEP + aspect changes on close
+        self._restorePicture()
         try:
             if self["poster"].instance is not None:
                 self["poster"].instance.setPixmap(None)
@@ -1805,6 +1843,11 @@ class _CustomMediaPlayerBase(Screen):
                 seek.seekTo(int(self.resumePosition * 90000))
         self["movieTitle"].setText(name)
         self.state = self.STATE_PLAYING
+        # FIX (r95 / MERGE): attributes the vendored engine's autosub worker
+        # and menu read off the player; gen bump kills stale workers.
+        self.title = name
+        self._item_url = path
+        self._autosub_gen += 1
         self.subtitleHandler.setService(self.currentService)
         self.updateSubtitleIndicator()
         self.updatePlaylistInfo()
@@ -2044,16 +2087,23 @@ class _CustomMediaPlayerBase(Screen):
     def showSubtitleMenu(self):
         if not self.currentService:
             return
-        try:
-            self.subtitleHandler.setService(self.session.nav.getCurrentService())
-            logger.info("[Player] subtitle menu: %d embedded, %d external",
-                        len(self.subtitleHandler.subtitleList),
-                        len(self.subtitleHandler.externalSubtitles))
-        except Exception as e:
-            logger.warning("[Player] subtitle re-scan failed: %s", e)
-        self.session.open(SubtitleSelectionScreen, self.subtitleHandler)
+        # FIX (r95 / MERGE / BUG 1): construct the vendored menu helper
+        # (it opens its own ChoiceBox; it is NOT a Screen). No setService
+        # call here — it would re-run the auto-attach pipeline on every
+        # menu open, restarting the video (BUG 1). The handler is already
+        # kept in sync via doPlayCurrent() on every track change.
+        if SubtitleMenuScreen is not None:
+            SubtitleMenuScreen(self.session, self)
+        else:
+            self.session.open(SubtitleSelectionScreen, self.subtitleHandler)
         if not self.playerBarVisible:
             self.slideUp()
+
+    # FIX (r95 / MERGE): "Studio settings" entry of the vendored subtitle
+    # menu calls this; it opens the styling overlay.
+    def _open_studio_overlay(self):
+        if StudioSettingsScreen is not None:
+            self.session.open(StudioSettingsScreen)
 
     def toggleSubtitles(self):
         if not self.currentService:
@@ -2089,6 +2139,8 @@ class _CustomMediaPlayerBase(Screen):
             ("Progress Gates (r91)", "proggates"),
             ("Sleep Timer: %s" % self._sleepLabel(), "sleep"),
             ("Mark Current Watched", "mark_watched"),
+            ("Picture: Brightness/Contrast/Colour", "picture"),
+            ("Aspect: %s" % self._aspectLabel(), "aspect"),
             ("Stop Playback", "stop"),
         ]
         self.session.openWithCallback(self.onMenuSelect, ChoiceBox,
@@ -2166,6 +2218,10 @@ class _CustomMediaPlayerBase(Screen):
                 if item:
                     self.playlist.markWatched(item[0])
                     self["statusInfo"].setText("Marked watched")
+            elif action == "picture":
+                self._showPictureMenu()
+            elif action == "aspect":
+                self._cycleAspect()
             elif action == "stop":
                 self.stop()
         except Exception as e:
@@ -2379,13 +2435,27 @@ class _CustomMediaPlayerBase(Screen):
                 return points
             cmd = ["ffprobe", "-loglevel", "0", "-of", "json",
                    "-show_chapters", item[0]]
-            # FIX (r88): subprocess.check_output's timeout kwarg is 3.3+.
-            # On Py2 images this raised TypeError, silently disabling
-            # chapter extraction.
-            kwargs = {}
+            # FIX (r88 / BUG 7): subprocess.check_output's timeout kwarg
+            # is 3.3+. On Py2 images this raised TypeError, silently
+            # disabling chapter extraction; the previous fix dropped the
+            # timeout entirely on Py2, which let a stuck ffprobe hang
+            # the player indefinitely. This version wraps Py2 calls in
+            # a SIGALRM-based alarm so ffprobe is killed after 10 s on
+            # both Pythons.
+            out = None
             if sys.version_info[0] >= 3:
-                kwargs["timeout"] = 10
-            out = subprocess.check_output(cmd, **kwargs).decode("utf-8", "replace")
+                out = subprocess.check_output(cmd, timeout=10).decode("utf-8", "replace")
+            else:
+                import signal
+                _old_handler = signal.signal(signal.SIGALRM, lambda *_: None)
+                signal.alarm(10)
+                try:
+                    out = subprocess.check_output(cmd).decode("utf-8", "replace")
+                finally:
+                    signal.alarm(0)
+                    signal.signal(signal.SIGALRM, _old_handler)
+            if not out:
+                return points
             for ch in json.loads(out).get("chapters", []):
                 try:
                     st = float(ch.get("start_time", 0))
@@ -2496,6 +2566,148 @@ class _CustomMediaPlayerBase(Screen):
         except Exception:
             pass
         logger.info("[Player] SELF-TEST SUMMARY: %d/%d OK", ok, len(results))
+
+    # ------------------------------------------------------------ picture
+    # [NovaPlay port] Brightness / contrast / colour (PEP) + aspect-ratio
+    # cycling, ported from NovaPlay's novaplay_picture.py. Uses /proc/stb
+    # video controls — works on the box, degrades gracefully (returns
+    # empty lists / no-op) on images without those files.
+    def _showPictureMenu(self):
+        try:
+            from .wgfm_picture import pep_available, pep_get, pep_set, pep_percent, PEP, PEP_STEP
+        except ImportError:
+            try:
+                from wgfm_picture import pep_available, pep_get, pep_set, pep_percent, PEP, PEP_STEP
+            except ImportError:
+                self["statusInfo"].setText("Picture controls unavailable on this box")
+                if not self.playerBarVisible:
+                    self.slideUp()
+                return
+        rows = []
+        actions = []
+        for key, lbl in pep_available():
+            pct = pep_percent(key)
+            rows.append((u"%s +   (%d%%)" % (lbl, pct), (key, +1)))
+            rows.append((u"%s -" % lbl, (key, -1)))
+            actions.extend([(key, +1), (key, -1)])
+        rows.append((u"Reset (normal)", (None, 0)))
+        actions.append((None, 0))
+        if not rows:
+            self["statusInfo"].setText("Picture controls unavailable on this box")
+            if not self.playerBarVisible:
+                self.slideUp()
+            return
+        self._pic_pep_actions = actions
+        self.session.openWithCallback(self._onPicturePicked, ChoiceBox,
+                                      title="Picture (Brightness/Contrast/Colour)",
+                                      list=rows)
+        if not self.playerBarVisible:
+            self.slideUp()
+
+    def _onPicturePicked(self, choice):
+        if not choice:
+            return
+        try:
+            from .wgfm_picture import pep_set, pep_get, pep_percent, PEP, PEP_STEP
+        except ImportError:
+            try:
+                from wgfm_picture import pep_set, pep_get, pep_percent, PEP, PEP_STEP
+            except ImportError:
+                return
+        idx = choice[1] if isinstance(choice, (tuple, list)) and len(choice) > 1 else choice
+        if not isinstance(idx, tuple):
+            return
+        key, direction = idx
+        if key is None:
+            # Reset all to normal (128)
+            for k, _l in PEP:
+                pep_set(k, 128)
+            self["statusInfo"].setText("Picture: reset to normal")
+        else:
+            new_lvl = pep_get(key) + direction * PEP_STEP
+            ok = pep_set(key, new_lvl)
+            lbl = dict(PEP).get(key, key)
+            if ok:
+                self["statusInfo"].setText("%s: %d%%" % (lbl, pep_percent(key)))
+            else:
+                self["statusInfo"].setText("%s: not supported" % lbl)
+        if not self.playerBarVisible:
+            self.slideUp()
+
+    def _reapplySavedPep(self):
+        """Re-apply PEP settings saved in a previous session.
+        Reads from config.plugins.wgfilemanager.pep_<key> if present."""
+        try:
+            from .wgfm_picture import pep_available, pep_set
+        except ImportError:
+            try:
+                from wgfm_picture import pep_available, pep_set
+            except ImportError:
+                return
+        try:
+            for key, _l in pep_available():
+                attr = "pep_" + key
+                if hasattr(_pc, attr):
+                    v = getattr(_pc, attr).value
+                    if v and str(v).isdigit():
+                        pep_set(key, int(v))
+        except Exception:
+            pass
+
+    # ------------------------------------------------------------ aspect
+    _ASPECT_MODES = [("Full", 0), ("14:9", 120), ("4:3", 240)]
+
+    def _aspectLabel(self):
+        try:
+            return self._ASPECT_MODES[self._aspect_idx][0]
+        except Exception:
+            return "Full"
+
+    def _cycleAspect(self):
+        self._aspect_idx = (getattr(self, "_aspect_idx", 0) + 1) % len(self._ASPECT_MODES)
+        self._applyAspectMode()
+
+    def _applyAspectMode(self):
+        try:
+            from .wgfm_picture import restore as _pic_restore, apply as _pic_apply, available as _pic_avail
+        except ImportError:
+            try:
+                from wgfm_picture import restore as _pic_restore, apply as _pic_apply, available as _pic_avail
+            except ImportError:
+                self["statusInfo"].setText("Aspect control unavailable on this box")
+                if not self.playerBarVisible:
+                    self.slideUp()
+                return
+        label, bar = self._ASPECT_MODES[self._aspect_idx]
+        if bar == 0:
+            _pic_restore()
+            self["statusInfo"].setText("Aspect: %s (system default)" % label)
+        else:
+            # Use the box's own zoom/policy modes; pick the first available
+            modes = _pic_avail()
+            if not modes:
+                self["statusInfo"].setText("Aspect: %s (no box modes)" % label)
+            else:
+                # Cycle through available modes
+                _pic_apply(modes[self._aspect_idx % len(modes)][1],
+                           modes[self._aspect_idx % len(modes)][2])
+                self["statusInfo"].setText("Aspect: %s" % modes[self._aspect_idx % len(modes)][0])
+        if not self.playerBarVisible:
+            self.slideUp()
+
+    def _restorePicture(self):
+        """Called on player close: restore all PEP + aspect changes."""
+        try:
+            from .wgfm_picture import restore as _pic_restore
+        except ImportError:
+            try:
+                from wgfm_picture import restore as _pic_restore
+            except ImportError:
+                return
+        try:
+            _pic_restore()
+        except Exception:
+            pass
 
     # ------------------------------------------------------------ folder play
     def _playWholeFolder(self):

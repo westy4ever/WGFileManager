@@ -120,19 +120,19 @@ class HotkeyManager:
             if os.path.exists(user_config_path):
                 with open(user_config_path, 'r') as f:
                     self.config = json.load(f)
-                logger.info(f"Loaded user hotkey config from {user_config_path}")
+                logger.info((("Loaded user hotkey config from " + "{user_config_path}").format(user_config_path=(user_config_path))))
             elif os.path.exists(default_config_path):
                 # Fallback to default config
                 with open(default_config_path, 'r') as f:
                     self.config = json.load(f)
-                logger.info(f"Loaded default hotkey config from {default_config_path}")
+                logger.info((("Loaded default hotkey config from " + "{default_config_path}").format(default_config_path=(default_config_path))))
             else:
                 # Create minimal config
                 self.config = self._create_minimal_config()
                 logger.warning("Created minimal hotkey config")
 
         except Exception as e:
-            logger.error(f"Error loading hotkey config: {e}")
+            logger.error((("Error loading hotkey config: " + "{e}").format(e=(e))))
             self.config = self._create_minimal_config()
 
     def _create_minimal_config(self):
@@ -171,10 +171,10 @@ class HotkeyManager:
                         "description": action_config.get("description", "")
                     })
 
-            logger.info(f"Built hotkey map with {len(hotkeys)} actions")
+            logger.info((("Built hotkey map with " + "{_a0}" + " actions").format(_a0=(len(hotkeys)))))
 
         except Exception as e:
-            logger.error(f"Error building hotkey map: {e}")
+            logger.error((("Error building hotkey map: " + "{e}").format(e=(e))))
 
     def set_profile(self, profile_name):
         """Switch to a different hotkey profile"""
@@ -182,13 +182,13 @@ class HotkeyManager:
             if profile_name in self.config.get("hotkey_profiles", {}):
                 self.current_profile = profile_name
                 self._build_hotkey_map()
-                logger.info(f"Switched to hotkey profile: {profile_name}")
+                logger.info((("Switched to hotkey profile: " + "{profile_name}").format(profile_name=(profile_name))))
                 return True
             else:
-                logger.error(f"Hotkey profile not found: {profile_name}")
+                logger.error((("Hotkey profile not found: " + "{profile_name}").format(profile_name=(profile_name))))
                 return False
         except Exception as e:
-            logger.error(f"Error setting profile: {e}")
+            logger.error((("Error setting profile: " + "{e}").format(e=(e))))
             return False
 
     def get_available_profiles(self):
@@ -205,7 +205,7 @@ class HotkeyManager:
                 for profile_id, data in profiles.items()
             ]
         except Exception as e:
-            logger.error(f"Error getting profiles: {e}")
+            logger.error((("Error getting profiles: " + "{e}").format(e=(e))))
             return []
 
     def get_profile_info(self, profile_id=None):
@@ -223,7 +223,7 @@ class HotkeyManager:
                 "hotkey_count": len(profile.get("hotkeys", {}))
             }
         except Exception as e:
-            logger.error(f"Error getting profile info: {e}")
+            logger.error((("Error getting profile info: " + "{e}").format(e=(e))))
             return {}
 
     def get_hotkey_for_action(self, action):
@@ -243,7 +243,7 @@ class HotkeyManager:
             return None
 
         except Exception as e:
-            logger.error(f"Error getting hotkey for action: {e}")
+            logger.error((("Error getting hotkey for action: " + "{e}").format(e=(e))))
             return None
 
     def handle_key_press(self, key, player_instance=None):
@@ -252,7 +252,7 @@ class HotkeyManager:
             self._cancel_long_press_timer(key)
             self._pending_short.pop(key, None)  # clear any stale state
 
-            has_long = bool(self.hotkey_map.get(f"long_{key}"))
+            has_long = bool(self.hotkey_map.get((("long_" + "{key}").format(key=(key)))))
             actions = self.hotkey_map.get(key, [])
 
             if has_long:
@@ -276,7 +276,7 @@ class HotkeyManager:
             return False
 
         except Exception as e:
-            logger.error(f"Error handling key press: {e}")
+            logger.error((("Error handling key press: " + "{e}").format(e=(e))))
             return False
 
     def handle_key_release(self, key, player_instance=None):
@@ -294,7 +294,7 @@ class HotkeyManager:
             return True
 
         except Exception as e:
-            logger.error(f"Error handling key release: {e}")
+            logger.error((("Error handling key release: " + "{e}").format(e=(e))))
             return False
 
     def _start_long_press_timer(self, key, player_instance):
@@ -302,14 +302,14 @@ class HotkeyManager:
         try:
             self._cancel_long_press_timer(key)
 
-            long_key = f"long_{key}"
+            long_key = (("long_" + "{key}").format(key=(key)))
             if not self.hotkey_map.get(long_key):
                 return
 
             if _E_TIMER_AVAILABLE:
                 # eTimer fires on the main loop -> safe to touch UI/player
                 timer = eTimer()
-                cb = lambda k=key, p=player_instance: self._handle_long_press(f"long_{k}", p)
+                cb = lambda k=key, p=player_instance: self._handle_long_press((("long_" + "{k}").format(k=(k))), p)
                 # FIX (r88): attach via exactly ONE of the two APIs -
                 # trying both unconditionally double-fires on builds
                 # where both exist.
@@ -338,7 +338,7 @@ class HotkeyManager:
                 timer.start()
 
         except Exception as e:
-            logger.error(f"Error starting long press timer: {e}")
+            logger.error((("Error starting long press timer: " + "{e}").format(e=(e))))
 
     def _cancel_long_press_timer(self, key):
         """Cancel long press timer. Returns True if a pending timer was cancelled."""
@@ -349,11 +349,11 @@ class HotkeyManager:
                     timer.stop()
                 else:                        # threading.Timer
                     timer.cancel()
-                logger.debug(f"Cancelled long press timer for {key}")
+                logger.debug((("Cancelled long press timer for " + "{key}").format(key=(key))))
                 return True
             return False
         except Exception as e:
-            logger.error(f"Error cancelling long press timer: {e}")
+            logger.error((("Error cancelling long press timer: " + "{e}").format(e=(e))))
             return False
 
     def _handle_long_press(self, long_key, player_instance):
@@ -367,10 +367,10 @@ class HotkeyManager:
             actions = self.hotkey_map.get(long_key, [])
             if actions:
                 action_config = actions[0]
-                logger.info(f"Long press detected: {long_key} -> {action_config['action']}")
+                logger.info((("Long press detected: " + "{long_key}" + " -> " + "{_a0}").format(long_key=(long_key), _a0=(action_config['action']))))
                 self._execute_action(action_config, player_instance)
         except Exception as e:
-            logger.error(f"Error handling long press: {e}")
+            logger.error((("Error handling long press: " + "{e}").format(e=(e))))
 
     # action -> attribute name on the player instance (resolved lazily)
     # FIX (r91-audit): names now match the round-88/91 player's actual
@@ -443,7 +443,7 @@ class HotkeyManager:
             action = action_config.get("action")
             action_id = action_config.get("action_id")
 
-            logger.info(f"Executing hotkey action: {action_id} -> {action}")
+            logger.info((("Executing hotkey action: " + "{action_id}" + " -> " + "{action}").format(action_id=(action_id), action=(action))))
 
             if not player_instance:
                 logger.warning("No player instance for hotkey execution")
@@ -456,7 +456,7 @@ class HotkeyManager:
                 if callable(method):
                     method()
                     return True
-                logger.warning(f"Player does not implement '{attr}' (action '{action}')")
+                logger.warning((("Player does not implement '" + "{attr}" + "' (action '" + "{action}" + "')").format(attr=(attr), action=(action))))
                 return False
 
             # 2) Methods on the player's subtitle manager
@@ -471,7 +471,7 @@ class HotkeyManager:
                 if callable(method):
                     method()
                     return True
-                logger.warning(f"Subtitle manager does not implement '{attr}' (action '{action}')")
+                logger.warning((("Subtitle manager does not implement '" + "{attr}" + "' (action '" + "{action}" + "')").format(attr=(attr), action=(action))))
                 return False
 
             # 3) Seeking
@@ -485,7 +485,7 @@ class HotkeyManager:
                 if callable(seeker):
                     seeker(self._SEEK_ACTIONS[action])
                     return True
-                logger.warning(f"Player has no seek method (action '{action}')")
+                logger.warning((("Player has no seek method (action '" + "{action}" + "')").format(action=(action))))
                 return False
 
             # 4) mark_position needs a point_type argument the old code never
@@ -494,11 +494,11 @@ class HotkeyManager:
                 logger.warning("Action 'mark_position' needs a point_type argument - not wired")
                 return False
 
-            logger.error(f"Unknown action: {action}")
+            logger.error((("Unknown action: " + "{action}").format(action=(action))))
             return False
 
         except Exception as e:
-            logger.error(f"Error executing action {action_config}: {e}")
+            logger.error((("Error executing action " + "{action_config}" + ": " + "{e}").format(action_config=(action_config), e=(e))))
             return False
 
     def save_config(self, config_path=None):
@@ -515,11 +515,11 @@ class HotkeyManager:
             with open(config_path, 'w') as f:
                 json.dump(self.config, f, indent=2)
 
-            logger.info(f"Saved hotkey config to {config_path}")
+            logger.info((("Saved hotkey config to " + "{config_path}").format(config_path=(config_path))))
             return True
 
         except Exception as e:
-            logger.error(f"Error saving config: {e}")
+            logger.error((("Error saving config: " + "{e}").format(e=(e))))
             return False
 
     def reset_to_defaults(self):
@@ -539,7 +539,7 @@ class HotkeyManager:
                 try:
                     self.save_config()
                 except Exception as se:
-                    logger.warning(f"Reset loaded but not persisted: {se}")
+                    logger.warning((("Reset loaded but not persisted: " + "{se}").format(se=(se))))
                 logger.info("Reset hotkey config to defaults")
                 return True
             else:
@@ -547,7 +547,85 @@ class HotkeyManager:
                 return False
 
         except Exception as e:
-            logger.error(f"Error resetting to defaults: {e}")
+            logger.error((("Error resetting to defaults: " + "{e}").format(e=(e))))
+            return False
+
+    # ------------------------------------------------------------------
+    # BUG-2 fix: reset_subtitle_keys()
+    # ------------------------------------------------------------------
+    # The UI's hotkey-setup screen (ui/hotkey_setup.py) calls
+    # self.hotkey_manager.reset_subtitle_keys() after the user confirms
+    # a reset of subtitle-specific bindings. The base class only had
+    # reset_to_defaults() (which nukes ALL hotkeys, not just subtitle
+    # ones), so the call raised AttributeError and the surrounding
+    # try/except swallowed it - the "Reset subtitle hotkeys" button did
+    # nothing. This method:
+    #   1. walks the current profile's hotkeys dict;
+    #   2. drops every entry whose action is a subtitle action
+    #      (toggle_subtitle / open_subtitle_menu);
+    #   3. restores the two canonical subtitle defaults (subtitle ->
+    #      toggle_subtitle, text -> open_subtitle_menu);
+    #   4. rebuilds the hotkey map and persists the result.
+    # Non-subtitle bindings (audio / jump / chapter / seek) are left
+    # untouched. Falls through to reset_to_defaults() if the current
+    # profile is missing - mirrors the UI's existing fallback path.
+    # ------------------------------------------------------------------
+    _SUBTITLE_ACTIONS = frozenset({
+        "toggle_subtitle",
+        "open_subtitle_menu",
+    })
+
+    def reset_subtitle_keys(self):
+        """Reset only subtitle-related hotkey bindings in the current profile."""
+        try:
+            profiles = self.config.get("hotkey_profiles", {})
+            profile = profiles.get(self.current_profile)
+            if not profile:
+                logger.warning(
+                    ("reset_subtitle_keys: profile '" + "{current_profile}" + "' missing - falling back to full reset").format(current_profile=(self.current_profile))
+                )
+                return self.reset_to_defaults()
+
+            hotkeys = profile.get("hotkeys", {})
+            if not isinstance(hotkeys, dict):
+                hotkeys = {}
+
+            # Drop every entry whose action is a subtitle action.
+            for hid in list(hotkeys.keys()):
+                if hotkeys[hid].get("action") in self._SUBTITLE_ACTIONS:
+                    del hotkeys[hid]
+
+            # Restore the canonical defaults.
+            hotkeys["subtitle_toggle"] = {
+                "key": "subtitle",
+                "action": "toggle_subtitle",
+                "label": "Toggle Subtitles",
+                "description": "Toggle subtitles on/off"
+            }
+            hotkeys["subtitle_menu"] = {
+                "key": "text",
+                "action": "open_subtitle_menu",
+                "label": "Subtitle Menu",
+                "description": "Open subtitle selection menu"
+            }
+
+            profile["hotkeys"] = hotkeys
+            profiles[self.current_profile] = profile
+            self.config["hotkey_profiles"] = profiles
+
+            self._build_hotkey_map()
+            try:
+                self.save_config()
+            except Exception as se:
+                logger.warning((("Subtitle-key reset not persisted: " + "{se}").format(se=(se))))
+
+            logger.info(
+                ("Reset subtitle keys in profile '" + "{current_profile}" + "' ({count} total bindings)").format(current_profile=(self.current_profile), count=(len(hotkeys)))
+            )
+            return True
+
+        except Exception as e:
+            logger.error((("Error resetting subtitle keys: " + "{e}").format(e=(e))))
             return False
 
 
@@ -590,7 +668,7 @@ class SubtitleHotkeyManager(HotkeyManager):
             return False
 
         except Exception as e:
-            logger.error(f"Error handling subtitle hotkey: {e}")
+            logger.error((("Error handling subtitle hotkey: " + "{e}").format(e=(e))))
             return False
 
     def _execute_subtitle_action(self, action):
@@ -607,7 +685,7 @@ class SubtitleHotkeyManager(HotkeyManager):
         try:
             ok = self._execute_action(
                 {"action": action, "action_id": action}, self.player_ref)
-            return "OK" if ok else f"Failed: {action}"
+            return "OK" if ok else (("Failed: " + "{action}").format(action=(action)))
         except Exception as e:
-            logger.error(f"Error executing subtitle action: {e}")
-            return f"Error: {e}"
+            logger.error((("Error executing subtitle action: " + "{e}").format(e=(e))))
+            return (("Error: " + "{e}").format(e=(e)))

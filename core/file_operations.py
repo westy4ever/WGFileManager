@@ -36,7 +36,7 @@ class FileOperations:
             validate_path(destination)
             
             if not os.path.exists(source):
-                raise FileOperationError(f"Source does not exist: {source}")
+                raise FileOperationError((("Source does not exist: " + "{source}").format(source=(source))))
             
             if os.path.isdir(source):
                 return self._copy_directory(source, destination, overwrite)
@@ -44,7 +44,7 @@ class FileOperations:
                 return self._copy_file(source, destination, overwrite)
                 
         except Exception as e:
-            raise FileOperationError(f"Copy failed: {e}")
+            raise FileOperationError((("Copy failed: " + "{e}").format(e=(e))))
     
     def _copy_file(self, source, destination, overwrite=False):
         """Copy single file"""
@@ -57,7 +57,7 @@ class FileOperations:
 
         # Clear cache entry if exists
         if self.cache:
-            self.cache.delete(f"file_size_{hash(source)}")
+            self.cache.delete((("file_size_" + "{_a0}").format(_a0=(hash(source)))))
 
         return dest_path
     
@@ -81,7 +81,7 @@ class FileOperations:
             validate_path(destination)
             
             if not os.path.exists(source):
-                raise FileOperationError(f"Source does not exist: {source}")
+                raise FileOperationError((("Source does not exist: " + "{source}").format(source=(source))))
             
             if use_trash and self.config.plugins.wgfilemanager.trash_enabled.value == "yes":
                 return self._move_to_trash(source)
@@ -101,12 +101,12 @@ class FileOperations:
             
             # Clear cache
             if self.cache:
-                self.cache.delete(f"file_size_{hash(source)}")
+                self.cache.delete((("file_size_" + "{_a0}").format(_a0=(hash(source)))))
             
             return dest_path
             
         except Exception as e:
-            raise FileOperationError(f"Move failed: {e}")
+            raise FileOperationError((("Move failed: " + "{e}").format(e=(e))))
     
     def _move_to_trash(self, source):
         """Move file to trash"""
@@ -119,7 +119,7 @@ class FileOperations:
             timestamp = int(time.time())
             random_suffix = random.randint(1000, 9999)
             name = os.path.basename(source)
-            trash_name = f"{name}_{timestamp}_{random_suffix}"
+            trash_name = (("{name}" + "_" + "{timestamp}" + "_" + "{random_suffix}").format(name=(name), timestamp=(timestamp), random_suffix=(random_suffix)))
             trash_path = os.path.join(self.trash_path, trash_name)
 
             shutil.move(source, trash_path)
@@ -127,7 +127,7 @@ class FileOperations:
         except FileOperationError:
             raise
         except Exception as e:
-            raise FileOperationError(f"Failed to move to trash: {e}")
+            raise FileOperationError((("Failed to move to trash: " + "{e}").format(e=(e))))
     
     def delete(self, path, permanent=False):
         """Delete file or directory"""
@@ -135,7 +135,7 @@ class FileOperations:
             validate_path(path)
             
             if not os.path.exists(path):
-                raise FileOperationError(f"Path does not exist: {path}")
+                raise FileOperationError((("Path does not exist: " + "{path}").format(path=(path))))
             
             if permanent or self.config.plugins.wgfilemanager.trash_enabled.value != "yes":
                 return self._permanent_delete(path)
@@ -143,7 +143,7 @@ class FileOperations:
                 return self._move_to_trash(path)
                 
         except Exception as e:
-            raise FileOperationError(f"Delete failed: {e}")
+            raise FileOperationError((("Delete failed: " + "{e}").format(e=(e))))
     
     def _permanent_delete(self, path):
         """Permanently delete file or directory"""
@@ -155,11 +155,11 @@ class FileOperations:
             
             # Clear cache
             if self.cache:
-                self.cache.delete(f"file_size_{hash(path)}")
+                self.cache.delete((("file_size_" + "{_a0}").format(_a0=(hash(path)))))
             
             return True
         except Exception as e:
-            raise FileOperationError(f"Permanent delete failed: {e}")
+            raise FileOperationError((("Permanent delete failed: " + "{e}").format(e=(e))))
     
     def rename(self, old_path, new_name):
         """Rename file or directory"""
@@ -167,28 +167,28 @@ class FileOperations:
             validate_path(old_path)
             
             if not os.path.exists(old_path):
-                raise FileOperationError(f"Path does not exist: {old_path}")
+                raise FileOperationError((("Path does not exist: " + "{old_path}").format(old_path=(old_path))))
             
             parent_dir = os.path.dirname(old_path)
             new_path = os.path.join(parent_dir, new_name)
             
             if os.path.exists(new_path):
-                raise FileOperationError(f"Destination already exists: {new_path}")
+                raise FileOperationError((("Destination already exists: " + "{new_path}").format(new_path=(new_path))))
             
             os.rename(old_path, new_path)
             
             # Update cache
             if self.cache:
-                old_key = f"file_size_{hash(old_path)}"
+                old_key = (("file_size_" + "{_a0}").format(_a0=(hash(old_path))))
                 if self.cache and old_key in self.cache:
                     size = self.cache.get(old_key)
                     self.cache.delete(old_key)
-                    self.cache.set(f"file_size_{hash(new_path)}", size)
+                    self.cache.set((("file_size_" + "{_a0}").format(_a0=(hash(new_path)))), size)
             
             return new_path
             
         except Exception as e:
-            raise FileOperationError(f"Rename failed: {e}")
+            raise FileOperationError((("Rename failed: " + "{e}").format(e=(e))))
     
     def create_directory(self, path, name):
         """Create new directory"""
@@ -198,13 +198,13 @@ class FileOperations:
             new_path = os.path.join(path, name)
             
             if os.path.exists(new_path):
-                raise FileOperationError(f"Directory already exists: {new_path}")
+                raise FileOperationError((("Directory already exists: " + "{new_path}").format(new_path=(new_path))))
             
             os.makedirs(new_path, exist_ok=True)
             return new_path
             
         except Exception as e:
-            raise FileOperationError(f"Create directory failed: {e}")
+            raise FileOperationError((("Create directory failed: " + "{e}").format(e=(e))))
     
     def create_file(self, path, name, content=""):
         """Create new file"""
@@ -214,7 +214,7 @@ class FileOperations:
             new_path = os.path.join(path, name)
             
             if os.path.exists(new_path):
-                raise FileOperationError(f"File already exists: {new_path}")
+                raise FileOperationError((("File already exists: " + "{new_path}").format(new_path=(new_path))))
             
             with open(new_path, 'w') as f:
                 f.write(content)
@@ -222,7 +222,7 @@ class FileOperations:
             return new_path
             
         except Exception as e:
-            raise FileOperationError(f"Create file failed: {e}")
+            raise FileOperationError((("Create file failed: " + "{e}").format(e=(e))))
     
     def get_file_size(self, path, use_cache=True):
         """Get file or directory size - OPTIMIZED for UI"""
@@ -284,7 +284,7 @@ class FileOperations:
             return info
             
         except Exception as e:
-            raise FileOperationError(f"Get file info failed: {e}")
+            raise FileOperationError((("Get file info failed: " + "{e}").format(e=(e))))
     
     def change_permissions(self, path, mode):
         """Change file permissions"""
@@ -292,7 +292,7 @@ class FileOperations:
             validate_path(path)
             
             if not os.path.exists(path):
-                raise FileOperationError(f"Path does not exist: {path}")
+                raise FileOperationError((("Path does not exist: " + "{path}").format(path=(path))))
             
             # Convert string mode to octal if needed
             if isinstance(mode, str):
@@ -302,7 +302,7 @@ class FileOperations:
             return True
             
         except Exception as e:
-            raise FileOperationError(f"Change permissions failed: {e}")
+            raise FileOperationError((("Change permissions failed: " + "{e}").format(e=(e))))
     
     def _check_disk_space(self, source, destination):
         """Check if enough disk space is available"""
@@ -324,8 +324,7 @@ class FileOperations:
 
             if needed > free:
                 raise DiskSpaceError(
-                    f"Insufficient space! Needed: {needed / (1024.0**3):.2f} GB, "
-                    f"Free: {free / (1024.0**3):.2f} GB"
+                    (("Insufficient space! Needed: " + "{_a0:.2f}" + " GB, Free: " + "{_a1:.2f}" + " GB").format(_a0=(needed / (1024.0**3)), _a1=(free / (1024.0**3))))
                 )
             return True
 
@@ -357,7 +356,7 @@ class FileOperations:
         name, ext = os.path.splitext(base)
         counter = 1
         while os.path.exists(dest_path):
-            dest_path = os.path.join(dest_dir, f"{name}_{counter}{ext}")
+            dest_path = os.path.join(dest_dir, (("{name}" + "_" + "{counter}" + "{ext}").format(name=(name), counter=(counter), ext=(ext))))
             counter += 1
 
         return dest_path
@@ -371,18 +370,18 @@ class FileOperations:
                 return True
             return False
         except Exception as e:
-            raise FileOperationError(f"Empty trash failed: {e}")
+            raise FileOperationError((("Empty trash failed: " + "{e}").format(e=(e))))
     
     def restore_from_trash(self, trash_item, destination=None):
         """Restore item from trash"""
         try:
             if not os.path.exists(trash_item):
-                raise FileOperationError(f"Trash item not found: {trash_item}")
+                raise FileOperationError((("Trash item not found: " + "{trash_item}").format(trash_item=(trash_item))))
 
             if not destination:
                 destination = "/media/hdd"
             if not os.path.isdir(destination):
-                raise FileOperationError(f"Restore destination is not a directory: {destination}")
+                raise FileOperationError((("Restore destination is not a directory: " + "{destination}").format(destination=(destination))))
 
             # Trash names are "<original_name>_<timestamp>_<random4>".
             # Strip ONLY the two trailing suffixes; underscores that are part
@@ -400,7 +399,7 @@ class FileOperations:
             counter = 1
             while os.path.exists(dest_path):
                 base, ext = os.path.splitext(original_name)
-                dest_path = os.path.join(destination, f"{base}_{counter}{ext}")
+                dest_path = os.path.join(destination, (("{base}" + "_" + "{counter}" + "{ext}").format(base=(base), counter=(counter), ext=(ext))))
                 counter += 1
 
             shutil.move(trash_item, dest_path)
@@ -409,7 +408,7 @@ class FileOperations:
         except FileOperationError:
             raise
         except Exception as e:
-            raise FileOperationError(f"Restore from trash failed: {e}")
+            raise FileOperationError((("Restore from trash failed: " + "{e}").format(e=(e))))
     
     # New method for compatibility with updated main_screen.py
     def can_play_file(self, path):
