@@ -24,6 +24,12 @@ Checks before pushing: `python3 tests/run_nova_checks.py`
 Picking one copies it out once (needs ffmpeg: `opkg install ffmpeg`), then sync and styling work on it.
 Picture subtitles (PGS / DVD / DVB) can't be used.
 
+**Theme colour:** Setup › Media Player › **Player Theme Colour** (Green / Blue / Red / Gold).
+The Nova player and the audio player draw their panels as armoured metal plates with cut
+corners and a neon edge in that colour; highlights follow it. It shows after Enigma2
+restarts (Setup offers the restart). Frame pictures: `player/nova/images/theme/<colour>/`,
+made by `tools/make_theme_frames.py --repo . --pkg player.nova --scan ui`.
+
 **Log:** `/tmp/wgfilemanager.log` (cleared on reboot) has the player and the Subtitle Studio lines.
 After a problem: `tail -n 80 /tmp/wgfilemanager.log`. A subtitle line there says who draws it:
 `-> Studio, N lines` (sync and styling work) or `-> Enigma2 draws it` (the file couldn't be read).

@@ -14,6 +14,7 @@ calls the panel's live callback and keeps the panel open (used for the
 subtitle sync steps), showing the callback's answer on the help line.
 """
 from Screens.Screen import Screen
+from .novaplay_theme import TH_CHIPSEL, TH_GOLD, Frame  # [theme]
 from Components.ActionMap import ActionMap
 from Components.Label import Label
 from enigma import ePoint
@@ -57,9 +58,9 @@ def _skin(name, cols):
     x0 = cols[0][1] - 30
     x1 = cols[-1][1] + cols[-1][2] + 30
     w = []
-    w.append('<widget name="panelBg" position="{x},100" size="{w},{h}" backgroundColor="#1A0C1017" '
+    w.append('<widget name="panelBg" theme="panel" position="{x},100" size="{w},{h}" backgroundColor="#1A0C1017" '
              'cornerRadius="22" zPosition="1" />'.format(x=x0, w=x1 - x0, h=150 + ROWS * _RH))
-    w.append('<widget name="panelTop" position="{x},100" size="{w},6" backgroundColor="#F2C230" '
+    w.append('<widget name="panelTop" theme="hide" position="{x},100" size="{w},6" backgroundColor="#F2C230" '
              'zPosition="2" />'.format(x=x0, w=x1 - x0))
     for key, x, wd, _t in cols:
         w.append('<widget name="h_{k}" position="{x},126" size="{w},40" font="Regular;24" '
@@ -100,7 +101,7 @@ class _ColumnPanel(Screen):
             self["gbar_" + key] = Label("")
             for i in range(ROWS):
                 self["r_%s%d" % (key, i)] = Label("")
-        self["panelBg"] = Label("")
+        self["panelBg"] = Frame()
         self["panelTop"] = Label("")
         for i in range(len(self.COLS) - 1):
             self["sep%d" % i] = Label("")
@@ -220,7 +221,7 @@ class _ColumnPanel(Screen):
             try:
                 if parseColor is not None:
                     self["h_" + key].instance.setForegroundColor(
-                        parseColor("#F2C230" if key == self._col else "#8B949E"))
+                        parseColor(TH_GOLD if key == self._col else "#8B949E"))
             except Exception:
                 pass
 
@@ -312,7 +313,7 @@ def _sp_tab_x(tabs=_SP_TABS):
 
 def _sp_skin(name="NovaSettingsPanel", tabs=_SP_TABS):
     xs = _sp_tab_x(tabs)
-    w = ['<widget name="spBg" position="{x},{y}" size="{w},{h}" backgroundColor="#1A121822" cornerRadius="28" zPosition="1" />'
+    w = ['<widget name="spBg" theme="panel" position="{x},{y}" size="{w},{h}" backgroundColor="#1A121822" cornerRadius="28" zPosition="1" />'
          .format(x=_SP_X, y=_SP_Y, w=_SP_W, h=_SP_H),
          '<widget name="spHead" position="{x},{y}" size="400,34" font="Bold;24" foregroundColor="#8B949E" transparent="1" zPosition="3" />'
          .format(x=_SP_X + 40, y=_SP_Y + 26),
@@ -365,7 +366,7 @@ class NovaSettingsPanel(Screen):
             self._resetPos(k)
             self["spTab_" + k] = Label(t)
         for n in ("spBg", "spRule", "spTabLine", "spRowBg", "spRowEdge"):
-            self[n] = Label("")
+            self[n] = Frame() if n == "spBg" else Label("")
         self["spHead"] = Label(self.HEAD)
         self["spClose"] = Label(u"EXIT  ✕")
         self["help"] = Label(_SP_HELP)
@@ -561,7 +562,7 @@ class NovaSettingsPanel(Screen):
                 try:
                     lab = self["spTab_" + k]
                     if parseColor is not None and lab.instance:
-                        lab.instance.setForegroundColor(parseColor("#F2C230"))
+                        lab.instance.setForegroundColor(parseColor(TH_GOLD))
                         lab.instance.invalidate()
                 except Exception:
                     pass
@@ -632,8 +633,8 @@ class NovaSettingsPanel(Screen):
                 foc = k == self._sel.get("speed", 0)
                 lab.setText(items[k][0])
                 self._box("spChip%d" % k, _SP_X + 40 + (k % 3) * 236, _SP_Y0 + (k // 3) * 72, 216, 56,
-                          bg="#1A463A12" if cur else ("#1A2E3A4E" if foc else "#1A232C3B"),
-                          fg="#F2C230" if (cur or foc) else "#F0F6FC")
+                          bg=TH_CHIPSEL if cur else ("#1A2E3A4E" if foc else "#1A232C3B"),
+                          fg=TH_GOLD if (cur or foc) else "#F0F6FC")
                 lab.show()
             else:
                 lab.hide()
@@ -669,7 +670,7 @@ class NovaSettingsPanel(Screen):
                     w5[3].hide()
                 try:
                     if parseColor is not None:
-                        w5[0].instance.setForegroundColor(parseColor("#F2C230" if g + i == k else "#F0F6FC"))
+                        w5[0].instance.setForegroundColor(parseColor(TH_GOLD if g + i == k else "#F0F6FC"))
                         w5[0].instance.invalidate()
                 except Exception:
                     pass
@@ -748,7 +749,7 @@ class NovaSettingsPanel(Screen):
             try:
                 if parseColor is not None:
                     inst = self["spRow%d" % i].instance
-                    inst.setForegroundColor(parseColor("#F2C230" if i == row else "#F0F6FC"))
+                    inst.setForegroundColor(parseColor(TH_GOLD if i == row else "#F0F6FC"))
                     inst.invalidate()
             except Exception:
                 pass

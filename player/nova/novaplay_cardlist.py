@@ -11,12 +11,13 @@ is the payload (getCurrent() returns it). UP / DOWN / page keys are handled
 by the listbox itself, like any MenuList.
 """
 from Components.GUIComponent import GUIComponent
+from .novaplay_theme import TH_GOLD_INT  # [theme]
 from .plugin_gridlist import ft
 from Components.MultiContent import MultiContentEntryText, MultiContentEntryPixmapAlphaBlend
 from enigma import (eListbox, eListboxPythonMultiContent, gFont,
                     RT_HALIGN_LEFT, RT_HALIGN_CENTER, RT_HALIGN_RIGHT, RT_VALIGN_CENTER)
 
-TEXT, MUTED, GOLD, DARK = 0xF0F6FC, 0xA3ADBB, 0xF2C230, 0x0C1017
+TEXT, MUTED, GOLD, DARK = 0xF0F6FC, 0xA3ADBB, TH_GOLD_INT, 0x0C1017
 CHIP_BG, CHIP_BG_SEL = 0x232B38, 0x3A4760
 GREEN, ORANGE, RED, GREY = 0x30C48D, 0xF2A33A, 0xE5484D, 0x6E7681
 

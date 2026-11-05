@@ -11,6 +11,7 @@ rounded dark card with a gold title and gold selection, sized to the list.
 Keys: ▲ ▼ move, ◀ ▶ page, 1-9 pick directly, OK choose, EXIT back.
 """
 from Screens.Screen import Screen
+from .novaplay_theme import TH_GOLD, TH_GOLD_INT  # [theme]
 from Components.ActionMap import ActionMap
 from Components.Label import Label
 from Components.MenuList import MenuList
@@ -18,7 +19,7 @@ from Components.MenuList import MenuList
 from .plugin_gridlist import scale_skin_xml, ft
 
 _W = 1100
-GOLD_ = "#F2C230"
+GOLD_ = TH_GOLD
 _ROW = 56
 _MAX_ROWS = 10
 
@@ -45,10 +46,10 @@ class _ChoiceList(object):
                 for lb in labels:
                     rows.append([lb,
                                  MultiContentEntryText(pos=(4, 10), size=(6, row - 20), text="",
-                                                       backcolor=0x1A121822, backcolor_sel=0xF2C230),
+                                                       backcolor=0x1A121822, backcolor_sel=TH_GOLD_INT),
                                  MultiContentEntryText(pos=(28, 0), size=(width - 40, row), font=0,
                                                        flags=RT_HALIGN_LEFT | RT_VALIGN_CENTER, text=lb,
-                                                       color=0xD6DCE5, color_sel=0xF2C230)])
+                                                       color=0xD6DCE5, color_sel=TH_GOLD_INT)])
                 self.l.setList(rows)
 
             def postWidgetCreate(self, instance):
@@ -102,7 +103,7 @@ class NovaChoiceBox(Screen):
         h = 104 + lh + 74
         self.skin = scale_skin_xml("""
         <screen name="NovaChoiceBox{rows}" position="center,center" size="{w},{h}" flags="wfNoBorder" backgroundColor="transparent">
-            <eLabel position="0,0" size="{w},{h}" backgroundColor="#1A121822" cornerRadius="18" zPosition="0" />
+            <eLabel theme="panel" position="0,0" size="{w},{h}" backgroundColor="#1A121822" cornerRadius="18" zPosition="0" />
             <widget name="title" position="36,20" size="{tw},48" font="Bold;32" foregroundColor="#F2C230" transparent="1" zPosition="2" />
             <eLabel position="36,76" size="120,4" backgroundColor="#F2C230" cornerRadius="2" zPosition="2" />
             <widget name="list" position="22,100" size="{lw},{lh}" scrollbarMode="showNever" font="Regular;28" itemHeight="{row}"
@@ -186,7 +187,7 @@ class NovaMessageBox(Screen):
         accent = "#E5484D" if type == self.TYPE_ERROR else GOLD_
         parts = ["""
         <screen name="NovaMessageBox{t}_{th}_{f}" position="center,center" size="{w},{h}" flags="wfNoBorder" backgroundColor="transparent">
-            <eLabel position="0,0" size="{w},{h}" backgroundColor="#1A121822" cornerRadius="18" zPosition="0" />
+            <eLabel theme="panel" position="0,0" size="{w},{h}" backgroundColor="#1A121822" cornerRadius="18" zPosition="0" />
             <widget name="title" position="36,20" size="{tw},48" font="Bold;30" foregroundColor="{a}" transparent="1" zPosition="2" />
             <eLabel position="36,74" size="120,4" backgroundColor="{a}" cornerRadius="2" zPosition="2" />
             <widget name="text" position="36,104" size="{tw},{th}" font="Regular;{f}" foregroundColor="#E6EAF0" transparent="1" zPosition="2" />

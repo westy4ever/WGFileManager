@@ -48,6 +48,7 @@ set with ALL session patches baked in:
   player_base.py       imports and module-level helpers
 """
 from .player_base import *  # noqa: F401,F403
+from .novaplay_theme import Frame  # [theme]
 from .player_osd import PlayerOSD
 from .player_switch import PlayerSwitch
 from .player_fallback import PlayerFallback
@@ -69,12 +70,12 @@ class NovaPlaySimplePlayer(PlayerStudioUI, PlayerOSD, PlayerSwitch, PlayerNetWai
              title, episode, video, subtitles, clock / seek bar with elapsed and
              remaining + "Ends 23:14" / colour keys + one help line.
              (No double hyphen inside an XML comment: the skin would not load.) -->
-        <widget name="overlayEdge"  position="158,866" size="1604,204" backgroundColor="#F2C230" transparent="1" zPosition="9" />
-        <widget name="posterEdge"   position="188,578" size="180,270" backgroundColor="#1A121822" zPosition="11" />
+        <widget name="overlayEdge" theme="hide"  position="158,866" size="1604,204" backgroundColor="#F2C230" transparent="1" zPosition="9" />
+        <widget name="posterEdge" theme="hide"   position="188,578" size="180,270" backgroundColor="#1A121822" zPosition="11" />
         <!-- [2026-11-04] slightly see-through like the BLUE / MENU panels; the gold
              frame is the panel's own border now (a gold block behind would show through) -->
-        <widget name="overlay_bg"   position="160,868" size="1600,200" backgroundColor="#1A121822" borderWidth="2" borderColor="#F2C230" cornerRadius="20" zPosition="10" />
-        <widget name="osdPosterBox" position="188,578" size="180,270" backgroundColor="#1A121822" zPosition="11" transparent="0" />
+        <widget name="overlay_bg" theme="panel"   position="160,868" size="1600,200" backgroundColor="#1A121822" borderWidth="2" borderColor="#F2C230" cornerRadius="20" zPosition="10" />
+        <widget name="osdPosterBox" theme="card" position="188,578" size="180,270" backgroundColor="#1A121822" zPosition="11" transparent="0" />
         <widget name="osdPoster" position="188,578" size="180,270" zPosition="12" alphatest="blend" scale="1" />
         <widget name="osd_title"    position="184,880" size="766,40" font="Regular;30" foregroundColor="#F2C230" transparent="1" zPosition="12" halign="left" valign="center" />
         <widget name="osd_episode"  position="770,880" size="180,40" font="Regular;24" foregroundColor="#F2C230" transparent="1" zPosition="12" halign="left" valign="center" />
@@ -99,7 +100,7 @@ class NovaPlaySimplePlayer(PlayerStudioUI, PlayerOSD, PlayerSwitch, PlayerNetWai
         <widget name="keyRed"    position="208,1016" size="185,38" font="Regular;23" halign="left" valign="center" foregroundColor="#F0F6FC" backgroundColor="#1A121822" transparent="1" zPosition="12" />
         <widget name="keyDotG"   position="399,1027" size="16,16" backgroundColor="#30A46C" cornerRadius="8" zPosition="12" />
         <widget name="keyGreen"  position="423,1016" size="185,38" font="Regular;23" halign="left" valign="center" foregroundColor="#F0F6FC" backgroundColor="#1A121822" transparent="1" zPosition="12" />
-        <widget name="keyDotY"   position="614,1027" size="16,16" backgroundColor="#F2C230" cornerRadius="8" zPosition="12" />
+        <widget name="keyDotY"   position="614,1027" size="16,16" backgroundColor="#F2C231" cornerRadius="8" zPosition="12" />
         <widget name="keyYellow" position="638,1016" size="185,38" font="Regular;23" halign="left" valign="center" foregroundColor="#F0F6FC" backgroundColor="#1A121822" transparent="1" zPosition="12" />
         <widget name="keyDotB"   position="851,1027" size="16,16" backgroundColor="#3E7BFA" cornerRadius="8" zPosition="12" />
         <widget name="keyBlue"   position="875,1016" size="185,38" font="Regular;23" halign="left" valign="center" foregroundColor="#F0F6FC" backgroundColor="#1A121822" transparent="1" zPosition="12" />
@@ -116,7 +117,7 @@ class NovaPlaySimplePlayer(PlayerStudioUI, PlayerOSD, PlayerSwitch, PlayerNetWai
         <widget name="osd_keybar" position="-300,-300" size="1,1" font="Regular;10" transparent="1" zPosition="0" />
         <widget name="osd_botline" position="-300,-300" size="1,1" font="Regular;10" transparent="1" zPosition="0" />
         <widget name="osd_jump" position="-300,-300" size="1,1" font="Regular;10" transparent="1" zPosition="0" />
-        <widget name="autoNextPanel" position="1110,92" size="750,255" zPosition="20" backgroundColor="#20000000" transparent="0" cornerRadius="24" />
+        <widget name="autoNextPanel" theme="card" position="1110,92" size="750,255" zPosition="20" backgroundColor="#20000000" transparent="0" cornerRadius="24" />
         <widget name="autoNextAccent" position="1110,92" size="750,7" zPosition="21" backgroundColor="#F2C230" transparent="0" />
         <widget name="autoNextPoster" position="1140,105" size="100,150" zPosition="22" alphatest="blend" scale="1" />
         <widget name="autoNextTitle" position="1370,122" size="455,40" font="Regular;30" halign="left" foregroundColor="#F0F6FC" backgroundColor="transparent" zPosition="22" transparent="1" />
@@ -260,7 +261,7 @@ class NovaPlaySimplePlayer(PlayerStudioUI, PlayerOSD, PlayerSwitch, PlayerNetWai
             my_log("playback start: {} ({} methods to try)".format(title, len(candidates or [])))
         except Exception:
             pass
-        self["overlay_bg"]   = Label("")
+        self["overlay_bg"]   = Frame()
         self["status"]       = Label("Playing...")
         self["osd_shadow"]   = Label("")
         self["osd_titlebar"] = Label("")
@@ -278,7 +279,7 @@ class NovaPlaySimplePlayer(PlayerStudioUI, PlayerOSD, PlayerSwitch, PlayerNetWai
         self["osd_botline"]  = Label("")
         self["aspect_bar_l"] = Label("")
         self["aspect_bar_r"] = Label("")
-        self["osdPosterBox"] = Label("")
+        self["osdPosterBox"] = Frame()
         self["osdPoster"]    = Pixmap()
         self["osd_videinfo"] = Label("")
         self["osd_subinfo"] = Label("")
@@ -316,6 +317,8 @@ class NovaPlaySimplePlayer(PlayerStudioUI, PlayerOSD, PlayerSwitch, PlayerNetWai
                 self[k] = ProgressBar()
             elif "Poster" in k:
                 self[k] = Pixmap()
+            elif k == "autoNextPanel":
+                self[k] = Frame()                   # [theme] armoured card
             else:
                 self[k] = Label("")
         self["subBg1"] = Label("")
@@ -328,7 +331,7 @@ class NovaPlaySimplePlayer(PlayerStudioUI, PlayerOSD, PlayerSwitch, PlayerNetWai
             for _bk in range(2):                    # [2026-10-31] bold copies
                 self["subBold%d_%d" % (_li, _bk)] = Label("")
         for _n in STUDIO_WIDGETS:                   # [2026-10-31] studio side panel
-            self[_n] = Label("")
+            self[_n] = Frame() if _n == "studioCardBg" else Label("")
         self["safeTop"] = Label("")
         self["safeBottom"] = Label("")
         self["safeLeft"] = Label("")

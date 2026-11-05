@@ -67,6 +67,15 @@ _SKIN_SCALE_ATTRS = ("position", "size", "cornerRadius", "itemHeight")
 
 
 def scale_skin_xml(xml):
+    # [2026-11-05] Theme Colour: the accent colour and the armoured frames
+    try:
+        try:
+            from .novaplay_theme import apply as _theme_apply
+        except ImportError:
+            from .novaplay_theme import apply as _theme_apply
+        xml = _theme_apply(xml)
+    except Exception:
+        pass
     if _SCALE == 1.0 and _TEXT == 1.0:
         return xml
 

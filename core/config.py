@@ -73,6 +73,9 @@ class WGFileManagerConfig:
             p.use_internal_player = ConfigYesNo(default=True)
         if not hasattr(p, 'fallback_to_external'):
             p.fallback_to_external = ConfigYesNo(default=True)
+        if not hasattr(p, 'player_theme_colour'):      # [2026-11-05] Nova / audio player frames
+            p.player_theme_colour = ConfigSelection(default="gold", choices=[
+                ("green", "Green"), ("blue", "Blue"), ("red", "Red"), ("gold", "Gold")])
 
         # --- Remote Access ---
         if not hasattr(p, 'remote_ip'):

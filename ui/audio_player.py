@@ -40,6 +40,7 @@ from enigma import eServiceReference, eTimer, iPlayableService, iServiceInformat
 
 from ..utils.logging_config import get_logger
 from ..player.nova.plugin_gridlist import scale_skin_xml, sc
+from ..player.nova.novaplay_theme import Frame
 
 logger = get_logger(__name__)
 
@@ -179,8 +180,9 @@ def resume_offer(playlist, start, path=None):
 SKIN = """
 <screen name="WGFMAudioPlayer" position="0,0" size="1920,1080" flags="wfNoBorder" backgroundColor="#0D1117">
     <eLabel position="0,0" size="1920,1080" backgroundColor="#0D1117" zPosition="0" />
-    <widget name="coverBox" position="180,130" size="560,560" font="Regular;220" halign="center" valign="center" foregroundColor="#2A3240" backgroundColor="#161B22" cornerRadius="24" transparent="0" zPosition="1" />
-    <widget name="cover" position="180,130" size="560,560" alphatest="blend" scale="1" zPosition="2" />
+    <eLabel theme="panel" position="150,96" size="1620,628" backgroundColor="#1A121822" zPosition="1" />
+    <widget name="coverBox" position="180,130" size="560,560" font="Regular;220" halign="center" valign="center" foregroundColor="#2A3240" backgroundColor="#161B22" cornerRadius="24" transparent="0" zPosition="2" />
+    <widget name="cover" position="180,130" size="560,560" alphatest="blend" scale="1" zPosition="3" />
     <widget name="title" position="800,160" size="940,72" font="Regular;54" foregroundColor="#F2C230" transparent="1" zPosition="2" />
     <widget name="artist" position="800,244" size="940,52" font="Regular;38" foregroundColor="#F0F6FC" transparent="1" zPosition="2" />
     <widget name="album" position="800,302" size="940,44" font="Regular;30" foregroundColor="#A3ADBB" transparent="1" zPosition="2" />
@@ -190,7 +192,7 @@ SKIN = """
     <widget name="upnext0" position="800,506" size="940,42" font="Regular;30" foregroundColor="#E5E7EB" transparent="1" zPosition="2" />
     <widget name="upnext1" position="800,554" size="940,42" font="Regular;30" foregroundColor="#C9D1D9" transparent="1" zPosition="2" />
     <widget name="upnext2" position="800,602" size="940,42" font="Regular;30" foregroundColor="#8B949E" transparent="1" zPosition="2" />
-    <widget name="overlay_bg" position="160,868" size="1600,200" backgroundColor="#1A121822" borderWidth="2" borderColor="#F2C230" cornerRadius="20" zPosition="10" />
+    <widget name="overlay_bg" theme="panel" position="160,868" size="1600,200" backgroundColor="#1A121822" borderWidth="2" borderColor="#F2C230" cornerRadius="20" zPosition="10" />
     <widget name="osd_title" position="184,880" size="1400,40" font="Regular;30" foregroundColor="#F2C230" transparent="1" zPosition="12" halign="left" valign="center" />
     <widget name="osd_clock" position="1610,880" size="130,40" font="Regular;28" foregroundColor="#FFFFFF" transparent="1" zPosition="12" halign="right" valign="center" />
     <widget name="seekFrame" position="182,930" size="1556,22" zPosition="11" backgroundColor="#1A2A3240" cornerRadius="11" />
@@ -204,7 +206,7 @@ SKIN = """
     <widget name="keyRed" position="208,1016" size="185,38" font="Regular;23" halign="left" valign="center" foregroundColor="#F0F6FC" transparent="1" zPosition="12" />
     <widget name="keyDotG" position="399,1027" size="16,16" backgroundColor="#30A46C" cornerRadius="8" zPosition="12" />
     <widget name="keyGreen" position="423,1016" size="185,38" font="Regular;23" halign="left" valign="center" foregroundColor="#F0F6FC" transparent="1" zPosition="12" />
-    <widget name="keyDotY" position="614,1027" size="16,16" backgroundColor="#F2C230" cornerRadius="8" zPosition="12" />
+    <widget name="keyDotY" position="614,1027" size="16,16" backgroundColor="#F2C231" cornerRadius="8" zPosition="12" />
     <widget name="keyYellow" position="638,1016" size="205,38" font="Regular;23" halign="left" valign="center" foregroundColor="#F0F6FC" transparent="1" zPosition="12" />
     <widget name="keyDotB" position="851,1027" size="16,16" backgroundColor="#3E7BFA" cornerRadius="8" zPosition="12" />
     <widget name="keyBlue" position="875,1016" size="205,38" font="Regular;23" halign="left" valign="center" foregroundColor="#F0F6FC" transparent="1" zPosition="12" />
@@ -249,8 +251,9 @@ class AudioPlaylistPlayer(Screen):
                   "upnext2", "osd_title", "osd_clock", "osd_elapsed", "osd_state", "status", "osd_durtext",
                   "keyRed", "keyGreen", "keyYellow", "keyBlue", "osd_keys", "seekBubble"):
             self[n] = Label(u"")
-        for n in ("overlay_bg", "seekFrame", "osd_divider", "keyDotR", "keyDotG", "keyDotY", "keyDotB"):
+        for n in ("seekFrame", "osd_divider", "keyDotR", "keyDotG", "keyDotY", "keyDotB"):
             self[n] = Label(u"")
+        self["overlay_bg"] = Frame()                 # [theme] armoured panel
         self["cover"] = Pixmap()
         self["seekbar"] = ProgressBar()
         self["coverBox"].setText(u"♫")

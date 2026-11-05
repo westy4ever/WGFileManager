@@ -407,6 +407,37 @@ def check_file_manager():
     shutil.rmtree(d, ignore_errors=True)
 
 
+def check_theme():
+    """Theme colour: the player and audio player use the frames; every picture exists"""
+    print("\n[8] theme colour and frames")
+    import re
+    T = nova("novaplay_theme")
+    A = __import__(PKG + ".ui.audio_player", fromlist=["x"])
+    p = nova("local_player").NovaLocalPlayer(Dummy(), "Film", nova().local_candidates("/x/a.mkv"), item_url="/x/a.mkv", prev_episode=None)
+    a = A.AudioPlaylistPlayer(Dummy(), ["/x/a.mp3"], 0, None)
+    bad = []
+    for label, obj in (("player", p), ("audio player", a)):
+        skin = getattr(obj, "skin", None) or type(obj).skin
+        if 'theme="' in skin:
+            bad.append(label + ": theme= left in the skin")
+        for m in re.finditer(r'<widget name="([^"]+)"[^>]*pixmap="[^"]*images/theme/', skin):
+            if not isinstance(obj._hw.get(m.group(1)), T.Frame):
+                bad.append("%s: %s should be a Frame" % (label, m.group(1)))
+        if "images/theme/" not in skin:
+            bad.append(label + ": no frame picture used")
+    expect("player and audio player draw their panels as frame pictures", bad, [])
+    missing = []
+    for name, _l, _c in T.THEMES:
+        for kind, w, h in sorted(T.REQUESTED):
+            if not os.path.isfile(T.frame_path(kind, w, h, name)):
+                missing.append("%s/%s_%dx%d" % (name, kind, w, h))
+        for kind in T.GENERIC:
+            if not os.path.isfile(os.path.join(T.FRAME_DIR, name, "%s_any.png" % kind)):
+                missing.append("%s/%s_any" % (name, kind))
+    expect("every frame picture exists in Green, Blue, Red and Gold (%d sizes)" % len(T.REQUESTED), missing, [])
+    expect("the YELLOW key dot is never recoloured", "#F2C231" in a.skin and "#F2C231" in (getattr(p, "skin", None) or type(p).skin), True)
+
+
 def main():
     check_imports()
     check_screen()
@@ -415,6 +446,7 @@ def main():
     check_builtin_subs()
     check_audio()
     check_file_manager()
+    check_theme()
     print("\n" + ("ALL PASSED" if not FAILS else "%d FAILED" % len(FAILS)))
     sys.exit(1 if FAILS else 0)
 

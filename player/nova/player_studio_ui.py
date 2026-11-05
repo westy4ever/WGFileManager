@@ -15,6 +15,8 @@ existing code in player_subs.py (PlayerSubs), reached through _studioIdx /
 _studioAdjust / _studioOk.
 """
 
+from .novaplay_theme import TH_CHIPSEL, TH_GOLD  # [theme]
+
 # ── layout (1920x1080 skin coordinates) ──────────────────────────────────
 SX, SY, SW, SH = 1080, 64, 780, 812
 ROWS = 6
@@ -24,14 +26,14 @@ CHIPS = 6
 TAB_X = (SX + 40, SX + 190, SX + 320, SX + 510)
 TAB_W = (120, 100, 160, 110)
 
-GOLD = "#F2C230"
+GOLD = TH_GOLD
 WHITE = "#F2F6FC"
 MUTED = "#8B949E"
 # [2026-11-04] slightly see-through, the same as the BLUE / MENU panels
 CARD = "#1A121822"
 ROWBG = "#1A1C2432"
 CHIPBG = "#1A232C3B"
-CHIPSEL = "#1A463A12"
+CHIPSEL = TH_CHIPSEL
 TRACK = "#1A343C4A"
 
 TABS = (u"Style", u"Box", u"Position", u"Sync")    # [2026-10-31] Box: background + corners
@@ -73,7 +75,7 @@ STUDIO_WIDGETS = HEAD + tuple(n for r in range(ROWS) for n in _row_names(r))
 
 def studio_skin_xml():
     out = [
-        '<widget name="studioCardBg" position="{x},{y}" size="{w},{h}" backgroundColor="{c}" cornerRadius="28" zPosition="85" />'
+        '<widget name="studioCardBg" theme="panel" position="{x},{y}" size="{w},{h}" backgroundColor="{c}" cornerRadius="28" zPosition="85" />'
         .format(x=SX, y=SY, w=SW, h=SH, c=CARD),
         '<widget name="studioHead" position="{x},{y}" size="400,34" font="Bold;24" foregroundColor="{m}" backgroundColor="{c}" transparent="1" zPosition="89" />'
         .format(x=SX + 40, y=SY + 26, m=MUTED, c=CARD),

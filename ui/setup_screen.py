@@ -92,6 +92,10 @@ class WGFileManagerSetup(ConfigListScreen, Screen):
         # --- STEP 3: ASSIGN 'p' AFTER REGISTRATION IS DONE ---
         p = config.plugins.wgfilemanager
         
+        try:
+            self._theme_before = config.plugins.wgfilemanager.player_theme_colour.value
+        except Exception:
+            self._theme_before = None
         # --- STEP 4: BUILD THE LIST ---
         try:
             self.list.append(getConfigListEntry("══════ General Settings ══════", ConfigNothing()))
@@ -123,6 +127,8 @@ class WGFileManagerSetup(ConfigListScreen, Screen):
             self.list.append(getConfigListEntry("══════ Media Player ══════", ConfigNothing()))
             self.list.append(getConfigListEntry("Use Internal Player:", p.use_internal_player))
             self.list.append(getConfigListEntry("Fallback to External:", p.fallback_to_external))
+            if hasattr(p, "player_theme_colour"):
+                self.list.append(getConfigListEntry("Player Theme Colour (after restart):", p.player_theme_colour))
             
             # Remote & Network
             self.list.append(getConfigListEntry("══════ Remote Access ══════", ConfigNothing()))
@@ -167,13 +173,27 @@ class WGFileManagerSetup(ConfigListScreen, Screen):
         try:
             # 1. Use the built-in ConfigListScreen saver to process all entries
             from Components.ConfigList import ConfigListScreen
+            p = config.plugins.wgfilemanager
+            theme_before = getattr(self, "_theme_before", None)
             ConfigListScreen.saveAll(self)
             
             # 2. Write the changes to the physical settings file (/etc/enigma2/settings)
             from Components.config import configfile
             configfile.save()
             
-            # 3. Close the screen and return to the previous menu
+            # 3. [2026-11-05] a new player theme colour shows after Enigma2 restarts
+            if hasattr(p, "player_theme_colour") and theme_before is not None and p.player_theme_colour.value != theme_before:
+                def _restart(yes):
+                    if yes:
+                        from Screens.Standby import TryQuitMainloop
+                        self.session.open(TryQuitMainloop, 3)
+                    self.close()
+                self.session.openWithCallback(_restart, MessageBox,
+                                              "Player theme colour: %s.\n\nRestart Enigma2 now so it takes effect?"
+                                              % p.player_theme_colour.value.capitalize(), MessageBox.TYPE_YESNO)
+                return
+
+            # 4. Close the screen and return to the previous menu
             self.close()
             
         except Exception as e:

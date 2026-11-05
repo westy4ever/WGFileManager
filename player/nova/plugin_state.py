@@ -91,6 +91,12 @@ def _read_keys():
 
 
 def _get_config(key, default=""):
+    if key == "theme_colour":                  # [2026-11-05] WGFileManager > Setup > Player Theme Colour
+        try:
+            from Components.config import config
+            return config.plugins.wgfilemanager.player_theme_colour.value
+        except Exception:
+            pass
     value = (_load_state().get("config") or {}).get(key, None)
     if key in _KEY_NAMES and not value:
         value = _read_keys().get(key, None)

@@ -8,6 +8,7 @@ Part of NovaPlaySimplePlayer (plugin_screen_player.py), split out
 and state through self; module-level helpers come from player_base.
 """
 from .player_base import *  # noqa: F401,F403
+from .novaplay_theme import TH_GOLD, TH_PALE  # [theme]
 
 
 class PlayerOSD(object):
@@ -503,7 +504,7 @@ class PlayerOSD(object):
         if getattr(self, "_stall_recovering", False):
             return u"⚠", "#FF6B6B"
         if getattr(self, "_paused", False):
-            return u"\u275a\u275a", "#F2C230"
+            return u"\u275a\u275a", TH_GOLD
         svc = None
         try:
             svc = self.session.nav.getCurrentService()
@@ -537,7 +538,7 @@ class PlayerOSD(object):
             else:
                 elapsed = current_play_secs()
 
-            color = "#F2C230" if self._paused else "#E5D1A6"
+            color = TH_GOLD if self._paused else TH_PALE
             try:
                 if parseColor is not None:
                     self["osd_elapsed"].instance.setForegroundColor(parseColor(color))
@@ -614,7 +615,7 @@ class PlayerOSD(object):
                 if parseColor is not None:
                     try:
                         self["osd_subinfo"].instance.setForegroundColor(
-                            parseColor("#F2C230" if _cc_on else "#6E7681"))
+                            parseColor(TH_GOLD if _cc_on else "#6E7681"))
                     except Exception:
                         pass
             except Exception:
