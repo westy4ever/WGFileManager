@@ -957,7 +957,7 @@ TRASH_PATH = "/media/hdd/wgfilemanager_trash/"
 
 # ========================================================================
 # MODULE-LEVEL CONSTANTS - part 2 (round-4 fix pack)
-# Consumed by utils/formatters.py, utils/subtitle_utils.py, network/*.py
+# Consumed by utils/formatters.py, network/*.py
 # ========================================================================
 ARCHIVE_EXTENSIONS = ['.zip', '.tar', '.tar.gz', '.tgz', '.tar.bz2', '.tbz2', '.tar.xz', '.txz', '.gz', '.bz2', '.xz', '.rar', '.7z']
 AUDIO_EXTENSIONS = ['.mp3', '.flac', '.wav', '.aac', '.ogg', '.m4a', '.wma', '.opus', '.ac3', '.dts', '.ape', '.aiff', '.amr']

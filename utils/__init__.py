@@ -27,60 +27,6 @@ from .security import (
 # Logging
 from .logging_config import get_logger, setup_logging
 
-# Subtitle Utilities (new)
-try:
-    from .subtitle_utils import (
-        detect_subtitle_encoding,
-        get_matching_subtitle_files,
-        parse_subtitle_language,
-        validate_subtitle_file,
-        is_subtitle_content,
-        get_video_for_subtitle,
-        clean_subtitle_text,
-        calculate_subtitle_stats,
-        convert_subtitle_format
-    )
-    SUBTITLE_UTILS_AVAILABLE = True
-except ImportError:
-    # Create placeholder functions if subtitle_utils doesn't exist
-    SUBTITLE_UTILS_AVAILABLE = False
-    
-    def detect_subtitle_encoding(file_path):
-        """Detect subtitle file encoding (fallback)"""
-        return 'utf-8'
-    
-    def get_matching_subtitle_files(video_path):
-        """Find matching subtitle files (fallback)"""
-        return []
-    
-    def parse_subtitle_language(filename):
-        """Parse language from subtitle filename (fallback)"""
-        return 'Unknown'
-    
-    def validate_subtitle_file(file_path):
-        """Validate subtitle file (fallback)"""
-        return False, "Subtitle utilities not available"
-    
-    def is_subtitle_content(content):
-        """Check if content looks like subtitle data (fallback)"""
-        return False
-    
-    def get_video_for_subtitle(subtitle_path):
-        """Find matching video file for subtitle (fallback)"""
-        return None
-    
-    def clean_subtitle_text(text):
-        """Clean subtitle text (fallback)"""
-        return text
-    
-    def calculate_subtitle_stats(subtitle_lines):
-        """Calculate subtitle statistics (fallback)"""
-        return {}
-    
-    def convert_subtitle_format(content, from_format, to_format):
-        """Convert subtitle format (fallback)"""
-        return content
-
 # Time utilities
 try:
     from .time_utils import (
@@ -208,18 +154,6 @@ __all__ = [
     # Logging
     'get_logger', 'setup_logging',
     
-    # Subtitle Utilities
-    'detect_subtitle_encoding',
-    'get_matching_subtitle_files',
-    'parse_subtitle_language',
-    'validate_subtitle_file',
-    'is_subtitle_content',
-    'get_video_for_subtitle',
-    'clean_subtitle_text',
-    'calculate_subtitle_stats',
-    'convert_subtitle_format',
-    'SUBTITLE_UTILS_AVAILABLE',
-    
     # Time Utilities
     'parse_time_string',
     'format_time_delta',
@@ -255,7 +189,6 @@ UTILS_FEATURES = {
     'validators': True,
     'security': True,
     'logging': True,
-    'subtitle_utilities': SUBTITLE_UTILS_AVAILABLE,
     'time_utilities': True,
     'file_utilities': True,
     'network_utilities': True,
@@ -266,7 +199,6 @@ def get_utils_info():
     return {
         'version': UTILS_VERSION,
         'features': [feature for feature, available in UTILS_FEATURES.items() if available],
-        'subtitle_support': SUBTITLE_UTILS_AVAILABLE,
         'description': 'Complete utility functions for WG File Manager PRO',
     }
 

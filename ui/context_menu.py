@@ -98,17 +98,6 @@ class ContextMenuHandler:
             ]
         }
     
-    # Add this import block HERE:
-    # ============================================================================
-    # HOTKEY SETUP IMPORT
-    # ============================================================================
-        try:
-            from ..ui.hotkey_setup import HotkeySetupScreen
-            self.HOTKEY_SUPPORT_AVAILABLE = True
-        except ImportError as e:
-            self.HOTKEY_SUPPORT_AVAILABLE = False
-            logger.warning((("HotkeySetupScreen not available: " + "{e}").format(e=(e))))
-    # ============================================================================
 
     def show_context_menu(self):
         """Show context menu for current selection"""
@@ -398,7 +387,6 @@ class ContextMenuHandler:
                     (" View Log", "log"),
                     
                     ("═══ SETTINGS ═══", None),
-                    (" Hotkey Settings", "hotkey_setup"), # ADD THIS LINE
                     (" Plugin Settings", "cfg"),
                 ]
             else:
@@ -427,7 +415,6 @@ class ContextMenuHandler:
                     (" Repair Picon", "picon"),
                     (" View Task Queue", "queue"),
                     (" View Log", "log"),
-                    (" Hotkey Settings", "hotkey_setup"), # ADD THIS LINE
                     (" Plugin Settings", "cfg"),
                 ]
             
@@ -464,23 +451,6 @@ class ContextMenuHandler:
         mode = answer[1]
 
         try:
-            # ============================================================================
-            # HOTKEY SETUP HANDLER
-            # ============================================================================
-            if mode == "hotkey_setup":
-                if hasattr(self, 'HOTKEY_SUPPORT_AVAILABLE') and self.HOTKEY_SUPPORT_AVAILABLE:
-                    from ..ui.hotkey_setup import HotkeySetupScreen
-                    self.main.session.open(HotkeySetupScreen)
-                else:
-                    self.dialogs.show_message(
-                        " Hotkey Settings not available!\n\n"
-                        "The hotkey setup module is not installed.\n"
-                        "Please ensure hotkey_setup.py exists in the ui folder.",
-                        type="error",
-                        timeout=3
-                    )
-                return
-            # ============================================================================
             # FIXED: Use self.config instead of importing config directly
             if mode == "cfg":
                 # FIXED: Direct import to avoid circular dependency
@@ -1999,122 +1969,3 @@ class ContextMenuHandler:
                     
         except Exception as e:
             logger.error((("Error forcing refresh: " + "{e}").format(e=(e))))
-
-    def add_subtitle_options(self, menu_items, file_path):
-        """Add subtitle options to context menu for video files"""
-        try:
-            ext = os.path.splitext(file_path)[1].lower()
-            video_extensions = ['.mp4', '.mkv', '.avi', '.ts', '.m2ts', '.mov', '.m4v']
-            
-            if ext in video_extensions:
-                # Subtitle options for video files
-                menu_items.extend([
-                    (" Play without subtitles", lambda: self._play_video(file_path, False)),
-                    (" Play with subtitles", lambda: self._play_video(file_path, True)),
-                    (" Subtitle Settings", lambda: self._open_subtitle_settings(file_path)),
-                    (" Download Subtitles", lambda: self._download_subtitles(file_path)),
-                    (" Find Subtitles", lambda: self._find_subtitles(file_path)),
-                    (" Sync Subtitles", lambda: self._sync_subtitles(file_path)),
-                ])
-        except Exception as e:
-            logger.error((("Error adding subtitle options: " + "{e}").format(e=(e))))
-    
-    def _play_video(self, file_path, with_subtitles=True):
-        """Play video with subtitle option"""
-        try:
-            if with_subtitles and self.parent.subtitle_manager:
-                # Ensure subtitle manager has this video
-                self.parent.subtitle_manager.set_video_file(file_path)
-                # Try to auto-load subtitles
-                from enigma import eServiceReference
-                service_ref = eServiceReference(4097, 0, file_path)
-                self.parent.subtitle_manager.auto_load_subtitle(service_ref)
-            
-            self.parent.play_media_file(file_path)
-        except Exception as e:
-            logger.error((("Error playing video: " + "{e}").format(e=(e))))
-            self.parent.dialogs.show_message((("Playback error: " + "{e}").format(e=(e))), type="error")
-    
-    def _open_subtitle_settings(self, file_path):
-        """Open subtitle settings for video"""
-        try:
-            if self.parent.subtitle_manager:
-                self.parent.open_subtitle_settings(file_path)
-            else:
-                self.parent.dialogs.show_message(
-                    "Subtitle manager not available",
-                    type="warning"
-                )
-        except Exception as e:
-            logger.error((("Error opening subtitle settings: " + "{e}").format(e=(e))))
-    
-    def _download_subtitles(self, file_path):
-        """Download subtitles for video"""
-        try:
-            self.parent.dialogs.show_subtitle_download_dialog(file_path, self._handle_download_choice)
-        except Exception as e:
-            logger.error((("Error downloading subtitles: " + "{e}").format(e=(e))))
-    
-    def _handle_download_choice(self, method, video_path):
-        """Handle subtitle download choice"""
-        try:
-            if method == "filename":
-                self._download_by_filename(video_path)
-            elif method == "hash":
-                self._download_by_hash(video_path)
-            elif method == "online":
-                self._search_online(video_path)
-            elif method == "local":
-                self._browse_local(video_path)
-        except Exception as e:
-            logger.error((("Error handling download choice: " + "{e}").format(e=(e))))
-    
-    def _find_subtitles(self, file_path):
-        """Find existing subtitle files"""
-        try:
-            if self.parent.subtitle_manager:
-                subtitles = self.parent.subtitle_manager.find_local_subtitles(file_path)
-                self.parent.dialogs.show_subtitle_selection_dialog(
-                    subtitles, 
-                    self._handle_subtitle_selection
-                )
-            else:
-                self.parent.dialogs.show_message(
-                    "Subtitle manager not available",
-                    type="warning"
-                )
-        except Exception as e:
-            logger.error((("Error finding subtitles: " + "{e}").format(e=(e))))
-    
-    def _handle_subtitle_selection(self, subtitle_path):
-        """Handle subtitle selection"""
-        try:
-            if subtitle_path and self.parent.subtitle_manager:
-                self.parent.subtitle_manager.load_subtitle(subtitle_path)
-                self.parent.dialogs.show_message(
-                    (("Loaded subtitle:\n" + "{_a0}").format(_a0=(os.path.basename(subtitle_path)))),
-                    type="info",
-                    timeout=2
-                )
-        except Exception as e:
-            logger.error((("Error loading subtitle: " + "{e}").format(e=(e))))
-    
-    def _sync_subtitles(self, file_path):
-        """Sync subtitle timing"""
-        try:
-            self.parent.dialogs.show_subtitle_delay_dialog(0, self._apply_subtitle_delay)
-        except Exception as e:
-            logger.error((("Error syncing subtitles: " + "{e}").format(e=(e))))
-    
-    def _apply_subtitle_delay(self, delay_ms):
-        """Apply subtitle delay"""
-        try:
-            if self.parent.subtitle_manager:
-                # This would apply delay to current subtitle
-                self.parent.dialogs.show_message(
-                    (("Subtitle delay applied: " + "{delay_ms}" + "ms").format(delay_ms=(delay_ms))),
-                    type="info",
-                    timeout=2
-                )
-        except Exception as e:
-            logger.error((("Error applying delay: " + "{e}").format(e=(e))))

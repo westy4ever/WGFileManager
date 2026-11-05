@@ -446,7 +446,7 @@ class WGFileManagerMain(Screen):
             "home": lambda: self.go_home(),
             "end": lambda: self.go_end(),
             "subtitle": self.open_subtitle_settings,
-            "help": self.open_hotkey_settings,
+            "help": self.show_keys_help,
         }, -1)
         logger.debug("[MainScreen] Action map setup complete")
 
@@ -662,7 +662,7 @@ class WGFileManagerMain(Screen):
 
     def update_help_text(self):
         """Update help text"""
-        help_text = "OK:Play/Open 0:Menu INFO:Storage 1-9:BMark MENU:Tools SUBTITLE:Subtitle Settings"
+        help_text = "OK:Play/Open 0:Menu INFO:Storage 1-9:BMark MENU:Tools HELP:Keys"
         self["help_text"].setText(help_text)
         logger.debug("[MainScreen] Help text updated")
 
@@ -1701,11 +1701,11 @@ class WGFileManagerMain(Screen):
         the player (YELLOW / TEXT during playback)."""
         try:
             self.dialogs.show_message(
-                "Subtitles are handled during playback:\n\n"
-                "YELLOW - select subtitle (external + embedded)\n"
-                "TEXT   - toggle subtitles on/off\n"
-                "In the selection menu:\n"
-                "YELLOW/BLUE - sync +/-100ms",
+                "Subtitles are handled in the player:\n\n"
+                "BLUE      Subtitles tab: search, local files, built-in tracks\n"
+                "YELLOW    subtitles on / off\n"
+                "Style & sync (in the Subtitles tab)  size, colour, position,\n"
+                "          sync to audio (0.5 s) and fine sync (0.1 s)",
                 type="info", timeout=6
             )
         except Exception as e:
@@ -2038,22 +2038,16 @@ class WGFileManagerMain(Screen):
             return 0.0
 
     # Hotkey settings
-    def open_hotkey_settings(self):
-        """Open hotkey settings directly from HELP button"""
-        try:
-            from ..ui.hotkey_setup import HotkeySetupScreen
-            logger.debug("[MainScreen] Opening hotkey settings")
-            self.session.open(HotkeySetupScreen)
-        except ImportError as e:
-            logger.error((("[MainScreen] Hotkey settings not available: " + "{e}").format(e=(e))))
-            self.dialogs.show_message(
-                (("Hotkey settings not available!\n\nError: " + "{e}" + "\nAccess via: MENU → Tools → Hotkey Settings").format(e=(e))),
-                type="error",
-                timeout=3
-            )
-        except Exception as e:
-            logger.error((("[MainScreen] Error opening hotkey settings: " + "{e}").format(e=(e))))
-            self.show_error("Hotkey settings", e)
+    def show_keys_help(self):
+        """HELP: the file browser's keys (was the old player's Hotkey Settings)"""
+        self.dialogs.show_message(
+            "OK  open folder / play file (music: the whole folder)\n"
+            "Hold OK  play every video in the folder\n"
+            "0  file menu (info, copy, move, archive...)\n"
+            "RED  delete    GREEN  rename    YELLOW  select    BLUE  copy to other pane\n"
+            "MENU  tools    INFO  storage    1-9  bookmarks\n"
+            "SUBTITLE  subtitle keys in the player",
+            type="info")
 
     def show_error(self, context, error):
         """Show user-friendly error message with logging"""
