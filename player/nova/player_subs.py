@@ -200,6 +200,28 @@ class PlayerSubs(object):
             update_subtitle_state(path=path, _orig_path=path, offset_ms=0)
             disable_subtitle(self.session)
             apply_subtitle(self.session, path)
+            self._logSubtitleAttach("picked", path)
+
+    def _logSubtitleAttach(self, how, path):
+        """[WGFM 2026-11-05] which renderer has the subtitle (the sync rows
+        depend on it) -- into /tmp/wgfilemanager.log"""
+        try:
+            from .novaplay_substudio import STUDIO
+            size = os.path.getsize(path) if os.path.exists(path) else -1
+            if STUDIO.is_attached():
+                my_log("subtitle {}: {} ({} bytes) -> Studio, {} lines".format(
+                    how, path, size, STUDIO.get_cue_count()))
+            else:
+                head = b""
+                try:
+                    with open(path, "rb") as fh:
+                        head = fh.read(80)
+                except Exception:
+                    pass
+                my_log("subtitle {}: {} ({} bytes) -> Enigma2 draws it, the Studio could not "
+                       "read it; file starts {!r}".format(how, path, size, head))
+        except Exception as e:
+            my_log("subtitle {}: {} ({})".format(how, path, e))
 
     # ── Subtitle Studio overlay (v3) ─────────────────────────────────────
     def _studioItemsList(self):
@@ -424,9 +446,29 @@ class PlayerSubs(object):
     def _studioSetDelay(self, new_off):
         from .novaplay_substudio import STUDIO
         new_off = int(new_off)
+        self._studioSyncMsg = None
         if not STUDIO.is_attached():
-            adjust_sync(self.session, new_off - self._studioDelayTotal())
-            return
+            st0 = get_subtitle_state()
+            p0 = st0.get("_orig_path") or st0.get("path") or ""
+            if p0 and os.path.exists(p0) and p0.lower().endswith(".srt") and STUDIO.attach(p0):
+                # [WGFM 2026-11-05] the file is readable: the Studio draws it from now on
+                try:
+                    svc = self.session.nav.getCurrentService()
+                    sub = svc and svc.subtitle()
+                    if sub:
+                        sub.disableSubtitle()
+                except Exception:
+                    pass
+                my_log("sync: Studio took over {}".format(p0))
+            else:
+                msg = adjust_sync(self.session, new_off - self._studioDelayTotal())
+                my_log("sync ({} ms) without the Studio: {} [subtitle {!r}]".format(new_off, msg, p0))
+                ok = msg.startswith("Sync: ") and msg[6:7] in "+-0123456789"
+                self._studioSyncMsg = None if ok else {
+                    "No subtitle active": u"Sync works on subtitle files (BLUE › search, or an .srt next to the video) - not on a track inside the video",
+                    "Sync: SRT files only": u"This subtitle type can't be synced - only text subtitles (.srt / .ass / .vtt)",
+                }.get(msg, u"Could not shift this subtitle file - see /tmp/wgfilemanager.log")
+                return
         st = get_subtitle_state()
         base_path = st.get("_orig_path") or st.get("path") or ""
         if base_path and os.path.exists(base_path) and base_path != STUDIO.get_path():

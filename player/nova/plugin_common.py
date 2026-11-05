@@ -10,6 +10,26 @@ except Exception:                                   # tests / outside the plugin
 _PLAY_ID = [""]
 
 
+def route_studio_log():
+    """[2026-11-05] the Subtitle Studio logs as "SubtitleStudio" (NovaPlay's
+    name); send those lines to /tmp/wgfilemanager.log as well"""
+    try:
+        import logging
+        main = logging.getLogger("WGFileManager")
+        st = logging.getLogger("SubtitleStudio")
+        st.setLevel(logging.DEBUG)
+        for h in main.handlers:
+            if h not in st.handlers:
+                st.addHandler(h)
+        if main.handlers:
+            st.propagate = False
+    except Exception:
+        pass
+
+
+route_studio_log()
+
+
 def set_play_id(pid):
     _PLAY_ID[0] = pid or ""
 

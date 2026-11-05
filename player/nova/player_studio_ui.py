@@ -421,8 +421,10 @@ class PlayerStudioUI(object):
             self["studioHead"].setText(u"SUBTITLES")
             self["studioClose"].setText(u"EXIT  ✕")
             onT = getattr(self, "_studioOnTabs", False)
+            _smsg = getattr(self, "_studioSyncMsg", None)   # [WGFM] why sync did nothing
             self["studioHint"].setText(
                 u"◀▶ tabs    ▼ list    EXIT close" if onT else
+                _smsg if (_smsg and cur in ("delay", "finedelay")) else
                 u"◀ heard the voice first  ·  saw the subtitle first ▶   (0.5 s)"
                 if cur == "delay" else
                 u"◀▶ 0.1 s, once it is nearly right    OK back to 0"

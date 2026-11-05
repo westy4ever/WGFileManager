@@ -144,10 +144,44 @@ def check_logic():
     expect("settings are kept in WGFileManager's own file", S._get_config("next_episode_prompt", "true"), "false")
 
 
+def check_sync():
+    """a downloaded subtitle: ◀ ▶ on SYNC TO AUDIO / FINE SYNC move it"""
+    print("\n[4] subtitle sync")
+    N = nova()
+    NS, SS, U = nova("novaplay_subtitles"), nova("novaplay_substudio"), nova("player_studio_ui")
+    d = tempfile.mkdtemp()
+    body = u"1\n00:00:05,000 --> 00:00:07,000\nمرحبا\n\n2\n00:00:10,000 --> 00:00:12,000\nWorld\n\n"
+    files = {"utf8.srt": body.encode("utf-8"), "utf16.srt": body.encode("utf-16")}
+    for name, data in sorted(files.items()):
+        path = os.path.join(d, name)
+        open(path, "wb").write(data)
+        p = nova("local_player").NovaLocalPlayer(Dummy(), "Film", N.local_candidates("/x/a.mkv"),
+                                                item_url="/x/a.mkv", prev_episode=None)
+        p._onSubtitlePicked(path)
+        p._showStudioOverlay()
+        p._studioTab = list(U.TABS).index("Sync")
+        p._studioOnTabs, p._studioRow = False, p._studioKeysNow().index("delay")
+        p._pl_navRightKey()
+        p._studioRow = p._studioKeysNow().index("finedelay")
+        p._pl_navLeftKey()
+        expect(name + ": Studio reads it; ▶ +0.5 s then FINE ◀ -0.1 s = +0.4 s",
+               (SS.STUDIO.get_cue_count(), SS.STUDIO.get_offset(), NS.get_subtitle_state().get("offset_ms")),
+               (2, 400, 400))
+        SS.STUDIO.detach()
+    # no subtitle file on (a track inside the video): say so instead of nothing
+    NS.update_subtitle_state(path="", _orig_path="", offset_ms=0)
+    p._studioSyncMsg = None
+    p._studioRow = p._studioKeysNow().index("delay")
+    p._pl_navRightKey()
+    expect("no subtitle file: the panel says why sync can't move it",
+           (p._studioSyncMsg or "").startswith(u"Sync works on subtitle files"), True)
+
+
 def main():
     check_imports()
     check_screen()
     check_logic()
+    check_sync()
     print("\n" + ("ALL PASSED" if not FAILS else "%d FAILED" % len(FAILS)))
     sys.exit(1 if FAILS else 0)
 

@@ -90,6 +90,8 @@ def _open(session, path, playlist, resume_pos):
         if target and os.path.isfile(target):
             play_playlist(session, playlist, playlist.index(target) if target in playlist else 0)
 
+    from .plugin_common import route_studio_log
+    route_studio_log()
     my_log("nova: play {} ({} in the list)".format(path, len(playlist)))
     session.open(NovaLocalPlayer, _title_of(path), local_candidates(path),
                  _capture_previous_service(session), prev_episode=prev, resume_pos=resume_pos,

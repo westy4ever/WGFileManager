@@ -19,3 +19,7 @@ adapted for files on disk; the old AjPanel-style player is gone.
 
 Checks before pushing: `python3 tests/run_nova_checks.py`
 
+
+**Log:** `/tmp/wgfilemanager.log` (cleared on reboot) has the player and the Subtitle Studio lines.
+After a problem: `tail -n 80 /tmp/wgfilemanager.log`. A subtitle line there says who draws it:
+`-> Studio, N lines` (sync and styling work) or `-> Enigma2 draws it` (the file couldn't be read).

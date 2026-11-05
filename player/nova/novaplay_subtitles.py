@@ -1515,7 +1515,8 @@ def _make_shifted_copy(path, offset_ms):
         with open(path, 'rb') as fh:
             raw = fh.read()
         text = None
-        for enc in ('utf-8', 'utf-8-sig', 'cp1256', 'latin-1'):
+        _encs = ('utf-16',) if raw[:2] in (b'\xff\xfe', b'\xfe\xff') else ()   # [WGFM] UTF-16
+        for enc in _encs + ('utf-8-sig', 'utf-8', 'cp1256', 'latin-1'):
             try:
                 text = raw.decode(enc)
                 break
@@ -1639,7 +1640,8 @@ def _srt_ts(ms):
 
 
 def _decode_text(raw):
-    for enc in ("utf-8-sig", "utf-8", "cp1256", "latin-1"):
+    _encs = ("utf-16",) if raw[:2] in (b"\xff\xfe", b"\xfe\xff") else ()   # [WGFM] UTF-16
+    for enc in _encs + ("utf-8-sig", "utf-8", "cp1256", "latin-1"):
         try:
             return raw.decode(enc)
         except Exception:

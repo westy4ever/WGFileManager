@@ -109,7 +109,9 @@ def parse_srt(path):
         return []
 
     text = None
-    for enc in ("utf-8-sig", "utf-8", "cp1256", "latin-1"):
+    # [WGFM 2026-11-05] UTF-16 files (BOM) used to fall through to latin-1 -> no lines
+    _encs = ("utf-16",) if raw[:2] in (b"\xff\xfe", b"\xfe\xff") else ()
+    for enc in _encs + ("utf-8-sig", "utf-8", "cp1256", "latin-1"):
         try:
             text = raw.decode(enc)
             break
