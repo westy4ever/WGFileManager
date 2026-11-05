@@ -42,8 +42,8 @@ def get_package_info():
 def check_player_support():
     """round-25: replaced check_subtitle_support - subtitles live in the player."""
     try:
-        from .player.custom_media_player import CustomMediaPlayer
-        return True, "Player with subtitle support available"
+        from .player.nova import play_file  # noqa: F401
+        return True, "Nova player with subtitle support available"
     except ImportError as e:
         return False, f"Player unavailable: {e}"
 

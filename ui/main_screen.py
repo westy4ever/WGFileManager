@@ -749,8 +749,8 @@ class WGFileManagerMain(Screen):
                 self.play_media_file(file_path)
             elif action == "play_folder":
                 logger.debug("[MainScreen] Playing entire folder")
-                from ..player.custom_media_player import playDirectory
-                playDirectory(self.session, os.path.dirname(file_path))
+                from ..player.nova import play_directory
+                play_directory(self.session, os.path.dirname(file_path))
         except Exception as e:
             logger.error((("[MainScreen] Error handling playback choice: " + "{e}").format(e=(e))))
             self.dialogs.show_message((("Playback error: " + "{e}").format(e=(e))), type="error")
@@ -1386,8 +1386,8 @@ class WGFileManagerMain(Screen):
             path = sel[0]
             d = os.path.dirname(path)
             logger.info((("[MainScreen] Folder play: " + "{d}").format(d=(d))))
-            from ..player.custom_media_player import playDirectory
-            playDirectory(self.session, d)
+            from ..player.nova import play_directory
+            play_directory(self.session, d)
         except Exception as e:
             logger.error((("[MainScreen] Folder play failed: " + "{e}").format(e=(e))))
             self.dialogs.show_message((("Folder play failed:\n" + "{e}").format(e=(e))), type="error")
@@ -1859,22 +1859,21 @@ class WGFileManagerMain(Screen):
             logger.debug("[MainScreen] All dependencies satisfied")
 
     def play_media_file(self, path):
-        """Play media file with the AjPanel-style player.
-        round-68: full-branch logging + traceback. Whatever fails, the
-        diary now names file, line, and exception - no more invisible
-        fallbacks."""
+        """Play a video with the Nova player (NovaPlay's player, local edition:
+        player/nova). Its folder's other videos are the episodes.
+        Whatever fails is logged with the traceback, then the external
+        player is tried."""
         import traceback as _tb
         logger.info("[MainScreen] play_media_file: %s", path)
         try:
-            from ..player.custom_media_player import CustomMediaPlayer
-            logger.info("[MainScreen] CustomMediaPlayer class imported OK")
+            from ..player.nova import play_file
         except Exception as e:
             logger.error("[MainScreen] IMPORT failed: %s\n%s", e, _tb.format_exc())
             self.play_with_external_player(path)
             return
         try:
-            self.session.open(CustomMediaPlayer, filePath=path)
-            logger.info("[MainScreen] CustomMediaPlayer opened for: %s", path)
+            play_file(self.session, path)
+            logger.info("[MainScreen] Nova player opened for: %s", path)
         except Exception as e:
             logger.error("[MainScreen] OPEN failed: %s\n%s", e, _tb.format_exc())
             logger.warning("[MainScreen] falling back to external player")

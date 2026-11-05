@@ -84,13 +84,13 @@ except ImportError:
         logger = logging.getLogger(__name__)
         logger.error("Failed to setup proper logging: %s" % str(e))
 
-# ===== FIX 4: player module (round-25: single AjPanel player) =====
+# ===== FIX 4: player module (Nova player: NovaPlay's player, local edition) =====
 try:
-    from .player.custom_media_player import CustomMediaPlayer  # noqa: F401
+    from .player.nova import play_file  # noqa: F401
     logger.info("Player module imported successfully")
 except ImportError as e:
     logger.error((("Error importing player module: " + "{e}").format(e=(e))))
-    CustomMediaPlayer = None
+    play_file = None
 
 from Components.config import config, ConfigSubsection
 
@@ -276,7 +276,7 @@ if __name__ == "__main__":
     
     # Test imports
     test_modules = [
-        ("custom_media_player", "player.custom_media_player"),
+        ("nova_player", "player.nova.plugin_screen_player"),
         ("main_screen", "ui.main_screen"),
     ]
     

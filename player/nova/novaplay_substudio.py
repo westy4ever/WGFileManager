@@ -1,0 +1,1072 @@
+# -*- coding: utf-8 -*-
+"""
+novaplay_substudio.py — Subtitle Studio: custom subtitle renderer.
+====================================================================
+Renders .srt subtitles as player-screen Labels (not the service layer),
+enabling live styling: size, color, background box, position, spacing —
+and instant sync offset (no shifted-file rewrites).
+
+Architecture:
+  * STUDIO is a module singleton. It is *bound* to the player screen
+    (STUDIO.bind(screen)) — the player owns the 250ms tick timer and
+    calls STUDIO.update(elapsed_ms) with its own wall-clock position
+    (pause-aware, seek-aware — reuses the position tracker's globals).
+  * novaplay_subtitles.apply_subtitle() routes here when config
+    STUDIO_ON is set (always, since 2026-10-31); falls back to the service path for non-SRT
+    or on any failure.
+  * Style lives in memory and is flushed to plugin_state config only
+    when the overlay closes (one flash write per session, not per key).
+
+Arabic: rendered through the same eLabel path the whole UI already uses
+(Arabic labels work on this image — verified by every screen in it).
+
+[cue-rise] New cue text enters 8 px below its final slot and rises into
+place over ~100 ms, using the same exponential smoothing the OSD slide
+and home zone-slide use. Gives every cue change a sense of motion
+without needing per-frame alpha blending, which Enigma2 doesn't expose.
+"""
+
+import os
+import re
+import time
+import bisect
+import json
+import logging
+
+try:
+    from .plugin_state import _get_config, _set_config
+except Exception:
+    _get_config = lambda k, d="": d
+    _set_config = lambda k, v: None
+
+try:
+    from enigma import gFont, ePoint, eSize
+except Exception:
+    gFont = ePoint = eSize = None
+
+try:
+    from skin import parseColor
+except Exception:
+    parseColor = None
+
+try:
+    from enigma import addFont          # [PATCH 68] font picker support
+except Exception:
+    addFont = None
+
+# ── Native Shadow Detection (runs at import time inside Enigma2) ──
+_NATIVE_SHADOW = False
+_FONT_METRICS = False
+
+try:
+    from enigma import eLabel as _shadow_test_label
+    _test = _shadow_test_label()
+    _NATIVE_SHADOW = hasattr(_test, "setShadowColor") and hasattr(_test, "setShadowOffset")
+except Exception:
+    _NATIVE_SHADOW = False
+
+try:
+    from enigma import fontRenderClass as _fontRenderClass
+    _FONT_METRICS = True
+except Exception:
+    _FONT_METRICS = False
+
+# ── Setup logger ──────────────────────────────────────────────────────
+logger = logging.getLogger("SubtitleStudio")
+
+_CUE_RE = re.compile(
+    r'(\d{1,2}):(\d{2}):(\d{2})[,.](\d{1,3})\s*-->\s*'
+    r'(\d{1,2}):(\d{2}):(\d{2})[,.](\d{1,3})')
+_MAX_CUES = 5000
+_COLORS = [
+    ("#00FFFFFF", "White"),      # White
+    ("#00FFFF80", "Yellow"),     # Yellow
+    ("#00A7F3FF", "Cyan"),       # Cyan
+    ("#00FF6B6B", "Red"),        # Red
+    ("#006BFF6B", "Green"),      # Green
+]
+_FALLBACK_FONT = "Regular"
+_OUTLINE_DIRS = [(-2, -2), (-2, 0), (-2, 2),
+                 (0, -2),           (0, 2),
+                 (2, -2),  (2, 0),  (2, 2)]
+
+
+def _ts_ms(h, m, s, ms):
+    """Convert time components to milliseconds."""
+    return ((int(h) * 3600 + int(m) * 60 + int(s)) * 1000 + int(ms))
+
+
+def parse_srt(path):
+    """
+    Tolerant SRT parser → sorted [(start_ms, end_ms, [lines], pos, italic)].
+    Handles various encoding issues and malformed timestamps.
+    """
+    try:
+        with open(path, "rb") as fh:
+            raw = fh.read()
+    except Exception as e:
+        logger.warning(f"Failed to read subtitle file: {e}")
+        return []
+
+    text = None
+    for enc in ("utf-8-sig", "utf-8", "cp1256", "latin-1"):
+        try:
+            text = raw.decode(enc)
+            break
+        except Exception:
+            text = None
+
+    if text is None:
+        logger.warning(f"Could not decode subtitle file: {path}")
+        return []
+
+    # Normalize line endings
+    text = text.replace("\r\n", "\n").replace("\r", "\n")
+
+    cues = []
+    for block in re.split(r"\n[ \t]*\n", text):
+        lines = block.split("\n")
+        i = 0
+        while i < len(lines) and not _CUE_RE.search(lines[i]):
+            i += 1
+        if i >= len(lines):
+            continue
+
+        m = _CUE_RE.search(lines[i])
+        if not m:
+            continue
+
+        try:
+            start = _ts_ms(*m.groups()[:4])
+            end = _ts_ms(*m.groups()[4:])
+        except (ValueError, TypeError) as e:
+            logger.warning(f"Skipping malformed timestamp: {e}")
+            continue
+
+        # v3: positioning tags (X1:/X2:/Y1:/Y2:) may sit on the timing
+        # line or the line right after it
+        pos_line = lines[i]
+        body_start = i + 1
+        if i + 1 < len(lines) and not _CUE_RE.search(lines[i + 1]) \
+                and re.search(r"\b[XY]\d\s*:", lines[i + 1]):
+            pos_line = lines[i] + " " + lines[i + 1]
+            body_start = i + 2
+        pos = {}
+        for k in ("X1", "X2", "Y1", "Y2"):
+            pm = re.search(r"\b%s\s*:\s*(-?\d+)" % k, pos_line, re.I)
+            if pm:
+                pos[k] = int(pm.group(1))
+        raw_body = [l.strip() for l in lines[body_start:] if l.strip()]
+        # [2026-10-31] ASS / SSA override codes ({\b1\fnSakkal Majalla\fs37...})
+        # from styled files: keep only {\anN} (where on screen), drop the rest;
+        # \N is a line break
+        an = re.search(r"\\an([1-9])", " ".join(raw_body))
+        if an and "Y1" not in pos:
+            pos["an"] = int(an.group(1))
+        _clean = []
+        for l in raw_body:
+            l = re.sub(r"\{\\[^}]*\}", "", l)
+            l = re.sub(r"\{\\[^}]*$", "", l)          # a code left open
+            for part in re.split(r"\\[Nn]", l):
+                if part.strip():
+                    _clean.append(part.strip())
+        raw_body = _clean
+        # v3: whole-cue italic detection BEFORE tag stripping
+        italic = bool(re.fullmatch(r"\s*<i>.*</i>\s*", " ".join(raw_body), re.S | re.I))
+        body = []
+        for l in raw_body:
+            l = re.sub(r"<[^>]+>", "", l).strip()
+            if l:
+                body.append(l)
+        if body and end > start:
+            cues.append((start, end, body, pos, italic))
+
+    # Sort by start time
+    cues.sort(key=lambda c: c[0])
+
+    # Remove duplicates (keep earliest)
+    seen = set()
+    unique_cues = []
+    for cue in cues:
+        key = (cue[0], tuple(cue[2]))
+        if key not in seen:
+            seen.add(key)
+            unique_cues.append(cue)
+
+    return unique_cues[:_MAX_CUES]
+
+
+def _estimate_width(text, font_size):
+    """
+    Arabic-aware character width estimation.
+    Uses per-character classes for better monospace approximation.
+    """
+    text = str(text or "")
+    total = 0.0
+
+    for ch in text:
+        o = ord(ch)
+        if ch.isspace():
+            total += font_size * 0.35
+        elif 0x0600 <= o <= 0x06FF or 0x0750 <= o <= 0x077F or 0x08A0 <= o <= 0x08FF:
+            # Arabic script
+            total += font_size * 0.82
+        elif ch in ",.;:!?،؛()[]{}":
+            total += font_size * 0.38
+        else:
+            total += font_size * 0.62
+
+    return int(total)
+
+
+def _fix_caps_text(t):
+    """[2026-11-04] "I DON'T KNOW. WHERE IS HE?" -> "I don't know. Where is
+    he?" -- only for a line that is mostly capitals (Latin letters);
+    Arabic and normal lines are left alone"""
+    t = str(t or "")
+    latin = [c for c in t if ("A" <= c <= "Z") or ("a" <= c <= "z")]
+    if len(latin) < 4 or sum(1 for c in latin if c.isupper()) < 0.8 * len(latin):
+        return t
+    low = t.lower()
+    out, cap = [], True
+    for c in low:
+        if cap and c.isalpha():
+            out.append(c.upper())
+            cap = False
+        else:
+            out.append(c)
+        if c in ".!?\n":
+            cap = True
+    res = "".join(out)
+    res = re.sub(r"\bi\b", "I", res)                              # I, I'm, I'll
+    return res
+
+
+def fix_caps(body):
+    if isinstance(body, (list, tuple)):
+        return type(body)(_fix_caps_text(b) for b in body)
+    return _fix_caps_text(body)
+
+
+def offset_limits(align):
+    """[2026-10-31] how far Vertical position may go and the text still shows:
+    Top -90..+250, Center -250..+250, Bottom -250..+110 (align 0/2/1)"""
+    return {0: (-90, 250), 2: (-250, 250)}.get(int(align) % 3, (-250, 110))
+
+
+def clamp_offset(style):
+    lo, hi = offset_limits(style.get("align", 1))
+    style["offset_y"] = max(lo, min(hi, int(style.get("offset_y", 0))))
+    return style["offset_y"]
+
+
+class SubtitleStudio(object):
+    """Main subtitle rendering engine."""
+
+    LINE_AREA_X = 210          # matches the skin's subLine geometry
+    LINE_AREA_W = 1500
+    DEFAULT_LINE_HEIGHT = 60
+    BG_PADDING = 20
+    MIN_BG_WIDTH = 80
+    FALLBACK_LINE_HEIGHT = 60
+    _SHADOW_KEYS = tuple("subShadow%d_%d" % (li, di)
+                          for li in range(2) for di in range(8))
+    # [2026-10-31] Bold: two copies of each line in the text colour, 1 px left
+    # and right (the box's native shadow did nothing on the Vu+ DUO4K)
+    _BOLD_KEYS = tuple("subBold%d_%d" % (li, bk) for li in range(2) for bk in range(2))
+
+    # [cue-rise] new-cue animation: enter 8 px below and rise over ~100 ms
+    _RISE_PX = 8
+    _RISE_MS = 100
+
+    def __init__(self):
+        self._screen = None
+        self._cues = []
+        self._starts = []
+        self._path = ""
+        self._offset_ms = 0
+        self._last_rendered = None
+        self._active = False
+        self._current_cue_index = -1
+        self._preview_body = None
+        self._font_state = None
+        self._shadow_logged = False
+
+        # [osd-lift 2026-10-28] top of the player panel while it is on screen
+        # (0 = hidden): bottom subtitles move up to stay above it
+        self._osd_top = 0
+
+        # [cue-rise] current rise offset in px (decreases to 0)
+        self._rise_y = 0
+        self._rise_started = 0.0
+
+        self.style = {
+            "size": 38,
+            "color_idx": 0,
+            "bg": True,
+            "bg_alpha": 128,
+            "offset_y": 0,
+            "spacing": 28,
+            "font_name": "Regular",
+            "font_path": "",
+            "outline": True,
+            "outline_color_idx": 0,
+            # [2026-10-31] bold text, outline thickness (0 off / 2 thin / 4 thick,
+            # an edge all around), rounded or square background box
+            "bold": False,
+            "outline_w": 2,
+            "bg_round": True,
+            "align": 1,            # 0=top, 1=bottom(default), 2=center
+            # v3
+            "auto_wrap": True,     # reflow long cues into 2 balanced lines
+            "use_cue_pos": True,   # honor SRT X/Y cue positions
+            "fix_caps": False,     # [2026-11-04] ALL-CAPS lines shown in normal case
+        }
+        self._load_style()
+        self._validate_colors()
+        # [PATCH 68] fonts registered via addFont() don't survive a restart
+        try:
+            if self.style.get("font_path") and os.path.isfile(self.style["font_path"]):
+                self.register_font(self.style["font_path"])
+        except Exception:
+            pass
+
+        # Log native shadow status once
+        logger.info(f"SubtitleStudio: native shadow = {_NATIVE_SHADOW}, font metrics = {_FONT_METRICS}")
+
+    # ── Validation ──────────────────────────────────────────────────────
+    def _validate_colors(self):
+        """Ensure color_idx is within valid range."""
+        if self.style["color_idx"] >= len(_COLORS):
+            self.style["color_idx"] = 0
+        if self.style["outline_color_idx"] >= len(_COLORS):
+            self.style["outline_color_idx"] = 0
+
+    # ── Style Helper Methods ───────────────────────────────────────────
+    def _style_color_hex(self):
+        return _COLORS[self.style["color_idx"]][0]
+
+    def _style_outline_hex(self):
+        # [2026-10-31] no outline colour setting any more: always black
+        return "#00000000"
+
+    def _style_bg_hex(self):
+        return "#%02X000000" % max(0, min(255, int(self.style["bg_alpha"])))
+
+    def _style_outline_on(self):
+        # [2026-10-31] with or without the background box
+        return int(self.style.get("outline_w", 2 if self.style["outline"] else 0)) > 0
+
+    # ── Fix B: Proper line height ──────────────────────────────────────
+    def _get_line_height(self, size):
+        """Get line height using font metrics if available."""
+        if _FONT_METRICS:
+            try:
+                from enigma import fontRenderClass, gFont as _gFont
+                font = _gFont("Regular", size)
+                h = fontRenderClass.getInstance().getLineHeight(font)
+                if h and h > 0:
+                    return max(60, h)
+            except Exception:
+                pass
+        return max(60, size + 26)
+
+    # ── Persistence ────────────────────────────────────────────────────
+    def _load_style(self):
+        """Load saved style preferences from plugin state."""
+        try:
+            size = _get_config("substudio_size", 38)
+            self.style["size"] = int(size) if size and str(size).isdigit() else 38
+
+            # [2026-10-31] Gold removed: the list is White/Yellow/Cyan/Red/Green,
+            # saved under a new key; an old index (6 colours) is converted once
+            color = str(_get_config("substudio_color2", "") or "")
+            if color.isdigit():
+                self.style["color_idx"] = int(color)
+            else:
+                old = str(_get_config("substudio_color", 0) or 0)
+                old = int(old) if old.isdigit() else 0
+                self.style["color_idx"] = {0: 0, 1: 1, 2: 1, 3: 2, 4: 3, 5: 4}.get(old, 0)
+            self.style["color_idx"] %= len(_COLORS)
+
+            bg_val = _get_config("substudio_bg", "true")
+            self.style["bg"] = str(bg_val).lower() in ("true", "1", "yes", "on")
+
+            alpha = _get_config("substudio_alpha", 128)
+            self.style["bg_alpha"] = int(alpha) if alpha and str(alpha).isdigit() else 128
+            self.style["bg_alpha"] = max(0, min(255, self.style["bg_alpha"]))
+
+            offy = _get_config("substudio_offy", 0)
+            self.style["offset_y"] = int(offy) if offy and str(offy).lstrip('-').isdigit() else 0
+
+            # [2026-10-31] line spacing and "positions from the file" are no
+            # longer settings: always the normal gap and the file's positions
+            self.style["spacing"] = 28
+
+            font_name = _get_config("substudio_fontname", "Regular")
+            self.style["font_name"] = str(font_name) if font_name else "Regular"
+
+            font_path = _get_config("substudio_fontpath", "")
+            self.style["font_path"] = str(font_path) if font_path else ""
+
+            outline = _get_config("substudio_outline", "true")
+            self.style["outline"] = str(outline).lower() in ("true", "1", "yes", "on")
+
+            outline_color = _get_config("substudio_outlinecolor", 0)
+            self.style["outline_color_idx"] = int(outline_color) if outline_color and str(outline_color).isdigit() else 0
+            self.style["outline_color_idx"] %= len(_COLORS)
+
+            align = _get_config("substudio_align", 1)
+            self.style["align"] = int(align) if align and str(align).isdigit() else 1
+            self.style["align"] %= 3
+
+            self.style["auto_wrap"] = True      # [2026-10-31] no longer a setting
+            clamp_offset(self.style)
+            self.style["bold"] = False          # [2026-10-31] Bold removed again
+            ow = str(_get_config("substudio_outline_w", "") or "")
+            # 0 off / 2 thin / 4 thick (3 = the earlier thick)
+            self.style["outline_w"] = {"0": 0, "2": 2, "3": 4, "4": 4}.get(ow, 2 if self.style["outline"] else 0)
+            self.style["outline"] = self.style["outline_w"] > 0
+            self.style["bg_round"] = str(_get_config("substudio_bground", "true")).lower() != "false"
+            self.style["use_cue_pos"] = True
+            self.style["fix_caps"] = str(_get_config("substudio_fixcaps", "false")).lower() == "true"
+        except Exception as e:
+            logger.warning(f"Error loading style: {e}")
+
+    def flush_style(self):
+        """Save current style preferences to plugin state."""
+        try:
+            _set_config("substudio_size", str(self.style["size"]))
+            _set_config("substudio_color2", str(self.style["color_idx"]))
+            _set_config("substudio_bg", "true" if self.style["bg"] else "false")
+            _set_config("substudio_alpha", str(self.style["bg_alpha"]))
+            _set_config("substudio_offy", str(self.style["offset_y"]))
+            _set_config("substudio_spacing", str(self.style["spacing"]))
+            _set_config("substudio_fontname", str(self.style["font_name"]))
+            _set_config("substudio_fontpath", str(self.style["font_path"]))
+            _set_config("substudio_outline", "true" if self.style["outline"] else "false")
+            _set_config("substudio_bold", "true" if self.style.get("bold") else "false")
+            _set_config("substudio_outline_w", str(int(self.style.get("outline_w", 2))))
+            _set_config("substudio_bground", "true" if self.style.get("bg_round", True) else "false")
+            _set_config("substudio_outlinecolor", str(self.style["outline_color_idx"]))
+            _set_config("substudio_align", str(self.style["align"]))
+            _set_config("substudio_autowrap", "true" if self.style["auto_wrap"] else "false")
+            _set_config("substudio_cuepos", "true" if self.style["use_cue_pos"] else "false")
+            _set_config("substudio_fixcaps", "true" if self.style.get("fix_caps") else "false")
+            logger.debug("Style flushed to config")
+        except Exception as e:
+            logger.warning(f"Error flushing style: {e}")
+
+    def reset_style(self):
+        """Reset all style settings to defaults."""
+        self.style = {
+            "size": 38,
+            "color_idx": 0,
+            "bg": True,
+            "bg_alpha": 128,
+            "offset_y": 0,
+            "spacing": 28,
+            "font_name": "Regular",
+            "font_path": "",
+            "outline": True,
+            "outline_color_idx": 0,
+            "bold": False,
+            "outline_w": 2,
+            "bg_round": True,
+            "align": 1,
+            "auto_wrap": True,
+            "use_cue_pos": True,
+            "fix_caps": False,
+        }
+        self._last_rendered = None
+        self._preview_body = None
+        self._layout_static()
+        self.flush_style()
+        logger.info("Style reset to defaults")
+
+    # ── v3: style presets ──────────────────────────────────────────────
+    def save_preset(self, slot):
+        try:
+            _set_config("substudio_preset_%s" % str(slot), json.dumps(self.style))
+            return True
+        except Exception:
+            return False
+
+    def load_preset(self, slot):
+        raw = ""
+        try:
+            raw = str(_get_config("substudio_preset_%s" % str(slot), "") or "")
+        except Exception:
+            raw = ""
+        if not raw:
+            return False
+        try:
+            st = json.loads(raw)
+            if isinstance(st, dict):
+                for k in self.style:
+                    if k in st and k not in ("spacing", "use_cue_pos", "auto_wrap"):   # [2026-10-31] fixed now
+                        self.style[k] = st[k]
+                self._last_rendered = None
+                self._preview_body = None
+                self._layout_static()
+                return True
+        except Exception:
+            pass
+        return False
+
+    # ── Binding / Attach ───────────────────────────────────────────────
+    def _reset_playback_state(self):
+        """[PATCH 68] STUDIO is a module singleton: without this the previous
+        episode's cues kept rendering on the next player, and attach()
+        preserved its stale offset."""
+        self._cues = []
+        self._starts = []
+        self._path = ""
+        self._offset_ms = 0
+        self._last_rendered = None
+        self._preview_body = None
+        self._current_cue_index = -1
+        self._font_state = None
+        self._rise_y = 0
+        self._rise_started = 0.0
+
+    _registered_fonts = set()
+
+    def register_font(self, path):
+        """[PATCH 68] the player calls this from the font browser; it never existed."""
+        path = str(path or "")
+        if not path or not os.path.isfile(path) or addFont is None:
+            return False
+        base = re.sub(r"[^A-Za-z0-9]+", "", os.path.splitext(os.path.basename(path))[0])[:24] or "Custom"
+        name = "NovaSub" + base
+        try:
+            if name not in SubtitleStudio._registered_fonts:
+                try:
+                    addFont(path, name, 100, False, 0)
+                except TypeError:            # older images: 4-arg signature
+                    addFont(path, name, 100, False)
+                SubtitleStudio._registered_fonts.add(name)
+        except Exception as e:
+            logger.warning("register_font failed: %s" % e)
+            return False
+        self.style["font_name"] = name
+        self.style["font_path"] = path
+        self._font_state = None
+        self._last_rendered = None
+        self._layout_static()
+        return True
+
+    def use_default_font(self):
+        self.style["font_name"] = "Regular"
+        self.style["font_path"] = ""
+        self._font_state = None
+        self._last_rendered = None
+        self._layout_static()
+
+    def bind(self, screen):
+        """Bind studio to a player screen instance."""
+        self._screen = screen
+        self._last_rendered = None
+        self._preview_body = None
+        self._active = True
+        self._reset_playback_state()      # [PATCH 68]
+        self._layout_static()
+        logger.debug("Studio bound to screen")
+
+    def unbind(self):
+        """Unbind from screen and clean up."""
+        self._hide_lines()
+        self._screen = None
+        self._active = False
+        self._reset_playback_state()      # [PATCH 68]
+        logger.debug("Studio unbound from screen")
+
+    def attach(self, path):
+        """
+        Parse and activate subtitle file.
+        Returns False for non-SRT / unreadable (caller falls back to service renderer).
+        """
+        path = str(path or "")
+        if not path.lower().endswith(".srt"):
+            logger.debug(f"Not an SRT file: {path}")
+            return False
+
+        cues = parse_srt(path)
+        if not cues:
+            logger.warning(f"No valid cues found in: {path}")
+            return False
+
+        self._cues = cues
+        self._starts = [c[0] for c in cues]
+        self._path = path
+        # [FIX] a new file starts unshifted: the previous file's in-memory
+        # offset used to carry over (the state said 0 ms, the text was late/early).
+        # attach_with_offset() and the player's delay setter set it afterwards.
+        self._offset_ms = 0
+        self._last_rendered = None
+        self._preview_body = None
+        self._current_cue_index = -1
+        self._rise_y = 0
+        logger.info(f"Attached {len(cues)} cues from: {path}")
+        return True
+
+    def attach_with_offset(self, path, offset_ms=0):
+        """Attach subtitle file with initial offset."""
+        if self.attach(path):
+            self._offset_ms = int(offset_ms or 0)
+            return True
+        return False
+
+    def set_offset(self, offset_ms):
+        """Set subtitle timing offset."""
+        new_offset = int(offset_ms or 0)
+        if new_offset != self._offset_ms:
+            self._offset_ms = new_offset
+            self._last_rendered = None   # force re-render
+            logger.debug(f"Offset set to {new_offset}ms")
+
+    def get_offset(self):
+        """Get current subtitle timing offset."""
+        return self._offset_ms
+
+    def detach(self):
+        """Detach current subtitle and clean up."""
+        self._cues = []
+        self._starts = []
+        self._path = ""
+        self._offset_ms = 0
+        self._last_rendered = None
+        self._preview_body = None
+        self._current_cue_index = -1
+        self._rise_y = 0
+        self._hide_lines()
+        logger.debug("Subtitle detached")
+
+    def is_attached(self):
+        """Check if a subtitle is loaded."""
+        return bool(self._cues)
+
+    def get_path(self):
+        """Get current subtitle file path."""
+        return self._path
+
+    def get_cue_count(self):
+        """Get number of loaded cues."""
+        return len(self._cues)
+
+    # ── Rendering ──────────────────────────────────────────────────────
+    def _w(self, key):
+        """Safely get widget by key."""
+        try:
+            return self._screen[key]
+        except Exception:
+            return None
+
+    def _hide_lines(self):
+        """Hide all subtitle-related widgets."""
+        for key in ("subBg1", "subBg2", "subLine1", "subLine2"):
+            w = self._w(key)
+            if w is not None:
+                try:
+                    w.hide()
+                except Exception as e:
+                    logger.debug(f"Error hiding {key}: {e}")
+        for key in self._SHADOW_KEYS + self._BOLD_KEYS:
+            w = self._w(key)
+            if w is not None:
+                try:
+                    w.hide()
+                except Exception:
+                    pass
+
+    def _y_base(self):
+        """Calculate base Y position based on alignment setting."""
+        if self.style["align"] == 0:  # Top
+            return 100 + self.style["offset_y"]
+        elif self.style["align"] == 2:  # Center
+            return 500 + self.style["offset_y"]
+        else:  # Bottom (default)
+            return 812 + self.style["offset_y"]
+
+    def _fallback_font(self):
+        """Return font name (custom font path or default)."""
+        if self.style["font_path"] and os.path.exists(self.style["font_path"]):
+            return self.style["font_name"]
+        return _FALLBACK_FONT
+
+    def _apply_font_all(self, override_name=None):
+        """[PATCH 68] _font_state is only recorded once at least one widget
+        instance actually took the style."""
+        if self._screen is None or gFont is None:
+            return
+        fname = override_name or self._fallback_font()
+        size = self.style["size"]
+        applied = False
+        try:
+            from skin import parseColor as _pc
+        except Exception:
+            _pc = None
+
+        # [2026-10-31] the outline is always the 8-copy stack (an edge all
+        # around the letters, 2 or 3 px); the native shadow was one side only
+        for key in ("subLine1", "subLine2"):
+            w = self._w(key)
+            if w is not None and w.instance is not None:
+                w.instance.setFont(gFont(fname, size))
+                applied = True
+                if _pc is not None:
+                    w.instance.setForegroundColor(_pc(self._style_color_hex()))
+                if _NATIVE_SHADOW:
+                    try:
+                        w.instance.setShadowOffset(ePoint(0, 0))
+                    except Exception:
+                        pass
+        for key in self._BOLD_KEYS:
+            w = self._w(key)
+            if w is not None and w.instance is not None:
+                w.instance.setFont(gFont(fname, size))
+                if _pc is not None:
+                    w.instance.setForegroundColor(_pc(self._style_color_hex()))
+                if not self.style.get("bold"):
+                    try:
+                        w.hide()
+                    except Exception:
+                        pass
+        for key in self._SHADOW_KEYS:
+            w = self._w(key)
+            if w is not None and w.instance is not None:
+                w.instance.setFont(gFont(fname, size))
+                if _pc is not None:
+                    w.instance.setForegroundColor(_pc(self._style_outline_hex()))
+                if not self._style_outline_on():
+                    try:
+                        w.hide()
+                    except Exception:
+                        pass
+
+        # [2026-10-31] box corners: rounded (14) or square
+        for key in ("subBg1", "subBg2"):
+            w = self._w(key)
+            if w is not None and w.instance is not None:
+                try:
+                    w.instance.setCornerRadius(14 if self.style.get("bg_round", True) else 0, 15)
+                except Exception:
+                    pass
+
+        if _pc is not None:
+            bg = self._style_bg_hex()
+            for key in ("subBg1", "subBg2"):
+                w = self._w(key)
+                if w is not None and w.instance is not None:
+                    w.instance.setBackgroundColor(_pc(bg))
+
+        self._font_state = (fname, size) if applied else None
+
+    def _layout_static(self):
+        """Apply font, size, and color settings."""
+        scr = self._screen
+        if scr is None or gFont is None:
+            return
+
+        try:
+            self._apply_font_all(None)
+            logger.debug("Static layout applied")
+        except Exception as e:
+            logger.warning(f"Error applying static layout: {e}")
+
+    def _wrap_body(self, body, size):
+        """v3: reflow the cue body into <=2 lines that fit LINE_AREA_W.
+        Balanced split minimizes the wider line. auto_wrap off = legacy
+        behavior (author's split, 3+ lines merged)."""
+        max_w = self.LINE_AREA_W - 90
+        if len(body) == 1:
+            if _estimate_width(body[0], size) <= max_w or not self.style.get("auto_wrap", True):
+                return [body[0], ""]
+        elif not self.style.get("auto_wrap", True):
+            return [body[0], " ".join(body[1:])]
+        elif (_estimate_width(body[0], size) <= max_w
+                and _estimate_width(" ".join(body[1:]), size) <= max_w
+                and len(body) == 2):
+            return [body[0], body[1]]
+        # (re)wrap: balanced split across all body text
+        text = " ".join(body)
+        words = text.split(" ")
+        best = None
+        for cut in range(1, len(words)):
+            a = " ".join(words[:cut])
+            b = " ".join(words[cut:])
+            wa = _estimate_width(a, size)
+            wb = _estimate_width(b, size)
+            if wa <= max_w and wb <= max_w:
+                if best is None or max(wa, wb) < best[0]:
+                    best = (max(wa, wb), a, b)
+        if best:
+            return [best[1], best[2]]
+        mid = max(1, len(words) // 2)
+        return [" ".join(words[:mid]), " ".join(words[mid:])]
+
+    def _render_cue(self, body, pos=None, italic=False):
+        if self.style.get("fix_caps"):
+            body = fix_caps(body)
+        size = self.style["size"]
+        line1, line2 = self._wrap_body(body, size)
+        # Fix B: Use _get_line_height instead of hardcoded size+26
+        line_h = self._get_line_height(size)
+        gap = self.style["spacing"]
+        y1 = self._y_base()
+        x = self.LINE_AREA_X
+        # v3: per-cue SRT positioning — SubRip's reference grid is
+        # 384x288; scale to 1920x1080. Override toggle in the overlay.
+        if pos and self.style.get("use_cue_pos", True):
+            try:
+                if "Y1" in pos:
+                    y1 = max(20, min(920, int(pos["Y1"] * 1080.0 / 288.0)) + self.style["offset_y"])
+                elif pos.get("an") in (7, 8, 9):         # [2026-10-31] {\an8}: top
+                    y1 = 100
+                elif pos.get("an") in (4, 5, 6):         # middle
+                    y1 = 500
+                if "X1" in pos and "X2" in pos:
+                    cx = (float(pos["X1"]) + float(pos["X2"])) / 2.0 * (1920.0 / 384.0)
+                    x = int(max(0, min(1920 - self.LINE_AREA_W, cx - self.LINE_AREA_W / 2.0)))
+            except Exception:
+                pass
+        # [cue-rise] apply the current rise offset to BOTH lines so they
+        # arrive together; the offset is animating toward 0 on each
+        # subsequent update() call.
+        if self._rise_y:
+            y1 += self._rise_y
+        y2 = y1 + line_h + gap
+        # [FIX] a one-line cue goes on the LOWER line when anchored at the bottom
+        # (it used to sit one line higher than the last line of two-line cues)
+        if not line2 and self.style["align"] == 1 and not (pos and self.style.get("use_cue_pos", True)
+                                                            and ("Y1" in pos or pos.get("an") in (4, 5, 6, 7, 8, 9))):
+            y1 = y2
+        # [osd-lift] keep the lines above the player panel while it shows
+        if self._osd_top:
+            bottom = (y2 if line2 else y1) + line_h
+            limit = self._osd_top - 8
+            if bottom > limit:
+                y1 -= bottom - limit
+                y2 -= bottom - limit
+        # Font pass — ONLY when the font state actually changed.
+        # [FIX] the box has no font registered as "Italic": asking for it drew
+        # italic cues invisible. Italic cues use the normal face.
+        want = None
+        new_font = (want or self._fallback_font(), size)
+        if getattr(self, "_font_state", None) != new_font:
+            self._apply_font_all(want)
+        outline_on = self._style_outline_on()
+        spec = [(line1, "subLine1", "subBg1", y1),
+                (line2, "subLine2", "subBg2", y2)]
+        for li, (text, lkey, bkey, y) in enumerate(spec):
+            lw = self._w(lkey)
+            bw = self._w(bkey)
+            if lw is None or lw.instance is None:
+                continue
+            if not text:
+                try:
+                    lw.hide()
+                    if bw is not None:
+                        bw.hide()
+                    # No text = hide all 8 shadows in one pass
+                    for di in range(8):
+                        sw = self._w("subShadow%d_%d" % (li, di))
+                        if sw is not None:
+                            sw.hide()
+                    for bk in range(2):
+                        bw2 = self._w("subBold%d_%d" % (li, bk))
+                        if bw2 is not None:
+                            bw2.hide()
+                except Exception:
+                    pass
+                continue
+            try:
+                lw.setText(text)
+                lw.instance.move(ePoint(x, y))
+                lw.instance.resize(eSize(self.LINE_AREA_W, line_h))
+                lw.show()
+                bold = bool(self.style.get("bold"))
+                for bk, dx in enumerate((-1, 1)):
+                    bw2 = self._w("subBold%d_%d" % (li, bk))
+                    if bw2 is None or bw2.instance is None:
+                        continue
+                    if bold:
+                        bw2.setText(text)
+                        bw2.instance.move(ePoint(x + dx, y))
+                        bw2.instance.resize(eSize(self.LINE_AREA_W, line_h))
+                        bw2.show()
+                    else:
+                        bw2.hide()
+                # Shadow pass — if native shadow is on, the 16 widgets are already hidden
+                # If not, use the fallback shadow stack
+                if True:
+                    if not outline_on:
+                        for di in range(8):
+                            sw = self._w("subShadow%d_%d" % (li, di))
+                            if sw is not None and sw.instance is not None:
+                                sw.hide()
+                    else:
+                        ow = max(1, int(self.style.get("outline_w", 2)))
+                        for di, (dx, dy) in enumerate(_OUTLINE_DIRS):
+                            sw = self._w("subShadow%d_%d" % (li, di))
+                            if sw is not None and sw.instance is not None:
+                                sw.setText(text)
+                                sw.instance.move(ePoint(x + dx * ow // 2, y + dy * ow // 2))
+                                sw.instance.resize(eSize(self.LINE_AREA_W, line_h))
+                                sw.show()
+                if bw is not None and bw.instance is not None:
+                    if self.style["bg"]:
+                        # [2026-10-31] the box fits the text: its real drawn
+                        # width (eLabel.calculateSize), a 20 px margin each
+                        # side; the old guess counted Arabic letters too wide
+                        pad = 20
+                        tw = 0
+                        try:
+                            tw = int(lw.instance.calculateSize().width())
+                        except Exception:
+                            tw = 0
+                        if tw <= 0:
+                            tw = _estimate_width(text, size)
+                        w = tw + pad * 2
+                        w = max(80, min(self.LINE_AREA_W, w))
+                        bx = x + (self.LINE_AREA_W - w) // 2
+                        bw.instance.move(ePoint(bx, y))
+                        bw.instance.resize(eSize(w, line_h))
+                        bw.show()
+                    else:
+                        bw.hide()
+            except Exception:
+                pass
+
+    # [2026-11-04] while the Studio panel is open and no line is showing (no
+    # subtitle loaded yet, or a pause between lines) a sample line shows, so
+    # every style change can be seen straight away
+    SAMPLE = [u"\u0647\u0643\u0630\u0627 \u0633\u062a\u0638\u0647\u0631 \u0627\u0644\u062a\u0631\u062c\u0645\u0629",
+              u"This is how your subtitles will look"]
+    sample_on = False
+
+    def set_sample(self, on):
+        self.sample_on = bool(on)
+        self._last_rendered = None
+        if not on:
+            self._hide_lines()           # the real line (if any) comes back next tick
+
+    def update(self, pos_ms):
+        """
+        Called by the player's timer with current position.
+        Updates subtitle display based on timing.
+        """
+        if self._screen is not None and self.sample_on and not self._cues:
+            if self._last_rendered != "sample":
+                self._last_rendered = "sample"
+                self._rise_y = 0
+                self._render_cue(self.SAMPLE, {}, False)
+            return
+        if self._screen is None or not self._cues:
+            if self._last_rendered is not None:
+                self._last_rendered = None
+                self._preview_body = None
+                self._rise_y = 0
+                self._hide_lines()
+            return
+
+        p = pos_ms - self._offset_ms     # [PATCH 67] +offset = subtitles LATER, same as _shift_srt_text
+        idx = bisect.bisect_right(self._starts, p) - 1
+        active = None
+        j = idx
+        while j >= 0 and j > idx - 5:
+            s, e, body, pos, italic = self._cues[j]
+            if s <= p < e:
+                active = (s, e, body, pos, italic)
+                break
+            if e < p - 8000:
+                break
+            j -= 1
+
+        self._preview_body = active[2] if active else None
+        key = None
+        if active:
+            key = (active[0], active[1], tuple(active[2]),
+                   tuple(sorted((active[3] or {}).items())), bool(active[4]))
+
+        now = time.time()
+
+        # [cue-rise] advance the current rise animation. If we're still
+        # rising, re-render in place (no cue change) so the label tracks
+        # the new Y on every tick, not just on cue changes.
+        if self._rise_y > 0 and active:
+            elapsed = (now - self._rise_started) * 1000.0
+            p_rise = min(1.0, elapsed / float(self._RISE_MS))
+            new_y = int((1.0 - p_rise) * self._RISE_PX)
+            if new_y != self._rise_y:
+                self._rise_y = new_y
+                self._render_cue(active[2], active[3], active[4])
+
+        if not active and self.sample_on:
+            key = "sample"
+            if key != self._last_rendered:
+                self._last_rendered = key
+                self._rise_y = 0
+                self._render_cue(self.SAMPLE, {}, False)
+            return
+        if key != self._last_rendered:
+            self._last_rendered = key
+            if active:
+                # [cue-rise] arm the rise animation on every new cue
+                self._rise_y = self._RISE_PX
+                self._rise_started = now
+                self._render_cue(active[2], active[3], active[4])
+                self._current_cue_index = idx if active else -1
+            else:
+                self._hide_lines()
+                self._current_cue_index = -1
+                self._rise_y = 0
+
+    def set_osd_top(self, y):
+        """[osd-lift] the player panel appeared (its top y) or went away (0)"""
+        y = int(y or 0)
+        if y != self._osd_top:
+            self._osd_top = y
+            self.refresh()
+
+    def refresh(self):
+        """Re-draw the current cue with the current style right away."""
+        self._last_rendered = None
+        self._rise_y = 0
+
+    def get_preview(self):
+        """Current cue body for the overlay's live preview strip —
+        the active cue, or the file's first cue before anything shows."""
+        if self._preview_body:
+            return self._preview_body
+        if self._cues:
+            return self._cues[0][2]
+        return []
+
+    def get_current_cue(self):
+        """Get the currently displayed cue text, if any."""
+        if self._last_rendered and len(self._last_rendered) >= 3:
+            return self._last_rendered[2]
+        return None
+
+    def get_current_cue_index(self):
+        """Get the current cue index."""
+        return self._current_cue_index
+
+    def jump_to_cue(self, index):
+        """
+        Jump to a specific cue index.
+        Useful for seeking to subtitle positions.
+        """
+        if 0 <= index < len(self._cues):
+            cue = self._cues[index]
+            self._last_rendered = None  # Force update
+            self._rise_y = 0            # no rise on an explicit jump
+            self._render_cue(cue[2], cue[3], cue[4])
+            self._current_cue_index = index
+            return True
+        return False
+
+
+# Module singleton instance
+STUDIO = SubtitleStudio()

@@ -1,25 +1,24 @@
 """
 WGFileManager Player Module
-round-88: player + settings.
 
-The AjPanel-style CustomMediaPlayer (custom_media_player.py) is the one
-player. PlayerSettings and HotkeySettings (setup_screen.py) are the
-settings screens; every config key they write is read by the player or
-by core/hotkey_manager.py.
+The Nova player (player/nova/) -- NovaPlay's player, local edition -- is
+the one video player. PlayerSettings and HotkeySettings (setup_screen.py)
+are the settings screens.
 
-Exports (round-88):
-    CustomMediaPlayer, playFile, playPlaylist, playDirectory
+Exports:
+    play_file, play_playlist, play_directory  (and the old names
+    playFile, playPlaylist, playDirectory, kept for callers)
     PlayerSettings, HotkeySettings
     show_player_settings, show_hotkey_settings
     add_player_settings_to_menu, reset_player_settings
 """
 
-from .custom_media_player import (
-    CustomMediaPlayer,
-    playFile,
-    playPlaylist,
-    playDirectory,
-)
+from .nova import play_file, play_playlist, play_directory
+
+# old names, kept so existing callers keep working
+playFile = play_file
+playPlaylist = play_playlist
+playDirectory = play_directory
 
 # FIX (r88): HotkeySettings and show_hotkey_settings were referenced by
 # add_player_settings_to_menu() but never exported. Both are now
@@ -35,7 +34,9 @@ from .setup_screen import (
 
 __all__ = [
     # Player
-    'CustomMediaPlayer',
+    'play_file',
+    'play_playlist',
+    'play_directory',
     'playFile',
     'playPlaylist',
     'playDirectory',
