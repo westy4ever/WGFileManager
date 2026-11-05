@@ -846,7 +846,7 @@ class SubtitleStudio(object):
         # [osd-lift] keep the lines above the player panel while it shows
         if self._osd_top:
             bottom = (y2 if line2 else y1) + line_h
-            limit = self._osd_top - 8
+            limit = self._osd_top - 30        # [2026-11-05] Arabic letters reach below the line box
             if bottom > limit:
                 y1 -= bottom - limit
                 y2 -= bottom - limit

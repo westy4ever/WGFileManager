@@ -283,6 +283,7 @@ _MENU_COLS = (
 # items call live_cb and keep it open; setColumn() refreshes a tab (Movy's
 # subtitle list arrives in the background).
 _SP_X, _SP_Y, _SP_W, _SP_H = 1080, 64, 780, 812
+_SP_ROW_X = _SP_X + 30          # [theme] the chosen-row bar stays inside the frame's side lights
 _SP_ROWS = 11
 _SP_RH = 52
 _SP_Y0 = _SP_Y + 164
@@ -324,9 +325,9 @@ def _sp_skin(name="NovaSettingsPanel", tabs=_SP_TABS):
          '<widget name="spTabLine" position="{x},{y}" size="80,6" backgroundColor="#F2C230" cornerRadius="3" zPosition="3" />'
          .format(x=xs[0], y=_SP_Y + 130),
          '<widget name="spRowBg" position="{x},{y}" size="{w},{h}" backgroundColor="#1A1C2432" cornerRadius="14" zPosition="2" />'
-         .format(x=_SP_X + 18, y=_SP_Y0, w=_SP_W - 36, h=_SP_RH - 4),
+         .format(x=_SP_ROW_X, y=_SP_Y0, w=_SP_W - 60, h=_SP_RH - 4),
          '<widget name="spRowEdge" position="{x},{y}" size="6,{h}" backgroundColor="#F2C230" cornerRadius="3" zPosition="3" />'
-         .format(x=_SP_X + 18, y=_SP_Y0 + 8, h=_SP_RH - 20),
+         .format(x=_SP_ROW_X, y=_SP_Y0 + 8, h=_SP_RH - 20),
          '<widget name="help" position="{x},{y}" size="{w},34" font="Regular;20" foregroundColor="#8B949E" transparent="1" zPosition="3" />'
          .format(x=_SP_X + 40, y=_SP_Y + _SP_H - 52, w=_SP_W - 80)]
     for i, (k, _t, tw) in enumerate(tabs):
@@ -679,8 +680,8 @@ class NovaSettingsPanel(Screen):
                 self._box("spRowEdge", _SP_X + 30, _SP_Y0 + (k // 3) * 72 + 12, 6, 32)
             else:
                 y = _SP_Y0 + gh + 12 + (k - g) * _SP_RH
-                self._box("spRowBg", _SP_X + 18, y)
-                self._box("spRowEdge", _SP_X + 18, y + 8, 6, _SP_RH - 20)
+                self._box("spRowBg", _SP_ROW_X, y)
+                self._box("spRowEdge", _SP_ROW_X, y + 8, 6, _SP_RH - 20)
                 self["spRowBg"].show()
             self["spRowEdge"].show() if items else self["spRowEdge"].hide()
             self._fit(gh + (12 + len(rows) * _SP_RH if rows else 0))
@@ -741,8 +742,8 @@ class NovaSettingsPanel(Screen):
             return
         row = max(0, min(_SP_ROWS - 1, self._sel[self._col] - top))
         y = _SP_Y0 + row * _SP_RH
-        self._box("spRowBg", _SP_X + 18, y)
-        self._box("spRowEdge", _SP_X + 18, y + 8, 6, _SP_RH - 20)
+        self._box("spRowBg", _SP_ROW_X, y)
+        self._box("spRowEdge", _SP_ROW_X, y + 8, 6, _SP_RH - 20)
         self["spRowBg"].show()
         self["spRowEdge"].show()
         for i in range(_SP_ROWS):
