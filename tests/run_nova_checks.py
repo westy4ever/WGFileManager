@@ -174,7 +174,45 @@ def check_sync():
     p._studioRow = p._studioKeysNow().index("delay")
     p._pl_navRightKey()
     expect("no subtitle file: the panel says why sync can't move it",
-           (p._studioSyncMsg or "").startswith(u"Sync works on subtitle files"), True)
+           (p._studioSyncMsg or "").startswith(u"No subtitle file on"), True)
+
+
+def check_builtin_subs():
+    """a track inside the video: listed in the Subtitles tab, copied out, synced"""
+    print("\n[5] built-in subtitle tracks")
+    import subprocess
+    import time
+    E, NS, SS, U = nova("novaplay_embedsubs"), nova("novaplay_subtitles"), nova("novaplay_substudio"), nova("player_studio_ui")
+    if not E.find_ffmpeg():
+        ok("(no ffmpeg on this PC: skipped)")
+        return
+    d = tempfile.mkdtemp()
+    srt = os.path.join(d, "in.srt")
+    open(srt, "wb").write(u"1\n00:00:01,000 --> 00:00:03,000\nمرحبا\n\n2\n00:00:04,000 --> 00:00:05,500\nSecond\n\n".encode("utf-8"))
+    mkv = os.path.join(d, "Film 2024.mkv")
+    subprocess.call(["ffmpeg", "-v", "error", "-y", "-f", "lavfi", "-i", "color=c=black:s=64x64:d=6", "-i", srt,
+                     "-map", "0", "-map", "1", "-c:v", "mpeg4", "-c:s", "srt", "-metadata:s:s:0", "language=ara", mkv])
+    NS._ss_cache_dir = lambda: os.path.join(d, "cache")
+    p = nova("local_player").NovaLocalPlayer(Dummy(), "Film", nova().local_candidates(mkv), item_url=mkv, prev_episode=None)
+    NS.update_subtitle_state(item_url=mkv, path="", _orig_path="", offset_ms=0)
+    p._embeddedProbe()
+    t0 = time.time()
+    while E.tracks(mkv) is None and time.time() - t0 < 20:
+        time.sleep(0.1)
+    expect("Subtitles tab lists the video's track",
+           [r[0] for r in p._subsItems() if r[0].startswith(u"Built-in")], [u"Built-in: Arabic · SRT"])
+    p._embeddedPick([a for a in p._subs_acts if a[0] == "embedded"][0][1])
+    t0 = time.time()
+    while not p._emb_job.done and time.time() - t0 < 30:
+        time.sleep(0.1)
+    p._embeddedPoll()
+    p._showStudioOverlay()
+    p._studioTab = list(U.TABS).index("Sync")
+    p._studioOnTabs, p._studioRow = False, p._studioKeysNow().index("delay")
+    p._pl_navRightKey()
+    expect("copied out, drawn by the Studio, SYNC TO AUDIO moves it",
+           (p._emb_job.error, SS.STUDIO.get_cue_count(), SS.STUDIO.get_offset()), (u"", 2, 500))
+    SS.STUDIO.detach()
 
 
 def main():
@@ -182,6 +220,7 @@ def main():
     check_screen()
     check_logic()
     check_sync()
+    check_builtin_subs()
     print("\n" + ("ALL PASSED" if not FAILS else "%d FAILED" % len(FAILS)))
     sys.exit(1 if FAILS else 0)
 

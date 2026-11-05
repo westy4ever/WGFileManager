@@ -355,6 +355,10 @@ class PlayerFallback(object):
         except Exception:
             pass
         try:
+            self._embeddedProbe()                # [2026-11-05] built-in subtitle list, in the background
+        except Exception:
+            pass
+        try:
             self._studioTimer.start(100, False)
         except Exception:
             pass

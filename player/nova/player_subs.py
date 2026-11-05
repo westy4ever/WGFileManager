@@ -68,11 +68,113 @@ class PlayerSubs(object):
                 acts.append(("sync", None))
         # [2026-11-04] Style & sync: the Studio (works with or without a subtitle)
         rows.append((u"Style & sync  \u203a", False)); acts.append(("studio", None))
+        # [2026-11-05] the video's own subtitle tracks (local files): picking one
+        # copies it out to an .srt, so sync and style work on it
+        for r, a in self._embeddedRows(st):
+            rows.append(r); acts.append(a)
         for name, key in ((u"SubSource", "subsource"), (u"SubDL", "subdl"),
                           (u"OpenSubtitles", "opensubtitles"), (u"Local files", "browse")):
             rows.append((name, False)); acts.append(("find", key))
         self._subs_acts = acts
         return rows
+
+    # ── [2026-11-05] built-in subtitle tracks -> an .srt the Studio draws ──
+    def _embeddedSource(self):
+        """the local file being played, or '' (a stream: its tracks can't be reached)"""
+        from .novaplay_embedsubs import local_source
+        for u in (getattr(getattr(self, "sref", None), "getPath", lambda: "")(),
+                  getattr(self, "_quality_current_url", ""), getattr(self, "_item_url", "")):
+            try:
+                p = local_source(u)
+            except Exception:
+                p = ""
+            if p:
+                return p
+        return ""
+
+    def _embeddedProbe(self):
+        try:
+            src = self._embeddedSource()
+            if src:
+                from .novaplay_embedsubs import probe
+                probe(src)
+        except Exception as e:
+            my_log("built-in subtitles: {}".format(e))
+
+    def _embeddedRows(self, st):
+        """rows + actions for the Subtitles tab (nothing for a stream)"""
+        try:
+            from .novaplay_embedsubs import find_ffmpeg, tracks, probe, label, cache_file
+            from .novaplay_subtitles import _ss_cache_dir
+            src = self._embeddedSource()
+            if not src:
+                return []
+            if not find_ffmpeg():
+                return [((u"Built-in subtitles: needs ffmpeg", False),
+                         ("embedded_info", u"Install ffmpeg to use the video's own subtitles: opkg install ffmpeg"))]
+            tr = tracks(src)
+            if tr is None:
+                probe(src)
+                return [((u"Built-in subtitles: reading the video\u2026", False),
+                         ("embedded_info", u"Still reading the video's subtitle list - open this tab again in a moment"))]
+            cur = st.get("_orig_path") or st.get("path") or ""
+            folder = _ss_cache_dir()
+            return [((u"Built-in: " + label(t), bool(cur) and cur == cache_file(src, t["index"], folder)),
+                     ("embedded", t)) for t in tr]
+        except Exception as e:
+            my_log("built-in subtitles rows: {}".format(e))
+            return []
+
+    def _embeddedPick(self, t):
+        from .novaplay_embedsubs import Extraction, label
+        from .novaplay_subtitles import _ss_cache_dir
+        if not t.get("text"):
+            self["status"].setText(u"%s: picture subtitles - they can't be turned into text" % label(t).split(u" - ")[0])
+            self._pl_showOSD(True)
+            return
+        src = self._embeddedSource()
+        if not src:
+            return
+        old = getattr(self, "_emb_job", None)
+        if old is not None and not old.done:
+            self["status"].setText(u"Already copying subtitles out of the video\u2026")
+            self._pl_showOSD(True)
+            return
+        self._emb_job = Extraction(src, t["index"], _ss_cache_dir())
+        self._emb_label = label(t)
+        my_log("built-in subtitles: picked track {} ({})".format(t["index"], self._emb_label))
+        if self._emb_job.done:
+            self._embeddedFinish()
+            return
+        if getattr(self, "_emb_timer", None) is None:
+            self._emb_timer = eTimer()
+            self._emb_timer.callback.append(self._embeddedPoll)
+            self.onClose.append(self._emb_timer.stop)
+        self._emb_timer.start(500, False)
+        self._embeddedPoll()
+
+    def _embeddedPoll(self):
+        job = getattr(self, "_emb_job", None)
+        if job is None:
+            return
+        if not job.done:
+            self["status"].setText(u"Copying subtitles out of the video\u2026 %d s  (first time only)" % job.seconds())
+            self._pl_showOSD(True)
+            return
+        try:
+            self._emb_timer.stop()
+        except Exception:
+            pass
+        self._embeddedFinish()
+
+    def _embeddedFinish(self):
+        job = self._emb_job
+        if job.error:
+            self["status"].setText(job.error)
+        else:
+            self._onSubtitlePicked(job.out)
+            self["status"].setText(u"Subtitles: %s  -  BLUE \u203a Style & sync to sync" % self._emb_label)
+        self._pl_showOSD(True)
 
     def _subsPanel(self):
         if getattr(self, "_studioOverlayActive", False) or getattr(self, "_autonext_active", False):
@@ -145,6 +247,11 @@ class PlayerSubs(object):
                     self._onSubtitleAction((u"", data))
                 elif act == "studio":
                     self._onSubtitleAction((u"", "studio_open"))
+                elif act == "embedded":
+                    self._embeddedPick(data)
+                elif act == "embedded_info":
+                    self["status"].setText(data)
+                    self._pl_showOSD(True)
         except Exception as e:
             my_log("subs panel pick error: {}".format(e))
 
@@ -465,7 +572,7 @@ class PlayerSubs(object):
                 my_log("sync ({} ms) without the Studio: {} [subtitle {!r}]".format(new_off, msg, p0))
                 ok = msg.startswith("Sync: ") and msg[6:7] in "+-0123456789"
                 self._studioSyncMsg = None if ok else {
-                    "No subtitle active": u"Sync works on subtitle files (BLUE › search, or an .srt next to the video) - not on a track inside the video",
+                    "No subtitle active": u"No subtitle file on - BLUE › Subtitles: a Built-in track, a search, or Local files",
                     "Sync: SRT files only": u"This subtitle type can't be synced - only text subtitles (.srt / .ass / .vtt)",
                 }.get(msg, u"Could not shift this subtitle file - see /tmp/wgfilemanager.log")
                 return
