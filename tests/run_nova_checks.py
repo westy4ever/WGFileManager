@@ -228,12 +228,75 @@ def check_builtin_subs():
     SS.STUDIO.detach()
 
 
+def check_audio():
+    """the audio player (ui/audio_player.py)"""
+    print("\n[6] audio player")
+    import time
+    import xml.etree.ElementTree as ET
+    name = PKG + ".ui.audio_player"
+    __import__(name)
+    A = sys.modules[name]
+    d = tempfile.mkdtemp()
+    A.STATE_FILE = os.path.join(d, "audio.json")
+    tracks = [os.path.join(d, "%02d - Artist - Song %d.mp3" % (i, i)) for i in range(1, 6)]
+    for t in tracks:
+        open(t, "w").close()
+    p = A.AudioPlaylistPlayer(Dummy(), tracks, 1, None)
+    ET.fromstring(p.skin)
+    w = widgets_of(p.skin)
+    c = set(k for k in p._hw if not k.lower().endswith("actions"))
+    expect("screen builds; widgets in code == widgets in the skin", (sorted(c - w), sorted(w - c)), ([], []))
+    expect("file names without tags -> title / artist",
+           [A.name_tags(x) for x in ("03 - Artist - Title.mp3", "Artist - Title.flac", "Just A Song.mp3", "07_Song.mp3")],
+           [("Title", "Artist"), ("Title", "Artist"), ("Just A Song", ""), ("Song", "")])
+    expect("seek steps when held: 10, 30, 60 s", [A.step_for_hold(n) for n in (1, 2, 4, 5, 9)], [10, 30, 30, 60, 60])
+    expect("times", [A.fmt_time(x) for x in (5, 151, 3725)], ["0:05", "2:31", "1:02:05"])
+    open(os.path.join(d, "Folder.JPG"), "w").close()
+    expect("cover: the folder picture", os.path.basename(A.folder_cover(tracks[0])), "Folder.JPG")
+    # play order / repeat
+    p.start_playback = lambda resume=0: None
+    expect("in order: up next after track 2", p.upcoming(3), [2, 3, 4])
+    p.repeat = "off"
+    p._jump_to(4)
+    expect("last track, repeat off: nothing next", p.upcoming(3), [])
+    p.repeat = "all"
+    expect("last track, repeat all: back to the first", p.upcoming(2), [0, 1])
+    p.repeat = "one"
+    p._eof_done = False
+    p._on_eof()
+    expect("repeat one: the same track again", p.current_index, 4)
+    p.repeat = "all"
+    p._eof_done = False
+    p._on_eof()
+    expect("repeat all at the end: the first track", p.current_index, 0)
+    p.toggle_shuffle()
+    expect("shuffle: current track first, every track once", (p.order[0], sorted(p.order)), (0, [0, 1, 2, 3, 4]))
+    expect("shuffle and repeat remembered", (A._load_state()["shuffle"], A._load_state()["repeat"]), (True, "all"))
+    o = A.new_round(5, 3)
+    expect("a new shuffle round doesn't start with the track just played", (o[0] != 3, sorted(o)), (True, [0, 1, 2, 3, 4]))
+    # resume
+    A.remember_place(d, tracks[3], 151)
+    expect("resume offered for the folder: track 4 at 2:31", A.resume_offer(tracks, 0), (3, 151))
+    A.remember_place(d, tracks[0], 4)
+    expect("no offer when it's the same track near the start", A.resume_offer(tracks, 0), None)
+    # sleep
+    p._sleep_picked((u"30 minutes", 30))
+    expect("sleep timer set", 1700 < p._sleep_end - time.time() <= 1800, True)
+    p._sleep_picked((u"At the end of this track", -1))
+    closed = []
+    p.close = lambda *a: closed.append(1)
+    p._eof_done = False
+    p._on_eof()
+    expect("sleep at the end of the track: closes the player", closed, [1])
+
+
 def main():
     check_imports()
     check_screen()
     check_logic()
     check_sync()
     check_builtin_subs()
+    check_audio()
     print("\n" + ("ALL PASSED" if not FAILS else "%d FAILED" % len(FAILS)))
     sys.exit(1 if FAILS else 0)
 
