@@ -181,7 +181,9 @@ class PlayerOSD(object):
             x = max(170, min(1750 - 150, x))
             inst = self["seekBubble"].instance
             if inst is not None:
-                inst.move(ePoint(x, 886))
+                # [2026-11-05] just above the bar (it covered the title line)
+                from .plugin_gridlist import sc as _sc
+                inst.move(ePoint(_sc(x), _sc(822)))
             self["seekBubble"].setText(self._clockText(target_secs))
             self["seekBubble"].show()
         except Exception as e:

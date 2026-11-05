@@ -211,7 +211,7 @@ SKIN = """
     <widget name="keyDotB" position="851,1027" size="16,16" backgroundColor="#3E7BFA" cornerRadius="8" zPosition="12" />
     <widget name="keyBlue" position="875,1016" size="205,38" font="Regular;23" halign="left" valign="center" foregroundColor="#F0F6FC" transparent="1" zPosition="12" />
     <widget name="osd_keys" position="1090,1016" size="650,38" font="Regular;22" foregroundColor="#A3ADBB" transparent="1" zPosition="12" halign="right" valign="center" />
-    <widget name="seekBubble" position="184,886" size="150,40" font="Regular;24" foregroundColor="#0C1017" backgroundColor="#F2C230" cornerRadius="10" halign="center" valign="center" transparent="0" zPosition="14" />
+    <widget name="seekBubble" position="184,822" size="150,40" font="Regular;24" foregroundColor="#0C1017" backgroundColor="#F2C230" cornerRadius="10" halign="center" valign="center" transparent="0" zPosition="14" />
 </screen>"""
 
 
@@ -594,7 +594,7 @@ class AudioPlaylistPlayer(Screen):
             if inst is not None:
                 from enigma import eSize
                 inst.resize(eSize(sc(240), sc(40)))
-                inst.move(ePoint(sc(x), sc(886)))
+                inst.move(ePoint(sc(x), sc(822)))   # above the bar, not over the title
         except Exception:
             pass
         self["seekBubble"].show()
