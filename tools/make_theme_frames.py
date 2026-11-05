@@ -59,7 +59,7 @@ def render(kind, w, h, accent):
         else:
             k = (t - 0.12) / 0.88
             col = (int(22 - 11 * k), int(26 - 12 * k), int(30 - 13 * k))
-        grad.putpixel((0, y), col + (236,))
+        grad.putpixel((0, y), col + (255 if h < 320 else 236,))   # short bars solid: burned-in subtitles don't show through
     grad = grad.resize((W, H))
     mask = Image.new("L", (W, H), 0)
     ImageDraw.Draw(mask).polygon(outer, fill=255)
