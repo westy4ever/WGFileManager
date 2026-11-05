@@ -10,6 +10,7 @@ from enigma import getDesktop, eTimer, eLabel, gFont, gRGB, RT_HALIGN_LEFT, RT_V
 from enigma import eServiceReference
 import threading
 import os
+from ..constants import AUDIO_EXTENSIONS
 import time
 
 from ..core.config import WGFileManagerConfig
@@ -681,10 +682,11 @@ class WGFileManagerMain(Screen):
                 if ext in ['.mp4', '.mkv', '.avi', '.ts', '.m2ts', '.mov', '.m4v', '.mpg', '.mpeg', '.wmv', '.flv']:
                     logger.debug("[MainScreen] Video file detected, showing playback options")
                     self.play_media_file(path)   # round-61: direct play (dialog removed)
-                # Audio files: SHOW MENU
-                elif ext in ['.mp3', '.flac', '.wav', '.aac', '.ogg', '.m4a', '.wma', '.ac3', '.dts']:
-                    logger.debug("[MainScreen] Audio file detected, showing smart menu")
-                    self.context_menu.show_smart_context_menu(path)
+                # Audio files: play straight away; the folder's other music is the
+                # playlist [2026-11-05] (the file menu is still on key 0)
+                elif ext in AUDIO_EXTENSIONS:
+                    logger.debug("[MainScreen] Audio file: playing with its folder")
+                    self.play_audio_file(path)
                 # Script files: Show menu
                 elif ext in ['.sh', '.py', '.pl']:
                     logger.debug("[MainScreen] Script file detected, showing smart menu")
@@ -1313,6 +1315,19 @@ class WGFileManagerMain(Screen):
             )
 
     # Tools and Features
+    def play_audio_file(self, path):
+        """[2026-11-05] OK on a music file: the audio player, with every music file
+        of the folder as the playlist (natural order: 2 before 10), from this one"""
+        try:
+            from .audio_player import AudioPlaylistPlayer, folder_audio
+            files = folder_audio(os.path.dirname(path)) or [path]
+            if path not in files:
+                files = [path]
+            self.session.open(AudioPlaylistPlayer, files, files.index(path), self)
+        except Exception as e:
+            logger.error("[MainScreen] audio play failed: %s", e)
+            self.show_error("Audio player", e)
+
     def open_tools(self):
         """Open tools menu"""
         if self.operation_in_progress:

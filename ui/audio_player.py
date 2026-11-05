@@ -90,6 +90,22 @@ def folder_cover(path):
     return os.path.join(folder, pics[0]) if len(pics) == 1 else ""
 
 
+def folder_audio(folder):
+    """the music files in a folder, in natural order (2 before 10), no hidden files"""
+    try:
+        from ..constants import AUDIO_EXTENSIONS
+    except Exception:
+        AUDIO_EXTENSIONS = [".mp3", ".flac", ".wav", ".aac", ".ogg", ".m4a", ".wma", ".opus", ".ac3", ".dts"]
+    exts = tuple(e.lower() for e in AUDIO_EXTENSIONS)
+    try:
+        names = [n for n in os.listdir(folder) if n.lower().endswith(exts) and not n.startswith(".")
+                 and os.path.isfile(os.path.join(folder, n))]
+    except Exception:
+        return []
+    names.sort(key=lambda s: [int(t) if t.isdigit() else t.lower() for t in re.split(r"(\d+)", s)])
+    return [os.path.join(folder, n) for n in names]
+
+
 def step_for_hold(n):
     """the n-th quick press in a row: 10 s, then 30 s, then 60 s (as the video player)"""
     return 10 if n <= 1 else (30 if n <= 4 else 60)

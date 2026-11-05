@@ -249,6 +249,12 @@ def check_audio():
     expect("file names without tags -> title / artist",
            [A.name_tags(x) for x in ("03 - Artist - Title.mp3", "Artist - Title.flac", "Just A Song.mp3", "07_Song.mp3")],
            [("Title", "Artist"), ("Title", "Artist"), ("Just A Song", ""), ("Song", "")])
+    for n in X:
+        open(os.path.join(d, n), "w").close()
+    expect("OK on a music file: the folder's music is the playlist, 2 before 10, no pictures / hidden",
+           [os.path.basename(x) for x in A.folder_audio(d)],
+           ["01 - Artist - Song 1.mp3", "02 - Artist - Song 2.mp3", "2 - Song.flac", "03 - Artist - Song 3.mp3",
+            "04 - Artist - Song 4.mp3", "05 - Artist - Song 5.mp3", "10 - Song.mp3"])
     expect("seek steps when held: 10, 30, 60 s", [A.step_for_hold(n) for n in (1, 2, 4, 5, 9)], [10, 30, 30, 60, 60])
     expect("times", [A.fmt_time(x) for x in (5, 151, 3725)], ["0:05", "2:31", "1:02:05"])
     open(os.path.join(d, "Folder.JPG"), "w").close()
