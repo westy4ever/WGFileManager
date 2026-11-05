@@ -65,13 +65,16 @@ def local_candidates(path):
 
 
 def _find_poster(path):
-    """a poster image next to the video: <name>.jpg / poster.jpg / folder.jpg"""
+    """a poster image next to the video (<name>.jpg / poster.jpg / folder.jpg /
+    cover.jpg); otherwise a TMDb lookup by the file name, done in the
+    background by plugin_imagecache (needs the TMDb key in api_keys.conf)"""
     base, folder = os.path.splitext(path)[0], os.path.dirname(path)
     for cand in (base + ".jpg", base + ".png", os.path.join(folder, "poster.jpg"),
                  os.path.join(folder, "folder.jpg"), os.path.join(folder, "cover.jpg")):
         if os.path.isfile(cand):
             return cand
-    return ""
+    from .plugin_imagecache import tmdb_address
+    return tmdb_address(path)
 
 
 def _open(session, path, playlist, resume_pos):

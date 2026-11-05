@@ -46,8 +46,55 @@ def _save_state(state=None):
             pass
 
 
+# API keys (subtitle sites, TMDb) are never in the repo: they are read from
+# WGFileManager's own keys file, else from an installed NovaPlay's
+# api_keys.conf (the same KEY=value lines), so nothing is entered twice.
+_KEY_NAMES = ("tmdb_api_key", "subsource_api_key", "subdl_api_key", "opensubtitles_api_key",
+              "opensubtitles_user", "opensubtitles_pass", "fanart_api_key")
+_OWN_KEYS_FILE = "/etc/enigma2/wgfilemanager_api_keys.conf"
+_PLUGINS_DIR = "/usr/lib/enigma2/python/Plugins/Extensions"
+_keys_cache = {"at": 0, "keys": None}
+
+
+def _keys_files():
+    files = [_OWN_KEYS_FILE]
+    try:
+        for d in sorted(os.listdir(_PLUGINS_DIR)):
+            if "nova" in d.lower():
+                files.append(os.path.join(_PLUGINS_DIR, d, "api_keys.conf"))
+    except Exception:
+        pass
+    return files
+
+
+def _read_keys():
+    """KEY=value lines; the first file that has a key wins (re-read each minute)"""
+    now = time.time()
+    if _keys_cache["keys"] is not None and now - _keys_cache["at"] < 60:
+        return _keys_cache["keys"]
+    keys = {}
+    for path in _keys_files():
+        try:
+            with open(path, "r") as f:
+                for line in f.read().splitlines():
+                    line = line.strip()
+                    if not line or line.startswith("#") or "=" not in line:
+                        continue
+                    k, v = line.split("=", 1)
+                    k, v = k.strip(), v.strip()
+                    if k in _KEY_NAMES and v and k not in keys:
+                        keys[k] = v
+        except Exception:
+            continue
+    _keys_cache.update(at=now, keys=keys)
+    return keys
+
+
 def _get_config(key, default=""):
-    return (_load_state().get("config") or {}).get(key, default)
+    value = (_load_state().get("config") or {}).get(key, None)
+    if key in _KEY_NAMES and not value:
+        value = _read_keys().get(key, None)
+    return default if value is None else value
 
 
 def _set_config(key, value):

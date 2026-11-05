@@ -124,6 +124,21 @@ def check_logic():
     fake._record_task = None
     expect("MENU › Timer for a local file: Sleep and Chapters, no Record",
            [r[0] for r in L._menuTimerItems(fake)], [u"Sleep", u"Chapters"])
+    IC = nova("plugin_imagecache")
+    expect("poster: title / year / kind from release-style file names",
+           [IC.poster_query(n) for n in ("Dune.Part.Two.2024.1080p.WEB-DL.x264.mkv",
+                                          "The.Bear.S03E05.720p.HDTV.mkv",
+                                          "Blade Runner 2049 (2017).mp4",
+                                          "1917.mkv",
+                                          "Show Name 2x07.avi")],
+           [("Dune Part Two", "2024", "movie"), ("The Bear", "", "tv"),
+            ("Blade Runner 2049", "2017", "movie"), ("1917", "", "movie"), ("Show Name", "", "tv")])
+    kf = os.path.join(d, "keys.conf")
+    open(kf, "w").write("# keys\nsubdl_api_key=ABC\ntmdb_api_key=\n")
+    S._OWN_KEYS_FILE, S._PLUGINS_DIR = kf, os.path.join(d, "none")
+    S._keys_cache.update(at=0, keys=None)
+    expect("API keys come from the keys file (empty ones ignored), not the repo",
+           (S._get_config("subdl_api_key", ""), S._get_config("tmdb_api_key", "")), ("ABC", ""))
     S._set_config("next_episode_prompt", "false")
     S._cache["state"] = None
     expect("settings are kept in WGFileManager's own file", S._get_config("next_episode_prompt", "true"), "false")
