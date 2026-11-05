@@ -72,7 +72,9 @@ def name_tags(path):
 
 
 def folder_cover(path):
-    """a picture next to the track: <name>.jpg, cover / folder / front.jpg, else any one picture"""
+    """a picture next to the track: <name>.jpg, or cover / folder / front.jpg.
+    [2026-11-05] no "the folder's only picture" guess: in a mixed folder it put
+    one album's cover on every song"""
     folder = os.path.dirname(path or "")
     stem = os.path.splitext(path or "")[0]
     for c in (stem + ".jpg", stem + ".png"):
@@ -86,8 +88,7 @@ def folder_cover(path):
     for c in _COVER_NAMES:
         if c in low:
             return os.path.join(folder, low[c])
-    pics = sorted(n for n in names if n.lower().endswith((".jpg", ".jpeg", ".png")) and not n.startswith("."))
-    return os.path.join(folder, pics[0]) if len(pics) == 1 else ""
+    return ""
 
 
 def folder_audio(folder):
@@ -380,6 +381,17 @@ class AudioPlaylistPlayer(Screen):
         self["title"].setText(title)
         self["artist"].setText(artist)
         self["album"].setText(album)
+        # [2026-11-05] no artist / album in the tags: the lines below move up (no gap)
+        y = 244
+        for name, used, h in (("artist", artist, 58), ("album", album, 58), ("trackline", True, 0)):
+            try:
+                inst = self[name].instance
+                if inst is not None:
+                    inst.move(ePoint(sc(800), sc(y + (12 if name == "trackline" else 0))))
+            except Exception:
+                pass
+            if used:
+                y += h
         self["osd_title"].setText(u"♫  " + (u"%s  —  %s" % (artist, title) if artist else title))
         self._paint_modes()
         self._paint_upnext()

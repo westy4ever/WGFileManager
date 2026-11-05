@@ -269,6 +269,10 @@ def check_audio():
     expect("seek steps when held: 10, 30, 60 s", [A.step_for_hold(n) for n in (1, 2, 4, 5, 9)], [10, 30, 30, 60, 60])
     expect("times", [A.fmt_time(x) for x in (5, 151, 3725)], ["0:05", "2:31", "1:02:05"])
     open(os.path.join(d, "Folder.JPG"), "w").close()
+    e = tempfile.mkdtemp()
+    open(os.path.join(e, "song.mp3"), "w").close()
+    open(os.path.join(e, "Footloose.jpg"), "w").close()
+    expect("cover: no guessing from a folder's only picture (mixed folders)", A.folder_cover(os.path.join(e, "song.mp3")), "")
     expect("cover: the folder picture", os.path.basename(A.folder_cover(tracks[0])), "Folder.JPG")
     # play order / repeat
     p.start_playback = lambda resume=0: None
