@@ -246,6 +246,17 @@ def check_audio():
     w = widgets_of(p.skin)
     c = set(k for k in p._hw if not k.lower().endswith("actions"))
     expect("screen builds; widgets in code == widgets in the skin", (sorted(c - w), sorted(w - c)), ([], []))
+    # nothing may be opened (the Resume question) while Enigma2 is still opening the screen
+    opened = []
+    sess = Dummy()
+    A.remember_place(d, tracks[3], 151)
+    q = A.AudioPlaylistPlayer(type("S", (), {"open": lambda s, *a, **k: opened.append(a),
+                                              "openWithCallback": lambda s, *a, **k: opened.append(a),
+                                              "nav": sess})(), tracks, 0, None)
+    for f in q.onLayoutFinish:
+        f()
+    expect("no question opened while the screen is opening (the Resume one waits for a timer)", opened, [])
+    expect("... and the timer runs the start", q.start_timer.callback is not None and q._first_start.__name__, "_first_start")
     expect("file names without tags -> title / artist",
            [A.name_tags(x) for x in ("03 - Artist - Title.mp3", "Artist - Title.flac", "Just A Song.mp3", "07_Song.mp3")],
            [("Title", "Artist"), ("Title", "Artist"), ("Just A Song", ""), ("Song", "")])

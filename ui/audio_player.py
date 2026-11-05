@@ -296,10 +296,19 @@ class AudioPlaylistPlayer(Screen):
         self.position_timer.callback.append(self.update_position)
         self.bubble_timer = eTimer()
         self.bubble_timer.callback.append(self._hide_bubble)
-        self.onLayoutFinish.append(self._first_start)
+        # [2026-11-05] the first step (it may ask "Resume ...?") runs just AFTER the
+        # screen is open: opening a question while Enigma2 is still opening this
+        # screen fails ("Modal open are allowed only from a screen which is modal")
+        self.start_timer = eTimer()
+        self.start_timer.callback.append(self._first_start)
+        self.onLayoutFinish.append(self._schedule_start)
         self.onClose.append(self._on_close)
 
     # ── start ────────────────────────────────────────────────────────────
+    def _schedule_start(self):
+        self["seekBubble"].hide()
+        self.start_timer.start(50, True)
+
     def _first_start(self):
         self["seekBubble"].hide()
         self._paint_modes()
@@ -732,7 +741,7 @@ class AudioPlaylistPlayer(Screen):
         self.close()
 
     def _on_close(self):
-        for t in (self.position_timer, self.bubble_timer):
+        for t in (self.position_timer, self.bubble_timer, self.start_timer):
             try:
                 t.stop()
             except Exception:
