@@ -172,6 +172,7 @@ class PlayerStudioUI(object):
         try:
             from .novaplay_substudio import STUDIO
             STUDIO.set_sample(False)
+            STUDIO.set_sync_view(False)
         except Exception:
             pass
         try:
@@ -414,6 +415,11 @@ class PlayerStudioUI(object):
         tab = self._studioTabNow()
         keys = self._studioKeysNow()
         cur = self._studioCurKey()
+        try:
+            from .novaplay_substudio import STUDIO
+            STUDIO.set_sync_view(TABS[tab] == u"Sync")      # [2026-11-05] no sample while syncing
+        except Exception:
+            pass
         if cur:
             self._studioSelectKey(cur)
         # header and tabs

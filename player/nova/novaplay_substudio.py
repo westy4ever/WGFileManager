@@ -946,6 +946,15 @@ class SubtitleStudio(object):
     SAMPLE = [u"\u0647\u0643\u0630\u0627 \u0633\u062a\u0638\u0647\u0631 \u0627\u0644\u062a\u0631\u062c\u0645\u0629",
               u"This is how your subtitles will look"]
     sample_on = False
+    # [2026-11-05] the panel is on its Sync tab: only the real lines at their
+    # real times (an empty gap must look empty), never the sample
+    sync_view = False
+
+    def set_sync_view(self, on):
+        on = bool(on)
+        if on != self.sync_view:
+            self.sync_view = on
+            self._last_rendered = None
 
     def set_sample(self, on):
         self.sample_on = bool(on)
@@ -958,7 +967,7 @@ class SubtitleStudio(object):
         Called by the player's timer with current position.
         Updates subtitle display based on timing.
         """
-        if self._screen is not None and self.sample_on and not self._cues:
+        if self._screen is not None and self.sample_on and not self._cues and not self.sync_view:
             if self._last_rendered != "sample":
                 self._last_rendered = "sample"
                 self._rise_y = 0
@@ -1004,12 +1013,15 @@ class SubtitleStudio(object):
                 self._rise_y = new_y
                 self._render_cue(active[2], active[3], active[4])
 
-        if not active and self.sample_on:
-            key = "sample"
+        if not active and self.sample_on and not self.sync_view:
+            # [2026-11-05] a gap while styling: the nearest real line of this
+            # subtitle (the one just shown, else the first), not the sample text
+            near = self._cues[max(0, min(idx, len(self._cues) - 1))]
+            key = ("near", near[0], near[1])
             if key != self._last_rendered:
                 self._last_rendered = key
                 self._rise_y = 0
-                self._render_cue(self.SAMPLE, {}, False)
+                self._render_cue(near[2], near[3], near[4])
             return
         if key != self._last_rendered:
             self._last_rendered = key

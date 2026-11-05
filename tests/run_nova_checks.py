@@ -168,6 +168,19 @@ def check_sync():
                (SS.STUDIO.get_cue_count(), SS.STUDIO.get_offset(), NS.get_subtitle_state().get("offset_ms")),
                (2, 400, 400))
         SS.STUDIO.detach()
+    # the sample line: never on the Sync tab; a gap while styling shows a real line
+    p._onSubtitlePicked(os.path.join(d, "utf8.srt"))
+    seen = []
+    for tab, pos in (("Sync", 8000), ("Style", 8000)):
+        p._studioTab = list(U.TABS).index(tab)
+        p._studioRefresh()
+        SS.STUDIO.update(pos)
+        r = SS.STUDIO._last_rendered
+        seen.append(r if r is None else r[0])
+    expect("pause between lines: empty on Sync, the nearest real line on Style", seen, [None, "near"])
+    SS.STUDIO.detach()
+    p._studioTab = list(U.TABS).index("Sync")
+    p._studioOnTabs = False
     # no subtitle file on (a track inside the video): say so instead of nothing
     NS.update_subtitle_state(path="", _orig_path="", offset_ms=0)
     p._studioSyncMsg = None
