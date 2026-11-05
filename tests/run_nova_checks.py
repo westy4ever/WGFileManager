@@ -438,6 +438,45 @@ def check_theme():
     expect("the YELLOW key dot is never recoloured", "#F2C231" in a.skin and "#F2C231" in (getattr(p, "skin", None) or type(p).skin), True)
 
 
+def check_exit_to_tv():
+    """exit returns to the TV channel: also after "next file", also from the audio player"""
+    print("\n[9] back to the TV channel")
+    N = nova()
+    PB = nova("player_base")
+    d = tempfile.mkdtemp()
+    files = [os.path.join(d, "E%d.mkv" % i) for i in (1, 2)]
+    for p in files:
+        open(p, "w").close()
+    opened = []
+    TV = "1:0:19:1234:5:6:7:0:0:0:"
+
+    class Nav(object):
+        def getCurrentlyPlayingServiceReference(self):
+            return TV if not opened else None          # a film is playing / stopped after the first
+    sess = type("S", (), {"nav": Nav(), "open": lambda s, cls, *a, **k: opened.append((a, k)),
+                          "openWithCallback": lambda s, cb, *a, **k: cb(False)})()
+    old_copy = PB._copy_service_ref
+    PB._copy_service_ref = lambda r: r
+    try:
+        N.play_file(sess, files[0])
+        on_next = opened[0][1]["on_next"]
+        on_next({"url": files[1]})
+    finally:
+        PB._copy_service_ref = old_copy
+    expect("the next file's player still returns to the TV channel", [o[0][2] for o in opened], [TV, TV])
+    A = __import__(PKG + ".ui.audio_player", fromlist=["x"])
+    calls = []
+    old = PB._restore_previous_service
+    PB._restore_previous_service = lambda session, prev: calls.append(prev)
+    try:
+        a = A.AudioPlaylistPlayer(Dummy(), ["/x/a.mp3"], 0, None)
+        a._prev_service = TV
+        a._on_close()
+    finally:
+        PB._restore_previous_service = old
+    expect("audio player exit: the channel comes back with a full re-tune (no frozen picture)", calls, [TV])
+
+
 def main():
     check_imports()
     check_screen()
@@ -447,6 +486,7 @@ def main():
     check_audio()
     check_file_manager()
     check_theme()
+    check_exit_to_tv()
     print("\n" + ("ALL PASSED" if not FAILS else "%d FAILED" % len(FAILS)))
     sys.exit(1 if FAILS else 0)
 

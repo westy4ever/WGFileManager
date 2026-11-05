@@ -77,9 +77,14 @@ def _find_poster(path):
     return tmdb_address(path)
 
 
-def _open(session, path, playlist, resume_pos):
+def _open(session, path, playlist, resume_pos, prev_service=None):
     from .local_player import NovaLocalPlayer
     from .player_base import _capture_previous_service
+    # [2026-11-05] the TV channel to return to: carried along the folder's files
+    # (the next file's player used to capture "nothing playing" and exit to a
+    # black / frozen screen instead of the channel)
+    if prev_service is None:
+        prev_service = _capture_previous_service(session)
     idx = playlist.index(path) if path in playlist else -1
     nxt = _episode(playlist[idx + 1]) if 0 <= idx < len(playlist) - 1 else None
     prev = _episode(playlist[idx - 1]) if idx > 0 else None
@@ -88,18 +93,19 @@ def _open(session, path, playlist, resume_pos):
     def on_next(ep):
         target = (ep or {}).get("url") or ""
         if target and os.path.isfile(target):
-            play_playlist(session, playlist, playlist.index(target) if target in playlist else 0)
+            play_playlist(session, playlist, playlist.index(target) if target in playlist else 0,
+                          _prev_service=prev_service)
 
     from .plugin_common import route_studio_log
     route_studio_log()
     my_log("nova: play {} ({} in the list)".format(path, len(playlist)))
     session.open(NovaLocalPlayer, _title_of(path), local_candidates(path),
-                 _capture_previous_service(session), prev_episode=prev, resume_pos=resume_pos,
+                 prev_service, prev_episode=prev, resume_pos=resume_pos,
                  item_url=path, next_episode=nxt, on_next=on_next if len(playlist) > 1 else None,
                  poster_url=_find_poster(path), episodes=episodes)
 
 
-def _start(session, path, playlist):
+def _start(session, path, playlist, prev_service=None):
     if not os.path.isfile(path):
         from Screens.MessageBox import MessageBox
         session.open(MessageBox, "File not found:\n%s" % path, MessageBox.TYPE_ERROR)
@@ -107,13 +113,13 @@ def _start(session, path, playlist):
     from .plugin_state import _get_saved_position
     pos = _get_saved_position(path)
     if pos <= 30:
-        _open(session, path, playlist, 0)
+        _open(session, path, playlist, 0, prev_service)
         return
     from Screens.MessageBox import MessageBox
     hhmm = "%d:%02d:%02d" % (pos // 3600, pos % 3600 // 60, pos % 60) if pos >= 3600 else "%d:%02d" % (pos // 60, pos % 60)
 
     def _ans(yes):
-        _open(session, path, playlist, pos if yes else 0)
+        _open(session, path, playlist, pos if yes else 0, prev_service)
     session.openWithCallback(_ans, MessageBox, "Resume from %s?" % hhmm, MessageBox.TYPE_YESNO)
 
 
@@ -125,13 +131,13 @@ def play_file(session, path):
     _start(session, path, lst)
 
 
-def play_playlist(session, paths, start=0):
+def play_playlist(session, paths, start=0, _prev_service=None):
     lst = [p for p in (paths or []) if p and os.path.isfile(p) and is_video(p)]
     if not lst:
         from Screens.MessageBox import MessageBox
         session.open(MessageBox, "No video files to play", MessageBox.TYPE_INFO)
         return
-    _start(session, lst[max(0, min(int(start or 0), len(lst) - 1))], lst)
+    _start(session, lst[max(0, min(int(start or 0), len(lst) - 1))], lst, _prev_service)
 
 
 def play_directory(session, folder, recursive=False):

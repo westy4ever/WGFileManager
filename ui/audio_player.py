@@ -761,10 +761,18 @@ class AudioPlaylistPlayer(Screen):
                 t.stop()
             except Exception:
                 pass
+        # [2026-11-05] the channel you were on, the way the video player does it:
+        # stop, then a moment later a full re-tune (with Fast Channel Change a
+        # direct playService() brought the channel back frozen)
         try:
             if self._prev_service:
-                self.session.nav.playService(self._prev_service)   # the channel you were on
+                from ..player.nova.player_base import _restore_previous_service
+                _restore_previous_service(self.session, self._prev_service)
             else:
                 self.session.nav.stopService()
-        except Exception:
-            pass
+        except Exception as e:
+            logger.error("audio: restoring the channel failed: %s", e)
+            try:
+                self.session.nav.stopService()
+            except Exception:
+                pass
