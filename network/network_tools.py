@@ -10,6 +10,7 @@ from Components.Label import Label
 from Components.MenuList import MenuList
 from enigma import getDesktop, eTimer
 import subprocess
+from ..utils.mainthread import call_on_main
 import threading
 import socket
 import re
@@ -133,12 +134,12 @@ class NetworkToolsScreen(Screen):
                 else:
                     msg += "\n\n❌ No internet connection detected"
                 
-                self.session.open(MessageBox, msg, MessageBox.TYPE_INFO, timeout=10)
-                self["status"].setText("Ready")
+                call_on_main(self.session.open, MessageBox, msg, MessageBox.TYPE_INFO, timeout=10)
+                call_on_main(self["status"].setText, "Ready")
                 
             except Exception as e:
                 logger.error((("Internet check error: " + "{e}").format(e=(e))))
-                self["status"].setText("Error checking internet")
+                call_on_main(self["status"].setText, "Error checking internet")
         
         threading.Thread(target=check_thread, daemon=True).start()
     
@@ -226,22 +227,22 @@ class NetworkScannerScreen(Screen):
                         ))
                         
                         # Update display
-                        self["results"].setList(active_hosts)
-                        self["status"].setText((("Found " + "{_a0}" + " devices...").format(_a0=(len(active_hosts)))))
+                        call_on_main(self["results"].setList, active_hosts)
+                        call_on_main(self["status"].setText, ("Found " + "{_a0}" + " devices...").format(_a0=(len(active_hosts))))
                 
                 # Scan complete
                 if active_hosts:
-                    self["status"].setText((("✅ Scan complete: " + "{_a0}" + " devices found").format(_a0=(len(active_hosts)))))
+                    call_on_main(self["status"].setText, ("✅ Scan complete: " + "{_a0}" + " devices found").format(_a0=(len(active_hosts))))
                 else:
-                    self["status"].setText("❌ No devices found")
-                    self["results"].setList([("No devices found", None)])
+                    call_on_main(self["status"].setText, "❌ No devices found")
+                    call_on_main(self["results"].setList, [("No devices found", None)])
                 
                 self.scan_results = active_hosts
                 self.scanning = False
                 
             except Exception as e:
                 logger.error((("Scan error: " + "{e}").format(e=(e))))
-                self["status"].setText((("❌ Scan failed: " + "{e}").format(e=(e))))
+                call_on_main(self["status"].setText, ("❌ Scan failed: " + "{e}").format(e=(e)))
                 self.scanning = False
         
         threading.Thread(target=scan_thread, daemon=True).start()
@@ -372,12 +373,12 @@ class PortScannerScreen(Screen):
                 else:
                     msg = (("No open ports found on " + "{ip}").format(ip=(ip)))
                 
-                self.session.open(MessageBox, msg, MessageBox.TYPE_INFO)
-                self["status"].setText("Ready")
+                call_on_main(self.session.open, MessageBox, msg, MessageBox.TYPE_INFO)
+                call_on_main(self["status"].setText, "Ready")
                 
             except Exception as e:
                 logger.error((("Port scan error: " + "{e}").format(e=(e))))
-                self["status"].setText("Scan failed")
+                call_on_main(self["status"].setText, "Scan failed")
         
         threading.Thread(target=scan_thread, daemon=True).start()
 
@@ -434,16 +435,16 @@ class DeviceDetectionScreen(Screen):
                     if len(devices) > 10:
                         msg += (("\n... and " + "{_a0}" + " more").format(_a0=(len(devices)-10)))
                     
-                    self["message"].setText(msg)
-                    self["status"].setText((("✅ " + "{_a0}" + " devices detected").format(_a0=(len(devices)))))
+                    call_on_main(self["message"].setText, msg)
+                    call_on_main(self["status"].setText, ("✅ " + "{_a0}" + " devices detected").format(_a0=(len(devices))))
                 else:
-                    self["message"].setText("No devices found in ARP table")
-                    self["status"].setText("Try scanning network first")
+                    call_on_main(self["message"].setText, "No devices found in ARP table")
+                    call_on_main(self["status"].setText, "Try scanning network first")
                 
             except Exception as e:
                 logger.error((("Device detection error: " + "{e}").format(e=(e))))
-                self["message"].setText((("Detection failed:\n" + "{e}").format(e=(e))))
-                self["status"].setText("Error")
+                call_on_main(self["message"].setText, ("Detection failed:\n" + "{e}").format(e=(e)))
+                call_on_main(self["status"].setText, "Error")
         
         threading.Thread(target=scan_thread, daemon=True).start()
 
@@ -486,12 +487,12 @@ class NetworkMapScreen(Screen):
                 map_text += "• 4 other devices\n\n"
                 map_text += "Scan network for detailed map"
                 
-                self["map"].setText(map_text)
-                self["status"].setText("✅ Map generated")
+                call_on_main(self["map"].setText, map_text)
+                call_on_main(self["status"].setText, "✅ Map generated")
                 
             except Exception as e:
                 logger.error((("Map error: " + "{e}").format(e=(e))))
-                self["status"].setText("Map generation failed")
+                call_on_main(self["status"].setText, "Map generation failed")
         
         threading.Thread(target=map_thread, daemon=True).start()
 
@@ -595,7 +596,7 @@ class SMBShareScannerScreen(Screen):
                 
                 # Method 2: Scan common SMB IPs (445/139)
                 if len(smb_hosts) == 0:
-                    self["status"].setText("⏳ Scanning IP range for SMB ports...")
+                    call_on_main(self["status"].setText, "⏳ Scanning IP range for SMB ports...")
                     
                     base_ip = "192.168.100."
                     for i in [1, 2, 9, 10, 15, 18, 27, 50, 100, 200]:  # Common IPs
@@ -610,24 +611,24 @@ class SMBShareScannerScreen(Screen):
                 
                 # Update display
                 if smb_hosts:
-                    self["host_list"].setList(smb_hosts)
-                    self["status"].setText((("✅ Found " + "{_a0}" + " SMB/CIFS hosts").format(_a0=(len(smb_hosts)))))
+                    call_on_main(self["host_list"].setList, smb_hosts)
+                    call_on_main(self["status"].setText, ("✅ Found " + "{_a0}" + " SMB/CIFS hosts").format(_a0=(len(smb_hosts))))
                 else:
-                    self["host_list"].setList([
+                    call_on_main(self["host_list"].setList, [
                         ("❌ No SMB hosts found", None),
                         ("", None),
                         ("Try:", None),
                         ("• GREEN: Scan again", None),
                         ("• RED: Enter IP manually", None),
                     ])
-                    self["status"].setText("No SMB hosts detected")
+                    call_on_main(self["status"].setText, "No SMB hosts detected")
                 
                 self.discovered_hosts = smb_hosts
                 self.scanning = False
                 
             except Exception as e:
                 logger.error((("Auto scan error: " + "{e}").format(e=(e))))
-                self["status"].setText((("Scan failed: " + "{_a0}").format(_a0=(str(e)[:50]))))
+                call_on_main(self["status"].setText, ("Scan failed: " + "{_a0}").format(_a0=(str(e)[:50])))
                 self.scanning = False
         
         threading.Thread(target=scan_thread, daemon=True).start()
@@ -750,11 +751,7 @@ class SMBShareScannerScreen(Screen):
                 
                 # Show results
                 if shares:
-                    self.session.open(
-                        SMBShareDetailsScreen,
-                        server,
-                        shares
-                    )
+                    call_on_main(self.session.open, SMBShareDetailsScreen, server, shares)
                 else:
                     # Show error/auth required message
                     msg = "🗄️ SMB SCAN RESULTS\n\n"
@@ -767,13 +764,13 @@ class SMBShareScannerScreen(Screen):
                     msg += "• SMB protocol version mismatch\n\n"
                     msg += "Try mounting manually with credentials."
                     
-                    self.session.open(MessageBox, msg, MessageBox.TYPE_INFO)
+                    call_on_main(self.session.open, MessageBox, msg, MessageBox.TYPE_INFO)
                 
-                self["status"].setText("Scan complete")
+                call_on_main(self["status"].setText, "Scan complete")
                 
             except Exception as e:
                 logger.error((("Share scan error: " + "{e}").format(e=(e))))
-                self["status"].setText((("Scan failed: " + "{_a0}").format(_a0=(str(e)[:50]))))
+                call_on_main(self["status"].setText, ("Scan failed: " + "{_a0}").format(_a0=(str(e)[:50])))
         
         threading.Thread(target=scan_thread, daemon=True).start()
 
@@ -957,8 +954,8 @@ class SMBShareDetailsScreen(Screen):
                     msg += (("Location: " + "{mount_point}" + "\n\n").format(mount_point=(mount_point)))
                     msg += "You can now access the share in WGFileManager"
                     
-                    self.session.open(MessageBox, msg, MessageBox.TYPE_INFO, timeout=5)
-                    self["status"].setText("✅ Mount successful")
+                    call_on_main(self.session.open, MessageBox, msg, MessageBox.TYPE_INFO, timeout=5)
+                    call_on_main(self["status"].setText, "✅ Mount successful")
                 else:
                     # Try other SMB versions
                     for version in ["2.0", "1.0"]:
@@ -979,8 +976,8 @@ class SMBShareDetailsScreen(Screen):
                             msg = (("✅ Share Mounted (SMB " + "{version}" + ")!\n\n").format(version=(version)))
                             msg += (("Location: " + "{mount_point}").format(mount_point=(mount_point)))
                             
-                            self.session.open(MessageBox, msg, MessageBox.TYPE_INFO, timeout=5)
-                            self["status"].setText("✅ Mount successful")
+                            call_on_main(self.session.open, MessageBox, msg, MessageBox.TYPE_INFO, timeout=5)
+                            call_on_main(self["status"].setText, "✅ Mount successful")
                             return
                     
                     # All mount attempts failed
@@ -992,12 +989,12 @@ class SMBShareDetailsScreen(Screen):
                     msg += "• Verify share permissions\n"
                     msg += "• Use manual mount with credentials"
                     
-                    self.session.open(MessageBox, msg, MessageBox.TYPE_ERROR)
-                    self["status"].setText("❌ Mount failed")
+                    call_on_main(self.session.open, MessageBox, msg, MessageBox.TYPE_ERROR)
+                    call_on_main(self["status"].setText, "❌ Mount failed")
                 
             except Exception as e:
                 logger.error((("Mount error: " + "{e}").format(e=(e))))
-                self["status"].setText((("Mount error: " + "{_a0}").format(_a0=(str(e)[:50]))))
+                call_on_main(self["status"].setText, ("Mount error: " + "{_a0}").format(_a0=(str(e)[:50])))
         
         threading.Thread(target=mount_thread, daemon=True).start()
 
@@ -1115,15 +1112,13 @@ class FavoriteSharesScreen(Screen):
                 )
                 
                 if result.returncode == 0:
-                    self.session.open(MessageBox, 
-                                    (("✅ Mounted!\n\n" + "{mount_point}").format(mount_point=(mount_point))),
-                                    MessageBox.TYPE_INFO, timeout=3)
-                    self["status"].setText("✅ Mount successful")
+                    call_on_main(self.session.open, MessageBox, ("✅ Mounted!\n\n" + "{mount_point}").format(mount_point=(mount_point)), MessageBox.TYPE_INFO, timeout=3)
+                    call_on_main(self["status"].setText, "✅ Mount successful")
                 else:
-                    self["status"].setText("❌ Mount failed")
+                    call_on_main(self["status"].setText, "❌ Mount failed")
             except Exception as e:
                 logger.error((("Mount error: " + "{e}").format(e=(e))))
-                self["status"].setText("Mount error")
+                call_on_main(self["status"].setText, "Mount error")
         
         threading.Thread(target=mount_thread, daemon=True).start()
     
@@ -1247,20 +1242,20 @@ class SMBShareBrowserScreen(Screen):
                     if path:
                         items.insert(0, ("📂 [..]  (Parent Directory)", {'name': '..', 'is_dir': True}))
                     
-                    self["file_list"].setList(items if items else [("(Empty directory)", None)])
-                    self["status"].setText((("📁 " + "{_a0}" + " items").format(_a0=(len(items)))))
-                    self["title"].setText((("📁 //" + "{_a0}" + "/" + "{_a1}" + "/" + "{path}").format(_a0=(self.server), _a1=(self.share), path=(path))))
+                    call_on_main(self["file_list"].setList, items if items else [("(Empty directory)", None)])
+                    call_on_main(self["status"].setText, ("📁 " + "{_a0}" + " items").format(_a0=(len(items))))
+                    call_on_main(self["title"].setText, ("📁 //" + "{_a0}" + "/" + "{_a1}" + "/" + "{path}").format(_a0=(self.server), _a1=(self.share), path=(path)))
                 else:
-                    self["file_list"].setList([
+                    call_on_main(self["file_list"].setList, [
                         ("❌ Cannot browse share", None),
                         ("", None),
                         ("Access may require authentication", None),
                     ])
-                    self["status"].setText("Browse failed")
+                    call_on_main(self["status"].setText, "Browse failed")
                 
             except Exception as e:
                 logger.error((("Browse error: " + "{e}").format(e=(e))))
-                self["status"].setText((("Error: " + "{_a0}").format(_a0=(str(e)[:50]))))
+                call_on_main(self["status"].setText, ("Error: " + "{_a0}").format(_a0=(str(e)[:50])))
         
         threading.Thread(target=browse_thread, daemon=True).start()
     
@@ -1346,14 +1341,12 @@ class SMBShareBrowserScreen(Screen):
                 )
                 
                 if result.returncode == 0:
-                    self.session.open(MessageBox,
-                                    (("✅ Mounted!\n\n" + "{mount_point}").format(mount_point=(mount_point))),
-                                    MessageBox.TYPE_INFO, timeout=3)
-                    self["status"].setText("✅ Mounted")
+                    call_on_main(self.session.open, MessageBox, ("✅ Mounted!\n\n" + "{mount_point}").format(mount_point=(mount_point)), MessageBox.TYPE_INFO, timeout=3)
+                    call_on_main(self["status"].setText, "✅ Mounted")
                 else:
-                    self["status"].setText("❌ Mount failed")
+                    call_on_main(self["status"].setText, "❌ Mount failed")
             except Exception as e:
                 logger.error((("Mount error: " + "{e}").format(e=(e))))
-                self["status"].setText("Mount error")
+                call_on_main(self["status"].setText, "Mount error")
         
         threading.Thread(target=mount_thread, daemon=True).start()

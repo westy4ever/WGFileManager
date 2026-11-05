@@ -10,6 +10,7 @@ from Components.ActionMap import ActionMap
 from Components.Label import Label
 from Components.MenuList import MenuList
 from Components.ScrollLabel import ScrollLabel
+from Components.ConfigList import ConfigList, ConfigListScreen
 from Components.config import config, ConfigSubsection, ConfigSelection, ConfigYesNo, ConfigText, ConfigInteger
 from enigma import getDesktop, eTimer
 import os

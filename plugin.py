@@ -20,8 +20,6 @@ except ImportError as e:
 
 # ===== FIX 1: Python 2 compatibility =====
 PY2 = sys.version_info[0] == 2
-if not PY2:
-    print("[WGFileManager] WARNING: Enigma2 typically uses Python 2.7")
 
 # ===== FIX 2: Safe translation setup =====
 try:

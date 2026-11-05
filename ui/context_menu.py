@@ -11,47 +11,12 @@ from ..utils.logging_config import get_logger
 
 logger = get_logger(__name__)
 
-# ============================================================================
-# FIX FOR STACKTRACE THREADING ISSUE
-# ============================================================================
-# Patch to prevent StackTrace formatting errors in OpenATV
+# [2026-11-05] The global threading.Thread.run patch that used to be here was
+# removed: it re-ran the target of ANY failed thread in Enigma2 (every plugin),
+# so a failed download / copy could silently run twice.
+from ..utils.mainthread import call_on_main
 import threading
 import sys
-
-# Monkey patch Thread.run to handle StackTrace errors
-try:
-    original_thread_run = threading.Thread.run
-    
-    def patched_thread_run(self):
-        try:
-            original_thread_run(self)
-        except TypeError as e:
-            if "%d format" in str(e) or "real number is required" in str(e):
-                # StackTrace formatting error - run target directly
-                logger.warning((("StackTrace formatting error in thread " + "{_a0}" + ": " + "{e}").format(_a0=(self.name), e=(e))))
-                if hasattr(self, '_target') and self._target:
-                    try:
-                        self._target(*self._args, **self._kwargs)
-                    except Exception as target_error:
-                        logger.error((("Thread target error: " + "{target_error}").format(target_error=(target_error))))
-            else:
-                raise
-        except Exception as thread_error:
-            logger.error((("Thread error in " + "{_a0}" + ": " + "{thread_error}").format(_a0=(self.name), thread_error=(thread_error))))
-            # Try to run target anyway
-            if hasattr(self, '_target') and self._target:
-                try:
-                    self._target(*self._args, **self._kwargs)
-                except:
-                    pass
-    
-    threading.Thread.run = patched_thread_run
-    logger.info("Threading patch applied successfully")
-    
-except Exception as patch_error:
-    logger.error((("Failed to apply threading patch: " + "{patch_error}").format(patch_error=(patch_error))))
-
-# ============================================================================
 
 class ContextMenuHandler:
     def smart_callback(self, choice, original_handler, *args):
@@ -149,7 +114,8 @@ class ContextMenuHandler:
         """Show context menu for current selection"""
         try:
             sel = self.main.active_pane.getSelection()
-            if not sel or not sel[0]:
+            # [2026-11-05] on "..": the general menu, not delete / move / rename of the parent folder
+            if not sel or not sel[0] or self.main.active_pane.isParentSelected():
                 self.show_general_context_menu()
             else:
                 # Use smart context menu if enabled
@@ -225,7 +191,7 @@ class ContextMenuHandler:
         """Show context menu for selected item"""
         try:
             sel = self.main.active_pane.getSelection()
-            if not sel or not sel[0]:
+            if not sel or not sel[0] or self.main.active_pane.isParentSelected():
                 return
             
             item_path = sel[0]
@@ -268,7 +234,7 @@ class ContextMenuHandler:
                 ])
             
             # Compress if multiple items selected
-            marked = [x for x in self.main.active_pane.list if x[0][3]]
+            marked = [x for x in self.main.active_pane.list if x[0][3] and not self.main.active_pane.isParentPath(x[0][0])]
             if len(marked) > 1:
                 menu_items.append((" Compress Selected", "compress"))
             
@@ -321,7 +287,7 @@ class ContextMenuHandler:
             elif action == "shortcut":
                 self.create_shortcut(item_path)
             elif action == "compress":
-                files = [x[0][0] for x in self.main.active_pane.list if x[0][3]]
+                files = self.main.active_pane.markedPaths()
                 self.main.dialogs.show_archive_dialog(files, self.main.archive_mgr, self.main.active_pane.getCurrentDirectory())
         except Exception as e:
             logger.error((("Error handling item context menu: " + "{e}").format(e=(e))))
@@ -1538,16 +1504,10 @@ class ContextMenuHandler:
                         script_pid = result.pid
                         logger.info((("Script started in background with PID: " + "{script_pid}").format(script_pid=(script_pid))))
                         
-                        self.main.dialogs.show_message(
-                            (("Script started in background\n\nPID: " + "{script_pid}").format(script_pid=(script_pid))),
-                            type="info", timeout=3
-                        )
+                        call_on_main(self.main.dialogs.show_message, ("Script started in background\n\nPID: " + "{script_pid}").format(script_pid=(script_pid)), type="info", timeout=3)
                     except Exception as e:
                         logger.error((("Background script execution error: " + "{e}").format(e=(e))))
-                        self.main.dialogs.show_message(
-                            (("Failed to start script in background: " + "{_a0}").format(_a0=(str(e)))),
-                            type="error"
-                        )
+                        call_on_main(self.main.dialogs.show_message, ("Failed to start script in background: " + "{_a0}").format(_a0=(str(e))), type="error")
                 else:
                     # For foreground execution, use run with timeout
                     try:
@@ -1576,29 +1536,20 @@ class ContextMenuHandler:
                             if len(str(output)) > 800:
                                 display_output += "\n\n... (output truncated)"
                             
-                            self.main.dialogs.show_message(
-                                (("Script Output (Exit code: " + "{exit_code}" + "):\n\n" + "{display_output}").format(exit_code=(exit_code), display_output=(display_output))),
-                                type="info" if exit_code == 0 else "error"
-                            )
+                            call_on_main(self.main.dialogs.show_message, ("Script Output (Exit code: " + "{exit_code}" + "):\n\n" + "{display_output}").format(exit_code=(exit_code), display_output=(display_output)), type="info" if exit_code == 0 else "error")
                         else:
-                            self.main.dialogs.show_message(
-                                "Script executed (no output returned)",
-                                type="info"
-                            )
+                            call_on_main(self.main.dialogs.show_message, "Script executed (no output returned)", type="info")
                             
                     except subprocess.TimeoutExpired:
                         logger.warning((("Script execution timed out: " + "{file_path}").format(file_path=(file_path))))
-                        self.main.dialogs.show_message(
-                            "Script execution timed out (120 seconds)\n\nThe script may still be running in background.",
-                            type="error"
-                        )
+                        call_on_main(self.main.dialogs.show_message, "Script execution timed out (120 seconds)\n\nThe script may still be running in background.", type="error")
                     except Exception as e:
                         logger.error((("Foreground script execution error: " + "{e}").format(e=(e))))
-                        self.main.dialogs.show_message((("Script error: " + "{_a0}").format(_a0=(str(e)))), type="error")
+                        call_on_main(self.main.dialogs.show_message, ("Script error: " + "{_a0}").format(_a0=(str(e))), type="error")
                         
             except Exception as e:
                 logger.error((("Script execution error: " + "{e}").format(e=(e))))
-                self.main.dialogs.show_message((("Script setup error: " + "{_a0}").format(_a0=(str(e)))), type="error")
+                call_on_main(self.main.dialogs.show_message, ("Script setup error: " + "{_a0}").format(_a0=(str(e))), type="error")
         
         # Start script execution in separate thread
         try:
@@ -1698,11 +1649,11 @@ class ContextMenuHandler:
                             capture_output=True, text=True, timeout=30  # Increased timeout
                         )
                         info = result.stdout if result.stdout else "No package info available"
-                        self.main.dialogs.show_message("Package Info:\n\n" + info[:1000], type="info")
+                        call_on_main(self.main.dialogs.show_message, "Package Info:\n\n" + info[:1000], type="info")
                     except subprocess.TimeoutExpired:
-                        self.main.dialogs.show_message("Package info timeout (30 seconds)", type="error")
+                        call_on_main(self.main.dialogs.show_message, "Package info timeout (30 seconds)", type="error")
                     except Exception as e:
-                        self.main.dialogs.show_message("Cannot view package: " + str(e), type="error")
+                        call_on_main(self.main.dialogs.show_message, "Cannot view package: " + str(e), type="error")
                 
                 import threading
                 threading.Thread(target=view_pkg, daemon=True).start()
@@ -1750,7 +1701,7 @@ class ContextMenuHandler:
                     if result.stdout:
                         success_msg += "\n\n" + result.stdout[:500]
                     logger.info((("Package installation successful: " + "{file_path}").format(file_path=(file_path))))
-                    self.main.dialogs.show_message(success_msg, type="info")
+                    call_on_main(self.main.dialogs.show_message, success_msg, type="info")
                 else:
                     error_msg = "Installation failed!"
                     if result.stderr:
@@ -1758,23 +1709,17 @@ class ContextMenuHandler:
                     elif result.stdout:
                         error_msg += "\n\n" + result.stdout[:500]
                     logger.error((("Package installation failed: " + "{file_path}" + " - " + "{error_msg}").format(file_path=(file_path), error_msg=(error_msg))))
-                    self.main.dialogs.show_message(error_msg, type="error")
+                    call_on_main(self.main.dialogs.show_message, error_msg, type="error")
                     
             except subprocess.TimeoutExpired:
                 logger.error((("Package installation timeout: " + "{file_path}").format(file_path=(file_path))))
-                self.main.dialogs.show_message(
-                    "Installation timed out (180 seconds)\n\nThe package might still be installing.",
-                    type="error"
-                )
+                call_on_main(self.main.dialogs.show_message, "Installation timed out (180 seconds)\n\nThe package might still be installing.", type="error")
             except FileNotFoundError:
                 logger.error("opkg command not found")
-                self.main.dialogs.show_message(
-                    "opkg command not found!\n\nPlease ensure you're running on Enigma2 system.",
-                    type="error"
-                )
+                call_on_main(self.main.dialogs.show_message, "opkg command not found!\n\nPlease ensure you're running on Enigma2 system.", type="error")
             except Exception as e:
                 logger.error((("Installation error: " + "{e}").format(e=(e))))
-                self.main.dialogs.show_message((("Installation error: " + "{_a0}").format(_a0=(str(e)))), type="error")
+                call_on_main(self.main.dialogs.show_message, ("Installation error: " + "{_a0}").format(_a0=(str(e))), type="error")
         
         # Show progress message
         self.main.dialogs.show_message(

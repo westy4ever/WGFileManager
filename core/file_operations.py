@@ -29,9 +29,21 @@ class FileOperations:
         self.trash_path = None  # delete() will now fail loudly instead of crashing startup
         return False
     
+    @staticmethod
+    def _check_not_into_itself(source, destination):
+        """[2026-11-05] a folder copied into itself / its own subfolder copied its
+        own copy over and over until the disk was full"""
+        if not os.path.isdir(source):
+            return
+        src = os.path.realpath(source).rstrip("/")
+        dst = os.path.realpath(destination).rstrip("/")
+        if dst == src or dst.startswith(src + "/"):
+            raise FileOperationError("A folder can't be copied or moved into itself: %s" % source)
+
     def copy(self, source, destination, overwrite=False):
         """Copy file or directory"""
         try:
+            self._check_not_into_itself(source, destination)
             validate_path(source)
             validate_path(destination)
             
@@ -85,6 +97,7 @@ class FileOperations:
             
             if use_trash and self.config.plugins.wgfilemanager.trash_enabled.value == "yes":
                 return self._move_to_trash(source)
+            self._check_not_into_itself(source, destination)
             
             dest_path = self._get_unique_path(source, destination)
             

@@ -73,10 +73,11 @@ class ArchiveManager:
             
             os.makedirs(extract_dir, exist_ok=True)
             
-            # Extract based on file type
-            if archive_path.endswith('.zip'):
+            # Extract based on file type (any letter case: FILE.ZIP too)
+            low = archive_path.lower()
+            if low.endswith('.zip'):
                 self._extract_zip(archive_path, extract_dir)
-            elif archive_path.endswith(('.tar', '.tar.gz', '.tgz')):
+            elif low.endswith(('.tar', '.tar.gz', '.tgz')):
                 self._extract_tar(archive_path, extract_dir)
             else:
                 raise ArchiveError(f"Unsupported archive format: {archive_path}")
@@ -128,9 +129,39 @@ class ArchiveManager:
         """Extract TAR archive"""
         try:
             with tarfile.open(archive_path, 'r:*') as tf:
-                tf.extractall(destination)
+                safe = self._safe_tar_members(tf, destination)
+                try:
+                    tf.extractall(destination, members=safe, filter="data")
+                except TypeError:                      # Python without extraction filters
+                    tf.extractall(destination, members=safe)
+        except ArchiveError:
+            raise
         except Exception as e:
             raise ArchiveError(f"Extract TAR failed: {e}")
+
+    @staticmethod
+    def _safe_tar_members(tf, destination):
+        """[2026-11-05] refuse a tar whose entries leave the folder ("../..",
+        "/etc/...", links pointing out, device files): the plugin runs as root,
+        so such an archive could overwrite system files"""
+        root = os.path.realpath(destination)
+        out = []
+        for m in tf.getmembers():
+            target = os.path.realpath(os.path.join(root, m.name))
+            if target != root and not target.startswith(root + os.sep):
+                raise ArchiveError(f"Unsafe archive: '{m.name}' would be written outside the folder")
+            if m.issym() or m.islnk():
+                if m.issym():                           # relative to the link's own folder
+                    base = os.path.dirname(target)
+                else:                                   # hard link: a name inside the archive
+                    base = root
+                lt = os.path.realpath(m.linkname if os.path.isabs(m.linkname) else os.path.join(base, m.linkname))
+                if lt != root and not lt.startswith(root + os.sep):
+                    raise ArchiveError(f"Unsafe archive: link '{m.name}' points outside the folder")
+            if m.isdev():
+                continue                                # device files: skipped
+            out.append(m)
+        return out
     
     def _ensure_extension(self, path, archive_type):
         """Ensure archive has correct extension"""
@@ -157,7 +188,7 @@ class ArchiveManager:
             
             contents = []
             
-            if archive_path.endswith('.zip'):
+            if archive_path.lower().endswith('.zip'):
                 with zipfile.ZipFile(archive_path, 'r') as zf:
                     for info in zf.infolist():
                         contents.append({
@@ -167,7 +198,7 @@ class ArchiveManager:
                             'date': datetime(*info.date_time),
                             'is_dir': info.filename.endswith('/')
                         })
-            elif archive_path.endswith(('.tar', '.tar.gz', '.tgz')):
+            elif archive_path.lower().endswith(('.tar', '.tar.gz', '.tgz')):
                 with tarfile.open(archive_path, 'r:*') as tf:
                     for member in tf.getmembers():
                         contents.append({

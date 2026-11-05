@@ -56,6 +56,33 @@ class EnhancedFileList(FileList):
             logger.error((("[EnhancedFileList] Init error: " + "{e}").format(e=(e))))
             raise
     
+    def isParentPath(self, path):
+        """[2026-11-05] True for the ".." entry: its path is the PARENT folder, so
+        delete / rename / move / copy / mark on it acted on the whole parent
+        folder (on ".." inside /media/hdd/Movies: "Delete folder 'hdd'?")"""
+        try:
+            cur = self.getCurrentDirectory() or ""
+            if not path or not cur:
+                return False
+            parent = os.path.dirname(os.path.normpath(cur)) or "/"
+            return os.path.normpath(path) == os.path.normpath(parent)
+        except Exception:
+            return False
+
+    def isParentSelected(self):
+        try:
+            idx = self.getSelectionIndex()
+            if 0 <= idx < len(self.list) and len(self.list[idx][0]) > 2 and self.list[idx][0][2] == "..":
+                return True
+            sel = self.getSelection()
+            return bool(sel and sel[0]) and self.isParentPath(sel[0])
+        except Exception:
+            return False
+
+    def markedPaths(self):
+        """the marked entries' paths, never the ".." entry"""
+        return [x[0][0] for x in self.list if x[0][3] and not self.isParentPath(x[0][0])]
+
     def changeDir(self, directory, select=None):
         """Override to always show parent directory with detailed debugging"""
         logger.debug((("[EnhancedFileList] changeDir called: " + "{directory}" + ", select=" + "{select}").format(directory=(directory), select=(select))))
@@ -621,6 +648,9 @@ class WGFileManagerMain(Screen):
 
     def update_operation_progress(self):
         """Update progress bar during operations"""
+        if getattr(self, "_op_result", None):
+            self.finish_file_jobs()
+            return
         try:
             if self.operation_total > 0:
                 progress = int((self.operation_current / self.operation_total) * 100)
@@ -800,7 +830,10 @@ class WGFileManagerMain(Screen):
             # 1. Get the current active pane and what is highlighted
             pane = self.active_pane
             sel = pane.getSelection()
-            
+            if sel and sel[0] and pane.isParentSelected():
+                self["status_bar"].setText("The '..' entry can't be selected")
+                return
+
             if sel and sel[0]:
                 # 2. Toggle the visual mark in the Enigma2 FileList component
                 pane.markSelected()
@@ -917,7 +950,7 @@ class WGFileManagerMain(Screen):
         """Request file deletion - RED button"""
         try:
             # Check for multi-selected files first
-            marked = [x for x in self.active_pane.list if x[0][3]]
+            marked = [x for x in self.active_pane.list if x[0][3] and not self.active_pane.isParentPath(x[0][0])]
             
             if marked:
                 # Multi-select delete
@@ -930,7 +963,7 @@ class WGFileManagerMain(Screen):
             else:
                 # Single file delete
                 sel = self.active_pane.getSelection()
-                if not sel or not sel[0]:
+                if not sel or not sel[0] or self.active_pane.isParentSelected():
                     self.dialogs.show_message("No file selected!", type="info")
                     return
                 
@@ -1009,7 +1042,7 @@ class WGFileManagerMain(Screen):
         """Request file rename - GREEN button"""
         try:
             # Check for multi-selected files
-            marked = [x for x in self.active_pane.list if x[0][3]]
+            marked = [x for x in self.active_pane.list if x[0][3] and not self.active_pane.isParentPath(x[0][0])]
         
             if len(marked) > 1:
                 logger.debug((("[MainScreen] Rename request for " + "{_a0}" + " items - showing bulk rename suggestion").format(_a0=(len(marked)))))
@@ -1021,7 +1054,7 @@ class WGFileManagerMain(Screen):
         
             # Single file rename
             sel = self.active_pane.getSelection()
-            if not sel or not sel[0]:
+            if not sel or not sel[0] or self.active_pane.isParentSelected():
                 self.dialogs.show_message("No file selected!", type="info")
                 return
         
@@ -1101,12 +1134,12 @@ class WGFileManagerMain(Screen):
         files = []
         try:
             for item in self.active_pane.list:
-                if item[0][3]:  # Marked
+                if item[0][3] and not self.active_pane.isParentPath(item[0][0]):  # Marked
                     files.append(item[0][0])
             
             if not files:
                 sel = self.active_pane.getSelection()
-                if sel and sel[0]:
+                if sel and sel[0] and not self.active_pane.isParentSelected():
                     files.append(sel[0])
             
             logger.debug((("[MainScreen] Selected files: " + "{_a0}" + " items").format(_a0=(len(files)))))
@@ -1171,66 +1204,57 @@ class WGFileManagerMain(Screen):
             self.show_error("Paste", e)
 
     def _perform_paste(self, mode, files, dest):
-        """Perform paste operation in thread"""
-        try:
-            logger.debug((("[MainScreen] Performing paste operation: " + "{mode}" + ", " + "{_a0}" + " files").format(mode=(mode), _a0=(len(files)))))
-            
-            for i, src in enumerate(files):
-                try:
-                    if mode == "cp":
-                        logger.debug((("[MainScreen] Copying: " + "{src}" + " -> " + "{dest}").format(src=(src), dest=(dest))))
-                        self.file_ops.copy(src, dest)
-                    elif mode == "mv":
-                        logger.debug((("[MainScreen] Moving: " + "{src}" + " -> " + "{dest}").format(src=(src), dest=(dest))))
-                        self.file_ops.move(src, dest)
-                    
-                    with self.operation_lock:
-                        self.operation_current = i + 1
-                    
-                except Exception as e:
-                    logger.error((("[MainScreen] Paste failed for " + "{src}" + ": " + "{e}").format(src=(src), e=(e))))
-                    # Continue with next file
-            
-            # Operation complete
+        self._run_file_jobs("paste", mode, files, dest)
+
+    def _run_file_jobs(self, kind, mode, files, dest):
+        """[2026-11-05] runs in a worker thread: ONLY copies / moves and records the
+        result. Everything on screen (refresh, the result message, the timer) is
+        done by finish_file_jobs() on the main thread -- it used to be done right
+        here, and Enigma2's screens are not thread-safe (random crashes), and
+        "complete!" was shown even when every file had failed."""
+        done, errors = 0, []
+        for i, src in enumerate(files):
+            try:
+                if mode == "cp":
+                    self.file_ops.copy(src, dest)
+                elif mode == "mv":
+                    self.file_ops.move(src, dest)
+                done += 1
+            except Exception as e:
+                logger.error("[MainScreen] %s failed for %s: %s", kind, src, e)
+                errors.append("%s: %s" % (os.path.basename(src.rstrip("/")), str(e)[:60]))
             with self.operation_lock:
-                self.operation_in_progress = False
-                self.operation_timer.stop()
-            
-            # Clear clipboard if it was a cut operation
-            if mode == "mv":
-                self.clipboard = []
-                self.clipboard_mode = None
-                logger.debug("[MainScreen] Clipboard cleared (cut operation)")
-            
-            # Update UI in main thread
-            self.session.openWithCallback(
-                lambda: None,
-                MessageBox,
-                "Paste complete!",
-                type=MessageBox.TYPE_INFO,
-                timeout=2
-            )
-            
-            # Refresh panes
+                self.operation_current = i + 1
+        with self.operation_lock:
+            self._op_result = (kind, mode, done, errors)
+            self.operation_in_progress = False
+
+    def finish_file_jobs(self):
+        """main thread (from the progress timer): the result of _run_file_jobs"""
+        with self.operation_lock:
+            res, self._op_result = getattr(self, "_op_result", None), None
+        if not res:
+            return
+        kind, mode, done, errors = res
+        self.operation_timer.stop()
+        if mode == "mv" and kind == "paste" and not errors:
+            self.clipboard = []
+            self.clipboard_mode = None
+        try:
             self.active_pane.refresh()
             self.inactive_pane.refresh()
             self.update_ui()
-            
-            logger.info("[MainScreen] Paste operation completed successfully")
-            
         except Exception as e:
-            logger.error((("[MainScreen] Paste operation failed: " + "{e}").format(e=(e))))
-            with self.operation_lock:
-                self.operation_in_progress = False
-                self.operation_timer.stop()
-            
-            # Show error in main thread
-            self.session.openWithCallback(
-                lambda: None,
-                MessageBox,
-                (("Paste failed:\n" + "{e}").format(e=(e))),
-                type=MessageBox.TYPE_ERROR
-            )
+            logger.error("[MainScreen] refresh after %s: %s", kind, e)
+        word = "Copied" if mode == "cp" else "Moved"
+        if not errors:
+            self.dialogs.show_message("%s %d item%s" % (word, done, "" if done == 1 else "s"), type="info", timeout=2)
+        else:
+            msg = "%s %d, failed %d:\n\n%s" % (word, done, len(errors), "\n".join(errors[:4]))
+            if len(errors) > 4:
+                msg += "\n... and %d more (see /tmp/wgfilemanager.log)" % (len(errors) - 4)
+            self.dialogs.show_message(msg, type="error")
+        logger.info("[MainScreen] %s: %d done, %d failed", kind, done, len(errors))
 
     def execute_transfer(self, mode, files, dest):
         """Execute file transfer"""
@@ -1259,62 +1283,8 @@ class WGFileManagerMain(Screen):
             self.show_error("Transfer", e)
 
     def _perform_transfer(self, mode, files, dest):
-        """Perform transfer in thread"""
-        try:
-            logger.debug((("[MainScreen] Performing transfer operation: " + "{mode}" + ", " + "{_a0}" + " files").format(mode=(mode), _a0=(len(files)))))
-            
-            for i, src in enumerate(files):
-                try:
-                    if mode == "cp":
-                        logger.debug((("[MainScreen] Copying: " + "{src}" + " -> " + "{dest}").format(src=(src), dest=(dest))))
-                        self.file_ops.copy(src, dest)
-                    elif mode == "mv":
-                        logger.debug((("[MainScreen] Moving: " + "{src}" + " -> " + "{dest}").format(src=(src), dest=(dest))))
-                        self.file_ops.move(src, dest)
-                    
-                    with self.operation_lock:
-                        self.operation_current = i + 1
-                    
-                except Exception as e:
-                    logger.error((("[MainScreen] Transfer failed for " + "{src}" + ": " + "{e}").format(src=(src), e=(e))))
-                    # Continue with next file
-            
-            # Operation complete
-            with self.operation_lock:
-                self.operation_in_progress = False
-                self.operation_timer.stop()
-            
-            # Update UI in main thread
-            self.session.openWithCallback(
-                lambda: None,
-                MessageBox,
-                "Transfer complete!",
-                type=MessageBox.TYPE_INFO,
-                timeout=2
-            )
-            
-            # Refresh panes
-            self.active_pane.refresh()
-            self.inactive_pane.refresh()
-            self.update_ui()
-            
-            logger.info("[MainScreen] Transfer operation completed successfully")
-            
-        except Exception as e:
-            logger.error((("[MainScreen] Transfer operation failed: " + "{e}").format(e=(e))))
-            with self.operation_lock:
-                self.operation_in_progress = False
-                self.operation_timer.stop()
-            
-            # Show error in main thread
-            self.session.openWithCallback(
-                lambda: None,
-                MessageBox,
-                (("Transfer failed:\n" + "{e}").format(e=(e))),
-                type=MessageBox.TYPE_ERROR
-            )
+        self._run_file_jobs("transfer", mode, files, dest)
 
-    # Tools and Features
     def play_audio_file(self, path):
         """[2026-11-05] OK on a music file: the audio player, with every music file
         of the folder as the playlist (natural order: 2 before 10), from this one"""
@@ -1350,7 +1320,7 @@ class WGFileManagerMain(Screen):
                 self.show_file_info()
                 return
             
-            marked = [x for x in self.active_pane.list if x[0][3]]
+            marked = [x for x in self.active_pane.list if x[0][3] and not self.active_pane.isParentPath(x[0][0])]
             
             if marked:
                 logger.debug((("[MainScreen] Showing multi-selection context menu for " + "{_a0}" + " items").format(_a0=(len(marked)))))

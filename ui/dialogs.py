@@ -5,6 +5,7 @@ from Components.config import config
 import os
 import subprocess
 import threading
+from ..utils.mainthread import call_on_main, on_main
 import hashlib
 from datetime import datetime
 import glob
@@ -380,8 +381,8 @@ class Dialogs:
         def extract_thread():
             try:
                 archive_mgr.extract_archive(archive_path, dest_dir)
-                filelist.refresh()
-                update_callback()
+                call_on_main(filelist.refresh)
+                call_on_main(update_callback)
                 self.show_message("Extracted to: " + dest_dir, type="info")
             except Exception as e:
                 logger.error(f"Error in extract thread: {e}")
@@ -1672,8 +1673,8 @@ class Dialogs:
                             except:
                                 pass
                 
-                filelist.refresh()
-                update_callback()
+                call_on_main(filelist.refresh)
+                call_on_main(update_callback)
                 self.show_message(f" Removed {count} temporary files", type="info")
             except Exception as e:
                 logger.error(f"Error in cleanup temp thread: {e}")
@@ -1700,8 +1701,8 @@ class Dialogs:
                         except:
                             pass
                 
-                filelist.refresh()
-                update_callback()
+                call_on_main(filelist.refresh)
+                call_on_main(update_callback)
                 self.show_message(f" Removed {count} empty directories", type="info")
             except Exception as e:
                 logger.error(f"Error in cleanup empty thread: {e}")
@@ -1732,8 +1733,8 @@ class Dialogs:
                             except:
                                 pass
                 
-                filelist.refresh()
-                update_callback()
+                call_on_main(filelist.refresh)
+                call_on_main(update_callback)
                 self.show_message(f" Removed {count} cache files\nFreed: {format_size(total_size)}", type="info")
             except Exception as e:
                 logger.error(f"Error in cleanup cache thread: {e}")
@@ -1794,8 +1795,8 @@ class Dialogs:
                     except:
                         pass
                 
-                filelist.refresh()
-                update_callback()
+                call_on_main(filelist.refresh)
+                call_on_main(update_callback)
                 self.show_message(f" Fixed permissions for {count} files", type="info")
             except Exception as e:
                 logger.error(f"Error in permission repair thread: {e}")
@@ -2147,3 +2148,10 @@ class Dialogs:
             )
         except Exception as e:
             logger.error(f"Error showing manual delay dialog: {e}")        
+
+
+# [2026-11-05] message boxes and pickers may be asked for from worker threads
+# (installs, scans, extraction...): they always run on the main thread
+for _n, _v in list(vars(Dialogs).items()):
+    if _n.startswith("show_") and callable(_v):
+        setattr(Dialogs, _n, on_main(_v))

@@ -311,6 +311,102 @@ def check_audio():
     expect("sleep at the end of the track: closes the player", closed, [1])
 
 
+def check_file_manager():
+    """file manager fixes (2026-11-05 audit)"""
+    print("\n[7] file manager")
+    import threading
+    import shutil
+    MS = sys.modules.get(PKG + ".ui.main_screen") or __import__(PKG + ".ui.main_screen", fromlist=["x"])
+    FO = __import__(PKG + ".core.file_operations", fromlist=["x"])
+    MT = __import__(PKG + ".utils.mainthread", fromlist=["x"])
+    # 1. the ".." entry is never an operation target
+    fl = object.__new__(MS.EnhancedFileList)
+    fl.getCurrentDirectory = lambda: "/media/hdd/Movies/"
+    fl.list = [(("/media/hdd/", True, "..", True), ".."), (("/media/hdd/Movies/a.mkv", False, "a.mkv", True), "a"),
+               (("/media/hdd/Movies/b.mkv", False, "b.mkv", False), "b")]
+    fl.getSelectionIndex = lambda: 0
+    fl.getSelection = lambda: ("/media/hdd/", True)
+    expect("'..' recognised (by name and by path), files are not",
+           (fl.isParentSelected(), fl.isParentPath("/media/hdd"), fl.isParentPath("/media/hdd/Movies/a.mkv")),
+           (True, True, False))
+    expect("marked list never holds '..' (it was marked here)", fl.markedPaths(), ["/media/hdd/Movies/a.mkv"])
+    # 2. a folder into itself is refused (it used to fill the disk)
+    d = tempfile.mkdtemp()
+    src = os.path.join(d, "Movies")
+    os.makedirs(os.path.join(src, "2024"))
+    open(os.path.join(src, "x.txt"), "w").close()
+    ops = object.__new__(FO.FileOperations)
+    ops.config, ops.cache, ops.trash_path = None, None, None
+    got = []
+    for fn, dst in ((ops.copy, os.path.join(src, "2024")), (ops.copy, src), (ops.move, os.path.join(src, "2024"))):
+        try:
+            fn(src, dst)
+            got.append("done")
+        except Exception as e:
+            got.append("into itself" in str(e))
+    expect("copy / move a folder into itself or its subfolder: refused", got, [True, True, True])
+    other = os.path.join(d, "Backup")
+    os.makedirs(other)
+    ops.copy(src, other)
+    expect("a normal folder copy still works", sorted(os.listdir(os.path.join(other, "Movies"))), ["2024", "x.txt"])
+    # 3. copy / move: the worker only records; the main thread reports, failures included
+    m = object.__new__(MS.WGFileManagerMain)
+    m.operation_lock = threading.Lock()
+    m.file_ops = ops
+    m.operation_in_progress = True
+    m.operation_current = 0
+    t = threading.Thread(target=m._run_file_jobs, args=("paste", "cp", [os.path.join(src, "x.txt"), "/nonexistent/y"], other))
+    t.start()
+    t.join()
+    expect("worker result: 1 copied, 1 failed, nothing shown from the thread",
+           (m._op_result[2], len(m._op_result[3]), m.operation_in_progress), (1, 1, False))
+    shown = []
+    m.operation_timer = type("T", (), {"stop": lambda s: None})()
+    m.active_pane = m.inactive_pane = type("P", (), {"refresh": lambda s: None})()
+    m.update_ui = lambda: None
+    m.dialogs = type("D", (), {"show_message": lambda s, text, type="info", timeout=0: shown.append((type, text.split(":")[0]))})()
+    m.clipboard, m.clipboard_mode = ["x"], "cut"
+    m.finish_file_jobs()
+    expect("main thread: the failure is reported (was always 'Paste complete!')", shown, [("error", "Copied 1, failed 1")])
+    # 5. archives: a tar can't write outside its folder; FILE.ZIP works
+    import tarfile, io, zipfile
+    AR = __import__(PKG + ".core.archive", fromlist=["x"])
+    am = object.__new__(AR.ArchiveManager) if hasattr(AR, "ArchiveManager") else None
+    def mk_tar(path, entries):
+        with tarfile.open(path, "w") as tf:
+            for name, kind, link in entries:
+                ti = tarfile.TarInfo(name)
+                if kind == "sym":
+                    ti.type, ti.linkname = tarfile.SYMTYPE, link
+                    tf.addfile(ti)
+                else:
+                    ti.size = 2
+                    tf.addfile(ti, io.BytesIO(b"hi"))
+    res = []
+    for entries in ([("../../evil.txt", "file", "")], [("/tmp/evil_abs.txt", "file", "")], [("l", "sym", "/etc/passwd")],
+                    [("ok/a.txt", "file", ""), ("ok/l", "sym", "a.txt")]):
+        p = os.path.join(d, "t.tar")
+        mk_tar(p, entries)
+        try:
+            out = am.extract_archive(p, d)
+            res.append("extracted" if os.path.exists(os.path.join(out, "ok", "a.txt")) else "?")
+        except Exception as e:
+            res.append("refused" if "Unsafe" in str(e) else repr(e)[:60])
+    expect("tar: '../', '/abs' and links out are refused; a normal one extracts", res,
+           ["refused", "refused", "refused", "extracted"])
+    zp = os.path.join(d, "PACK.ZIP")
+    with zipfile.ZipFile(zp, "w") as z:
+        z.writestr("x.txt", "x")
+    expect("an upper-case .ZIP extracts", os.path.isfile(os.path.join(am.extract_archive(zp, d), "x.txt")), True)
+    # 4. the main-thread helper
+    seen = []
+    t = threading.Thread(target=lambda: seen.append(MT.call_on_main(lambda: threading.current_thread().name)))
+    t.start()
+    t.join()
+    expect("call_on_main from a worker without a reactor still runs (tests)", len(seen), 1)
+    shutil.rmtree(d, ignore_errors=True)
+
+
 def main():
     check_imports()
     check_screen()
@@ -318,6 +414,7 @@ def main():
     check_sync()
     check_builtin_subs()
     check_audio()
+    check_file_manager()
     print("\n" + ("ALL PASSED" if not FAILS else "%d FAILED" % len(FAILS)))
     sys.exit(1 if FAILS else 0)
 

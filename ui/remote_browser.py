@@ -3,7 +3,7 @@ from Screens.MessageBox import MessageBox
 from Components.ActionMap import ActionMap
 from Components.MenuList import MenuList
 from Components.Label import Label
-from enigma import getDesktop
+from enigma import getDesktop, eTimer
 import os
 import threading
 
@@ -77,8 +77,37 @@ class RemoteBrowser(Screen):
             "down": self.down,
         }, -1)
         
+        # [2026-11-05] background threads hand their screen updates to the main
+        # thread through this queue (Enigma2 screens are not thread-safe)
+        self._ui_calls = []
+        self._ui_lock = threading.Lock()
+        self._ui_timer = eTimer()
+        self._ui_timer.callback.append(self._drain_ui)
+        self._ui_timer.start(150, False)
+        self._close_timer = eTimer()
+        self._close_timer.callback.append(self.close)
+        self.onClose.append(self._ui_timer.stop)
+        self.onClose.append(self._close_timer.stop)
+
         # Show connection selector on startup
         self.onLayoutFinish.append(self.show_connection_selector)
+
+    def _ui(self, fn, *args):
+        """run fn(*args) on the main thread (from a worker thread)"""
+        with self._ui_lock:
+            self._ui_calls.append((fn, args))
+
+    def _drain_ui(self):
+        with self._ui_lock:
+            calls, self._ui_calls = self._ui_calls, []
+        for fn, args in calls:
+            try:
+                fn(*args)
+            except Exception as e:
+                logger.error("remote browser UI update: %s", e)
+
+    def _set_status(self, text):
+        self["status_bar"].setText(text)
     
     def show_connection_selector(self):
         """Show available connections - FIXED"""
@@ -89,14 +118,8 @@ class RemoteBrowser(Screen):
                 # FIXED: Don't use openWithCallback in __init__ context
                 self["status_bar"].setText("No saved connections! Configure in Settings.")
             
-                # Close after a delay
-                import threading
-                def delayed_close():
-                    import time
-                    time.sleep(3)
-                    self.close()
-            
-                threading.Thread(target=delayed_close, daemon=True).start()
+                # Close after 3 s (a timer: closing from a thread could crash Enigma2)
+                self._close_timer.start(3000, True)
                 return
         
             # Build connection list
@@ -157,61 +180,74 @@ class RemoteBrowser(Screen):
             logger.error(f"Error selecting connection: {e}")
             self.session.open(MessageBox, f"Connection error:\n{e}", MessageBox.TYPE_ERROR)
     
+    def _list_remote(self, path):
+        """worker thread: (ok, entries or error text) for a folder"""
+        c = self.current_connection or {}
+        t = c.get('type')
+        if t == 'ftp':
+            return True, self.ftp_client.list_directory(path)
+        if t == 'sftp':
+            return self.sftp_client.list_directory(c.get('host'), c.get('port'), c.get('username'),
+                                                   c.get('password'), path)
+        return False, "Unsupported connection type: %s" % t
+
+    def _show_listing(self, path, entries):
+        """main thread"""
+        self.current_path = path
+        self["current_path"].setText("Path: %s" % path)
+        self.update_file_list([e for e in entries if e.get('name') not in ('.', '..')])
+        self.loading = False
+
+    def _failed(self, text):
+        self.loading = False
+        self["status_bar"].setText("")
+        self.show_error(text)
+
     def connect_and_browse(self):
-        """Connect to remote server and browse"""
+        """Connect to remote server and browse (network work in a thread)"""
+        self["status_bar"].setText("Connecting...")
+        self.loading = True
+        path = self.current_path
+
         def connect_thread():
             try:
-                self["status_bar"].setText("Connecting...")
-                self.loading = True
-                
-                conn_type = self.current_connection.get('type')
-                host = self.current_connection.get('host')
-                port = self.current_connection.get('port')
-                username = self.current_connection.get('username')
-                password = self.current_connection.get('password')
-                
-                if conn_type == 'ftp':
-                    success, message = self.ftp_client.connect(host, port, username, password)
-                    if success:
-                        self.browse_directory(self.current_path)
-                    else:
-                        self.show_error(f"FTP connection failed:\n{message}")
-                
-                elif conn_type == 'sftp':
-                    success, result = self.sftp_client.list_directory(host, port, username, password, self.current_path)
-                    if success:
-                        self.update_file_list(result)
-                    else:
-                        self.show_error(f"SFTP connection failed:\n{result}")
-                
+                c = self.current_connection or {}
+                if c.get('type') == 'ftp':
+                    ok, message = self.ftp_client.connect(c.get('host'), c.get('port'), c.get('username'), c.get('password'))
+                    if not ok:
+                        self._ui(self._failed, "FTP connection failed:\n%s" % message)
+                        return
+                ok, result = self._list_remote(path)
+                if ok:
+                    self._ui(self._show_listing, path, result)
                 else:
-                    self.show_error(f"Unsupported connection type: {conn_type}")
-                
-                self.loading = False
-                
+                    self._ui(self._failed, "Connection failed:\n%s" % result)
             except Exception as e:
-                logger.error(f"Connection thread error: {e}")
-                self.show_error(f"Connection error:\n{e}")
-                self.loading = False
-        
+                logger.error("Connection thread error: %s", e)
+                self._ui(self._failed, "Connection error:\n%s" % e)
+
         threading.Thread(target=connect_thread, daemon=True).start()
-    
+
     def browse_directory(self, path):
-        """Browse directory on remote server"""
-        try:
-            conn_type = self.current_connection.get('type')
-            
-            if conn_type == 'ftp':
-                entries = self.ftp_client.list_directory(path)
-                self.update_file_list(entries)
-            
-            self.current_path = path
-            self["current_path"].setText(f"Path: {path}")
-            
-        except Exception as e:
-            logger.error(f"Browse error: {e}")
-            self.show_error(f"Browse failed:\n{e}")
-    
+        """Open a folder on the server (FTP and SFTP; was FTP only), in a thread"""
+        if self.loading:
+            return
+        self.loading = True
+        self["status_bar"].setText("Loading...")
+
+        def work():
+            try:
+                ok, result = self._list_remote(path)
+                if ok:
+                    self._ui(self._show_listing, path, result)
+                else:
+                    self._ui(self._failed, "Browse failed:\n%s" % result)
+            except Exception as e:
+                logger.error("Browse error: %s", e)
+                self._ui(self._failed, "Browse failed:\n%s" % e)
+
+        threading.Thread(target=work, daemon=True).start()
+
     def update_file_list(self, entries):
         """Update file list display"""
         try:
@@ -311,34 +347,29 @@ class RemoteBrowser(Screen):
         if not confirmed:
             return
         
+        self["status_bar"].setText("Downloading %s..." % filename)
+
         def download_thread():
             try:
-                self["status_bar"].setText(f"Downloading {filename}...")
-                
-                conn_type = self.current_connection.get('type')
-                
+                c = self.current_connection or {}
+                conn_type = c.get('type')
                 if conn_type == 'ftp':
                     success, message = self.ftp_client.download_file(remote_path, local_path)
                 elif conn_type == 'sftp':
-                    host = self.current_connection.get('host')
-                    port = self.current_connection.get('port')
-                    username = self.current_connection.get('username')
-                    password = self.current_connection.get('password')
-                    success, message = self.sftp_client.download_file(host, port, username, password, remote_path, local_path)
+                    success, message = self.sftp_client.download_file(c.get('host'), c.get('port'), c.get('username'),
+                                                                      c.get('password'), remote_path, local_path)
                 else:
-                    success = False
-                    message = "Unsupported protocol"
-                
+                    success, message = False, "Unsupported protocol"
                 if success:
-                    self["status_bar"].setText(f"[OK] Downloaded: {filename}")
-                    self.session.open(MessageBox, f"Download complete!\n\n{filename}", MessageBox.TYPE_INFO, timeout=3)
+                    self._ui(self._set_status, "[OK] Downloaded: %s" % filename)
+                    self._ui(lambda: self.session.open(MessageBox, "Download complete!\n\n%s" % filename,
+                                                       MessageBox.TYPE_INFO, timeout=3))
                 else:
-                    self.show_error(f"Download failed:\n{message}")
-                
+                    self._ui(self._failed, "Download failed:\n%s" % message)
             except Exception as e:
-                logger.error(f"Download thread error: {e}")
-                self.show_error(f"Download error:\n{e}")
-        
+                logger.error("Download thread error: %s", e)
+                self._ui(self._failed, "Download error:\n%s" % e)
+
         threading.Thread(target=download_thread, daemon=True).start()
     
     def refresh_list(self):
