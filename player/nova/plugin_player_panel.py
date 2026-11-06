@@ -14,7 +14,7 @@ calls the panel's live callback and keeps the panel open (used for the
 subtitle sync steps), showing the callback's answer on the help line.
 """
 from Screens.Screen import Screen
-from .novaplay_theme import TH_CHIPSEL, TH_GOLD, Frame  # [theme]
+from .novaplay_theme import TH_CHIPSEL, TH_GOLD, Frame, recolor as _theme_recolor  # [theme]
 from Components.ActionMap import ActionMap
 from Components.Label import Label
 from enigma import ePoint
@@ -32,7 +32,7 @@ _RH = 50         # row height
 # enigma2 doesn't blend widgets with each other: a widget's pixels REPLACE the
 # panel under it, so a see-through colour punches a hole to the video/TV
 # picture. Every colour here uses the panel's own alpha (1A).
-_FOCUS = "#1A5C4A12"     # focused column highlight (dark gold)
+_FOCUS = _theme_recolor("#1A5C4A12")     # focused column highlight (dark accent)
 _IDLE = "#1A2D333B"      # remembered row in the other columns (dark grey)
 _HELP = u"◀ ▶ column    ▲ ▼ choose    OK apply    EXIT close"
 

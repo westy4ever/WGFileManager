@@ -76,8 +76,10 @@ TH_DARK = "#" + _hex(_mix(_C, (0, 0, 0), 0.43))            # was #8A6D1E
 TH_DARK_INT = int(_hex(_mix(_C, (0, 0, 0), 0.62)), 16)     # was 0x5C4A12
 TH_CHIPSEL = "#1A" + _hex(_mix(_C, (0, 0, 0), 0.71))       # was #1A463A12 (selected chip)
 TH_TINT = "#" + _hex(_mix(_C, (12, 16, 23), 0.86))         # was #2A2717 (accent-tinted dark)
+TH_ROWSEL = "#" + _hex(_mix(_C, (24, 26, 30), 0.89))      # was #353124 (a selected list row)
 if _NAME == "gold":                                        # Gold: exactly today's shades
     TH_PALE, TH_DARK, TH_DARK_INT, TH_CHIPSEL, TH_TINT = "#E5D1A6", "#8A6D1E", 0x5C4A12, "#1A463A12", "#2A2717"
+    TH_ROWSEL = "#353124"
 
 # "#RRGGBB" or "#AARRGGBB" (AA = transparency, kept)
 _RECOLOR = tuple((re.compile(r"#((?:[0-9A-Fa-f]{2})?)" + old + r"\b", re.I), new) for old, new in (
@@ -86,6 +88,8 @@ _RECOLOR = tuple((re.compile(r"#((?:[0-9A-Fa-f]{2})?)" + old + r"\b", re.I), new
     ("8A6D1E", TH_DARK[1:]),
     ("463A12", TH_CHIPSEL[3:]),
     ("2A2717", TH_TINT[1:]),
+    ("5C4A12", "%06X" % TH_DARK_INT),
+    ("353124", TH_ROWSEL[1:]),
 ))
 
 

@@ -99,9 +99,10 @@ def render(kind, w, h, accent):
             d.rounded_rectangle([x0 + s + 10 * SS, y, x1 - s - 10 * SS, y + 4 * SS], radius=2 * SS, fill=lit)
         if h >= 120:                                            # side lights (short bars: the text is kept 24 px in)
             bl = int(min(60, h * 0.14)) * SS
+            gap = (72 if h >= 600 else 8) * SS                  # tall panels: room for a page arrow between the bars
             for x in (10 * SS, W - 16 * SS):
                 for k in (0, 1):
-                    y0 = H // 2 - bl - 4 * SS + k * (bl + 8 * SS)
+                    y0 = H // 2 - bl - gap // 2 + k * (bl + gap)
                     d.rounded_rectangle([x, y0, x + 6 * SS, y0 + bl], radius=3 * SS, fill=lit)
     # soft bloom on the lights and the edge
     bloom = Image.new("L", (W, H), 0)

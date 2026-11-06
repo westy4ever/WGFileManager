@@ -7,7 +7,7 @@ Part of NovaPlaySimplePlayer (plugin_screen_player.py), split out
 and state through self; module-level helpers come from player_base.
 """
 from .player_base import *  # noqa: F401,F403
-from .novaplay_theme import TH_GOLD, apply as _theme_apply  # [theme]
+from .novaplay_theme import TH_GOLD, apply as _theme_apply, recolor as _theme_recolor  # [theme]
 
 
 def _COLOR_NAMES():
@@ -486,7 +486,7 @@ class PlayerSubs(object):
                     pos = inst.position()
                     inst.move(ePoint(self._STUDIO_SLOTS_X[slot], int(pos.y())))
                     if parseColor is not None:
-                        inst.setBackgroundColor(parseColor("#5C4A12" if sel else "#171718"))
+                        inst.setBackgroundColor(parseColor(_theme_recolor("#5C4A12") if sel else "#171718"))
                         inst.setForegroundColor(parseColor(fg))
                         inst.invalidate()
                 self[card].show()
