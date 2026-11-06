@@ -286,6 +286,23 @@ class EnhancedFileList(FileList):
             logger.error((("[EnhancedFileList] Error getting current directory: " + "{e}").format(e=(e))))
             return ""
 
+_KEYMAP_LOADED = []
+
+
+def _load_keymap():
+    """the file manager's own keys (keymap.xml beside plugin.py), once per run"""
+    if _KEYMAP_LOADED:
+        return
+    _KEYMAP_LOADED.append(True)
+    try:
+        path = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "keymap.xml")
+        if os.path.isfile(path):
+            from keymapparser import readKeymap
+            readKeymap(path)
+    except Exception as e:
+        logger.error("[MainScreen] keymap: %s", e)
+
+
 class WGFileManagerMain(Screen):
     def __init__(self, session):
         """Initialize main screen with comprehensive debugging"""
@@ -512,13 +529,18 @@ class WGFileManagerMain(Screen):
     def setup_actions(self):
         """Setup key mappings"""
         logger.debug("[MainScreen] Setting up action map")
+        _load_keymap()
+        # [2026-11-06] "WGFileManagerKeys" (keymap.xml beside plugin.py) holds only
+        # the keys Enigma2's groups below don't give; the old WGFileManagerActions group
+        # (written into the box's keymap.xml by an old install) repeated the colour
+        # keys, numbers and CH+/- on press, so each press came twice.
         self["actions"] = ActionMap([
-            "WGFileManagerActions",
+            "WGFileManagerKeys",
             "OkCancelActions", "ColorActions", "DirectionActions", 
             "MenuActions", "NumberActions", "ChannelSelectBaseActions"
         ], {
             "ok": self.ok_pressed,
-            "ok_long": self.play_whole_folder,   # round-60 (Bug 128): hold OK
+            "OKLong": self.play_whole_folder,    # hold OK (OkCancelActions)
             "cancel": self.exit,
             "exit": self.exit,
             "up": self.up,
@@ -528,8 +550,7 @@ class WGFileManagerMain(Screen):
             "red": self.delete_request,
             "green": self.rename_request,
             "yellow": self.toggle_selection,
-            "yellow_long": self.unmark_all,
-            "yellowlong": self.unmark_all,       # [2026-11-06] OpenATV's name for hold YELLOW (ColorActions)
+            "yellowlong": self.unmark_all,       # hold YELLOW (ColorActions)
             "blue": self.quick_copy,
             "menu": self.open_tools,
             "0": self.zero_pressed,
@@ -548,8 +569,6 @@ class WGFileManagerMain(Screen):
             "text": self.preview_file,
             "nextBouquet": self.next_sort,
             "prevBouquet": self.prev_sort,
-            "channelUp": self.next_sort,
-            "channelDown": self.prev_sort,
             "audio": self.show_storage_selector,
             "pageUp": lambda: self.page_up(),
             "pageDown": lambda: self.page_down(),

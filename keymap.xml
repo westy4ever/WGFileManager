@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- WGFileManager: only the keys Enigma2's own groups (OkCancelActions, ColorActions,
+     DirectionActions, MenuActions, NumberActions, ChannelSelectBaseActions) do not
+     already give the file manager. A key in two groups reaches the screen twice:
+     the colour keys, numbers and CH+/CH- must NOT be here (2026-11-06: YELLOW
+     marked and unmarked in one press). Loaded by plugin.py. -->
+<keymap>
+	<map context="WGFileManagerKeys">
+		<key id="KEY_PLAY" mapto="play" flags="m" />
+		<key id="KEY_PAUSE" mapto="playpause" flags="m" />
+		<key id="KEY_PLAYPAUSE" mapto="playpause" flags="m" />
+		<key id="KEY_INFO" mapto="info" flags="m" />
+		<key id="KEY_TEXT" mapto="text" flags="m" />
+		<key id="KEY_AUDIO" mapto="audio" flags="m" />
+		<key id="KEY_SUBTITLE" mapto="subtitle" flags="m" />
+		<key id="KEY_HELP" mapto="help" flags="m" />
+		<key id="KEY_PAGEUP" mapto="pageUp" flags="m" />
+		<key id="KEY_PAGEDOWN" mapto="pageDown" flags="m" />
+		<key id="KEY_FASTFORWARD" mapto="pageUp" flags="m" />
+		<key id="KEY_REWIND" mapto="pageDown" flags="m" />
+		<key id="KEY_BACK" mapto="back" flags="m" />
+		<key id="KEY_HOME" mapto="home" flags="m" />
+		<key id="KEY_END" mapto="end" flags="m" />
+		<key id="KEY_EPG" mapto="nextBouquet" flags="m" />
+		<key id="KEY_TV" mapto="prevBouquet" flags="m" />
+		<key id="KEY_NEXTSONG" mapto="nextBouquet" flags="m" />
+		<key id="KEY_PREVIOUSSONG" mapto="prevBouquet" flags="m" />
+	</map>
+</keymap>

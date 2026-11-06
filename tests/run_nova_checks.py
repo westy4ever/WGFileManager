@@ -593,6 +593,16 @@ def check_marks():
         expect("a second press later unmarks it", left.markedPaths(), [])
     finally:
         _time.monotonic = _mono
+    # [2026-11-06] the plugin's own keys must not repeat a key Enigma2's groups give
+    import re as _re
+    km = open(os.path.join(REPO, "keymap.xml"), encoding="utf-8").read()
+    ids = set(_re.findall(r'<key id="(KEY_\w+)"', km))
+    clash = sorted(ids & {"KEY_RED", "KEY_GREEN", "KEY_YELLOW", "KEY_BLUE", "KEY_OK", "KEY_EXIT", "KEY_ESC",
+                          "KEY_MENU", "KEY_UP", "KEY_DOWN", "KEY_LEFT", "KEY_RIGHT", "KEY_CHANNELUP",
+                          "KEY_CHANNELDOWN"} | set(i for i in ids if _re.match(r"KEY_\d$", i)))
+    expect("keymap.xml: no key that reaches the screen twice", clash, [])
+    src = open(os.path.join(REPO, "ui", "main_screen.py"), encoding="utf-8").read()
+    expect("the old WGFileManagerActions group is not used", '"WGFileManagerActions"' in src, False)
     if _orig_getitem is None:
         del MS.WGFileManagerMain.__getitem__
     else:
