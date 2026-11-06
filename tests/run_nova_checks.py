@@ -650,6 +650,44 @@ def check_setup_save():
     expect("a new colour: the restart question, no error", asked, ["Theme colour: Green."])
 
 
+def check_storage_list():
+    """OK on "<List of Storage Devices>" opens the list of drives; the colour
+    keys do nothing there (a drive's row is its mount point: Internal flash = /)"""
+    print("\n[14] list of storage devices")
+    MS = __import__(PKG + ".ui.main_screen", fromlist=["x"])
+    went, shown = [], {}
+
+    class _Pane(object):
+        cur = "/media/hdd/"
+        def getSelection(self):
+            return (None, True, False, None, "<List of Storage Devices>", None) if self.cur else ("/", True)
+        def getCurrentDirectory(self):
+            return self.cur
+        def changeDir(self, d, select=None):
+            went.append(d)
+            self.cur = d
+    m = object.__new__(MS.WGFileManagerMain)
+    m.active_pane = _Pane()
+    m.update_ui = lambda: None
+    m._hw = {"status_bar": type("SB", (), {"setText": lambda s, t: shown.__setitem__("status", t)})()}
+    _orig = MS.WGFileManagerMain.__dict__.get("__getitem__")
+    MS.WGFileManagerMain.__getitem__ = lambda self, k: self._hw[k]
+    try:
+        m.execute_ok_navigation()
+        expect("OK on <List of Storage Devices>: the list of drives", went, [None])
+        m.delete_request()
+        expect("RED on the list of drives: nothing deleted, a hint", shown.get("status"), "Delete: open a drive first (OK)")
+        sent = []
+        m.dialogs = type("D", (), {"show_message": lambda s, t, **k: sent.append(t)})()
+        m.execute_transfer("cp", ["/media/hdd/a.mkv"], None)
+        expect("copy into a pane showing the drives: refused", len(sent), 1)
+    finally:
+        if _orig is None:
+            del MS.WGFileManagerMain.__getitem__
+        else:
+            MS.WGFileManagerMain.__getitem__ = _orig
+
+
 def main():
     check_imports()
     check_screen()
@@ -664,6 +702,7 @@ def main():
     check_file_icons()
     check_marks()
     check_setup_save()
+    check_storage_list()
     print("\n" + ("ALL PASSED" if not FAILS else "%d FAILED" % len(FAILS)))
     sys.exit(1 if FAILS else 0)
 

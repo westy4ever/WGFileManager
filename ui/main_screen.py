@@ -657,6 +657,8 @@ class WGFileManagerMain(Screen):
                 logger.debug((("[MainScreen] Right dir: " + "{right_dir}").format(right_dir=(right_dir))))
                 
                 # Build text with indicators
+                left_dir = left_dir or self._DEVICES       # None: the list of drives
+                right_dir = right_dir or self._DEVICES
                 if is_left_active:
                     left_text = "◀ LEFT: " + left_dir
                     right_text = "RIGHT: " + right_dir
@@ -732,7 +734,7 @@ class WGFileManagerMain(Screen):
                 status_text = "✓ SELECTED: %d items | Current: %s" % (count, current_name)
             else:
                 current_dir = self.active_pane.getCurrentDirectory()
-                status_text = "Path: %s" % current_dir
+                status_text = "Path: %s" % (current_dir or self._DEVICES)
                 logger.debug((("[MainScreen] Current directory: " + "{current_dir}").format(current_dir=(current_dir))))
 
             # 4. Update the Label widget
@@ -818,6 +820,13 @@ class WGFileManagerMain(Screen):
         """Execute navigation - PERFECT SMART BEHAVIOR"""
         try:
             sel = self.active_pane.getSelection()
+            if sel and sel[0] is None and len(sel) > 1 and sel[1]:
+                # [2026-11-06] "<List of Storage Devices>": Enigma2's row without a
+                # path -> the list of drives (Internal flash, the hard disk, USB ...)
+                logger.debug("[MainScreen] OK: list of storage devices")
+                self.active_pane.changeDir(None)
+                self.update_ui()
+                return
             if not sel or not sel[0]:
                 logger.debug("[MainScreen] No selection for OK navigation")
                 return
@@ -966,10 +975,30 @@ class WGFileManagerMain(Screen):
             logger.error((("[MainScreen] Error navigating to parent: " + "{e}").format(e=(e))))
             self.show_error("Navigate parent", e)
 
+    _DEVICES = "Storage devices"
+
+    def _in_devices(self, pane=None):
+        """the pane shows Enigma2's list of drives (no folder open)"""
+        try:
+            return (pane or self.active_pane).getCurrentDirectory() is None
+        except Exception:
+            return False
+
+    def _devices_block(self, what):
+        """[2026-11-06] the colour keys / MENU on the list of drives: nothing to
+        mark, delete, rename or copy there (a drive's row is its mount point --
+        "Internal flash" is / itself)"""
+        if self._in_devices():
+            self["status_bar"].setText("%s: open a drive first (OK)" % what)
+            return True
+        return False
+
     _TOGGLE_REPEAT = 0.6          # s: a second YELLOW on the same row this soon is the same press
 
     def toggle_selection(self):
         """Toggle mark/unmark for current item - YELLOW button"""
+        if self._devices_block("Mark"):
+            return
         try:
             # 1. Get the current active pane and what is highlighted
             pane = self.active_pane
@@ -1108,6 +1137,8 @@ class WGFileManagerMain(Screen):
     # File Operations
     def delete_request(self):
         """Request file deletion - RED button"""
+        if self._devices_block("Delete"):
+            return
         try:
             # Check for multi-selected files first
             marked = [x for x in self.active_pane.list if x[0][3] and not self.active_pane.isParentPath(x[0][0])]
@@ -1200,6 +1231,8 @@ class WGFileManagerMain(Screen):
 
     def rename_request(self):
         """Request file rename - GREEN button"""
+        if self._devices_block("Rename"):
+            return
         try:
             # Check for multi-selected files
             marked = [x for x in self.active_pane.list if x[0][3] and not self.active_pane.isParentPath(x[0][0])]
@@ -1264,6 +1297,8 @@ class WGFileManagerMain(Screen):
 
     def quick_copy(self):
         """Quick copy/move operation - BLUE button"""
+        if self._devices_block("Copy"):
+            return
         try:
             if self.clipboard:
                 logger.debug("[MainScreen] Clipboard has items, performing paste")
@@ -1418,6 +1453,9 @@ class WGFileManagerMain(Screen):
 
     def execute_transfer(self, mode, files, dest):
         """Execute file transfer"""
+        if not dest:                          # the other pane shows the list of drives
+            self.dialogs.show_message("The other pane shows the storage devices.\nOpen a drive or folder there first.", type="info")
+            return
         with self.operation_lock:
             if self.operation_in_progress:
                 self.dialogs.show_message("Another operation is in progress!", type="warning")
@@ -1460,6 +1498,8 @@ class WGFileManagerMain(Screen):
 
     def open_tools(self):
         """Open tools menu"""
+        if self._devices_block("Menu"):
+            return
         if self.operation_in_progress:
             self.dialogs.show_message("Please wait for current operation to complete!", type="info")
             return
