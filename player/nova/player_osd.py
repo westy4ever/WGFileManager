@@ -141,12 +141,9 @@ class PlayerOSD(object):
                 arrow = u"▶▶"
             else:
                 arrow = u"◀◀"
-            _th = target_secs // 3600
-            _tm = (target_secs % 3600) // 60
-            _ts = target_secs % 60
-            tstr = u"{:02d}:{:02d}:{:02d}".format(_th, _tm, _ts)
-            self["seekFlash"].setText(u"{} {}s\n{}".format(arrow, int(abs(delta_secs)), tstr))
-            self["seekFlash"].show()
+            # [2026-11-06] no big time in the middle of the picture: the step
+            # goes into the small bubble above the seek bar (_showSeekBubble)
+            self._seek_step_text = u"{} {} s".format(arrow, int(abs(delta_secs)))
             try:
                 self._seek_flash_timer.stop()
             except Exception:

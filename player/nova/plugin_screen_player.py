@@ -105,7 +105,7 @@ class NovaPlaySimplePlayer(PlayerStudioUI, PlayerOSD, PlayerSwitch, PlayerNetWai
         <widget name="keyDotB"   position="853,1027" size="16,16" backgroundColor="#3E7BFA" cornerRadius="8" zPosition="12" />
         <widget name="keyBlue"   position="877,1016" size="181,38" font="Regular;23" halign="left" valign="center" foregroundColor="#F0F6FC" backgroundColor="#1A121822" transparent="1" zPosition="12" />
         <widget name="osd_keys"     position="1048,1016" size="676,38" font="Regular;22" foregroundColor="#A3ADBB" transparent="1" zPosition="12" halign="right" valign="center" />
-        <widget name="seekBubble"   position="200,822" size="147,40" font="Bold;24" foregroundColor="#0C1017" backgroundColor="#F2C230" cornerRadius="10" halign="center" valign="center" transparent="0" zPosition="14" />
+        <widget name="seekBubble"   position="200,822" size="280,40" font="Bold;24" foregroundColor="#0C1017" backgroundColor="#F2C230" cornerRadius="10" halign="center" valign="center" transparent="0" zPosition="14" />
         <!-- old OSD parts, no longer shown (kept so nothing that still sets them breaks) -->
         <widget name="osd_shadow" position="-300,-300" size="1,1" font="Regular;10" transparent="1" zPosition="0" />
         <widget name="osd_topline" position="-300,-300" size="1,1" font="Regular;10" transparent="1" zPosition="0" />
