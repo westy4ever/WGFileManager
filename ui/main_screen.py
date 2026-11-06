@@ -529,6 +529,7 @@ class WGFileManagerMain(Screen):
             "green": self.rename_request,
             "yellow": self.toggle_selection,
             "yellow_long": self.unmark_all,
+            "yellowlong": self.unmark_all,       # [2026-11-06] OpenATV's name for hold YELLOW (ColorActions)
             "blue": self.quick_copy,
             "menu": self.open_tools,
             "0": self.zero_pressed,
@@ -946,12 +947,28 @@ class WGFileManagerMain(Screen):
             logger.error((("[MainScreen] Error navigating to parent: " + "{e}").format(e=(e))))
             self.show_error("Navigate parent", e)
 
+    _TOGGLE_REPEAT = 0.6          # s: a second YELLOW on the same row this soon is the same press
+
     def toggle_selection(self):
         """Toggle mark/unmark for current item - YELLOW button"""
         try:
             # 1. Get the current active pane and what is highlighted
             pane = self.active_pane
             sel = pane.getSelection()
+            # [2026-11-06] on the box every YELLOW press arrived twice in the same
+            # instant (the log: "Toggled selection" twice per press), so a row was
+            # marked and at once unmarked again -- nothing ever stayed marked.
+            # A second toggle of the same row within 0.6 s is that echo: ignored.
+            import time as _t
+            now = _t.monotonic()
+            here = (id(pane), sel[0] if sel else None)
+            last = getattr(self, "_last_toggle", None)
+            self._last_toggle = (here, now)
+            if now - getattr(self, "_last_unmark", -10.0) < 1.0:
+                return                         # the release of a held YELLOW (it just cleared the marks)
+            if last and last[0] == here and now - last[1] < self._TOGGLE_REPEAT:
+                logger.debug("[MainScreen] YELLOW echo ignored (%.0f ms after the last)", (now - last[1]) * 1000)
+                return
             if sel and sel[0] and pane.isParentSelected():
                 self["status_bar"].setText("The '..' entry can't be selected")
                 return
@@ -977,6 +994,8 @@ class WGFileManagerMain(Screen):
 
     def unmark_all(self):
         """Hold YELLOW: clear the marks in both panes"""
+        import time as _t
+        self._last_unmark = _t.monotonic()     # the release of the held key must not mark again
         cleared = 0
         for pn in ("left_pane", "right_pane"):
             try:

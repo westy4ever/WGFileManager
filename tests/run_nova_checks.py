@@ -573,6 +573,26 @@ def check_marks():
     m.unmark_all()
     expect("hold YELLOW clears the marks in both panes",
            (left.markedPaths(), right.markedPaths(), shown["status"]), ([], [], "Cleared 3 marks."))
+    # [2026-11-06] each YELLOW press arrived twice on the box: marked, then at once unmarked
+    import time as _time
+    m.active_pane = left
+    m.marked_files = set()
+    clock = [100.0]
+    m._last_unmark = 0.0                  # hold YELLOW was long ago
+    _mono = _time.monotonic
+    _time.monotonic = lambda: clock[0]
+    try:
+        left.isParentSelected = lambda: False
+        m.update_info_panel = lambda: None
+        m.toggle_selection()
+        clock[0] += 0.05                    # the echo of the same press
+        m.toggle_selection()
+        expect("one press arriving twice: the row stays marked", left.markedPaths(), ["/m/a/1.mkv"])
+        clock[0] += 1.5                     # a real second press
+        m.toggle_selection()
+        expect("a second press later unmarks it", left.markedPaths(), [])
+    finally:
+        _time.monotonic = _mono
     if _orig_getitem is None:
         del MS.WGFileManagerMain.__getitem__
     else:
