@@ -77,35 +77,35 @@ class NovaPlaySimplePlayer(PlayerStudioUI, PlayerOSD, PlayerSwitch, PlayerNetWai
         <widget name="overlay_bg" theme="panel"   position="160,868" size="1600,200" backgroundColor="#1A121822" borderWidth="2" borderColor="#F2C230" cornerRadius="20" zPosition="10" />
         <widget name="osdPosterBox" theme="card" position="178,466" size="240,350" backgroundColor="#1A121822" zPosition="11" transparent="0" />
         <widget name="osdPoster" position="188,476" size="220,330" zPosition="12" alphatest="blend" scale="1" />
-        <widget name="osd_title"    position="184,880" size="766,40" font="Regular;30" foregroundColor="#F2C230" transparent="1" zPosition="12" halign="left" valign="center" />
-        <widget name="osd_episode"  position="770,880" size="180,40" font="Regular;24" foregroundColor="#F2C230" transparent="1" zPosition="12" halign="left" valign="center" />
-        <widget name="osd_videinfo" position="960,880" size="260,40" font="Regular;22" foregroundColor="#A3ADBB" transparent="1" zPosition="12" halign="left" valign="center" />
-        <widget name="osd_subdetail" position="1230,880" size="370,40" font="Regular;20" foregroundColor="#A3ADBB" transparent="1" zPosition="12" halign="left" valign="center" />
-        <widget name="osd_clock"    position="1610,880" size="130,40" font="Regular;28" foregroundColor="#FFFFFF" transparent="1" zPosition="12" halign="right" valign="center" />
-        <widget name="seekFrame" position="182,930" size="1556,22" zPosition="11" backgroundColor="#1A2A3240" cornerRadius="11" />
-        <widget name="seekbar" position="184,932" size="1552,18" zPosition="12" backgroundColor="#1A1C2333" foregroundColor="#F2C230" cornerRadius="9" />
+        <widget name="osd_title"    position="200,880" size="750,40" font="Regular;30" foregroundColor="#F2C230" transparent="1" zPosition="12" halign="left" valign="center" />
+        <widget name="osd_episode"  position="774,880" size="176,40" font="Regular;24" foregroundColor="#F2C230" transparent="1" zPosition="12" halign="left" valign="center" />
+        <widget name="osd_videinfo" position="960,880" size="255,40" font="Regular;22" foregroundColor="#A3ADBB" transparent="1" zPosition="12" halign="left" valign="center" />
+        <widget name="osd_subdetail" position="1224,880" size="362,40" font="Regular;20" foregroundColor="#A3ADBB" transparent="1" zPosition="12" halign="left" valign="center" />
+        <widget name="osd_clock"    position="1597,880" size="127,40" font="Regular;28" foregroundColor="#FFFFFF" transparent="1" zPosition="12" halign="right" valign="center" />
+        <widget name="seekFrame" position="198,930" size="1524,22" zPosition="11" backgroundColor="#1A2A3240" cornerRadius="11" />
+        <widget name="seekbar" position="200,932" size="1520,18" zPosition="12" backgroundColor="#1A1C2333" foregroundColor="#F2C230" cornerRadius="9" />
         <!-- [seek-marks] watched before (thin line over the bar), resume tick, 25/50/75% ticks -->
         <widget name="seenLine" position="-50,-50" size="1,3" backgroundColor="#8A6D1E" zPosition="12" />
         <widget name="markResume" position="-50,-50" size="3,28" backgroundColor="#FFFFFF" zPosition="13" />
         <widget name="markC0" position="-50,-50" size="2,22" backgroundColor="#8B949E" zPosition="13" />
         <widget name="markC1" position="-50,-50" size="2,22" backgroundColor="#8B949E" zPosition="13" />
         <widget name="markC2" position="-50,-50" size="2,22" backgroundColor="#8B949E" zPosition="13" />
-        <widget name="seekMarker" position="184,927" size="28,28" zPosition="13" backgroundColor="#00FFFFFF" cornerRadius="14" />
-        <widget name="osd_elapsed"  position="184,958" size="330,40" font="Regular;28" foregroundColor="#E5D1A6" transparent="1" zPosition="12" valign="center" />
-        <widget name="osd_state"    position="520,958" size="60,40" font="Regular;30" foregroundColor="#39D98A" transparent="1" zPosition="12" halign="center" valign="center" />
-        <widget name="status"       position="590,958" size="640,40" font="Regular;24" foregroundColor="#FFFFFF" transparent="1" zPosition="12" halign="center" valign="center" />
-        <widget name="osd_durtext"  position="1240,958" size="500,40" font="Regular;26" foregroundColor="#FFFFFF" transparent="1" zPosition="12" halign="right" valign="center" />
-        <widget name="osd_divider"  position="184,1004" size="1552,1" backgroundColor="#1A2A3240" zPosition="11" />
-        <widget name="keyDotR"   position="184,1027" size="16,16" backgroundColor="#E5484D" cornerRadius="8" zPosition="12" />
-        <widget name="keyRed"    position="208,1016" size="185,38" font="Regular;23" halign="left" valign="center" foregroundColor="#F0F6FC" backgroundColor="#1A121822" transparent="1" zPosition="12" />
-        <widget name="keyDotG"   position="399,1027" size="16,16" backgroundColor="#30A46C" cornerRadius="8" zPosition="12" />
-        <widget name="keyGreen"  position="423,1016" size="185,38" font="Regular;23" halign="left" valign="center" foregroundColor="#F0F6FC" backgroundColor="#1A121822" transparent="1" zPosition="12" />
-        <widget name="keyDotY"   position="614,1027" size="16,16" backgroundColor="#F2C231" cornerRadius="8" zPosition="12" />
-        <widget name="keyYellow" position="638,1016" size="185,38" font="Regular;23" halign="left" valign="center" foregroundColor="#F0F6FC" backgroundColor="#1A121822" transparent="1" zPosition="12" />
-        <widget name="keyDotB"   position="851,1027" size="16,16" backgroundColor="#3E7BFA" cornerRadius="8" zPosition="12" />
-        <widget name="keyBlue"   position="875,1016" size="185,38" font="Regular;23" halign="left" valign="center" foregroundColor="#F0F6FC" backgroundColor="#1A121822" transparent="1" zPosition="12" />
-        <widget name="osd_keys"     position="1050,1016" size="690,38" font="Regular;22" foregroundColor="#A3ADBB" transparent="1" zPosition="12" halign="right" valign="center" />
-        <widget name="seekBubble"   position="184,822" size="150,40" font="Bold;24" foregroundColor="#0C1017" backgroundColor="#F2C230" cornerRadius="10" halign="center" valign="center" transparent="0" zPosition="14" />
+        <widget name="seekMarker" position="200,927" size="28,28" zPosition="13" backgroundColor="#00FFFFFF" cornerRadius="14" />
+        <widget name="osd_elapsed"  position="200,958" size="323,40" font="Regular;28" foregroundColor="#E5D1A6" transparent="1" zPosition="12" valign="center" />
+        <widget name="osd_state"    position="529,958" size="59,40" font="Regular;30" foregroundColor="#39D98A" transparent="1" zPosition="12" halign="center" valign="center" />
+        <widget name="status"       position="598,958" size="627,40" font="Regular;24" foregroundColor="#FFFFFF" transparent="1" zPosition="12" halign="center" valign="center" />
+        <widget name="osd_durtext"  position="1234,958" size="490,40" font="Regular;26" foregroundColor="#FFFFFF" transparent="1" zPosition="12" halign="right" valign="center" />
+        <widget name="osd_divider"  position="200,1004" size="1520,1" backgroundColor="#1A2A3240" zPosition="11" />
+        <widget name="keyDotR"   position="200,1027" size="16,16" backgroundColor="#E5484D" cornerRadius="8" zPosition="12" />
+        <widget name="keyRed"    position="224,1016" size="181,38" font="Regular;23" halign="left" valign="center" foregroundColor="#F0F6FC" backgroundColor="#1A121822" transparent="1" zPosition="12" />
+        <widget name="keyDotG"   position="411,1027" size="16,16" backgroundColor="#30A46C" cornerRadius="8" zPosition="12" />
+        <widget name="keyGreen"  position="434,1016" size="181,38" font="Regular;23" halign="left" valign="center" foregroundColor="#F0F6FC" backgroundColor="#1A121822" transparent="1" zPosition="12" />
+        <widget name="keyDotY"   position="621,1027" size="16,16" backgroundColor="#F2C231" cornerRadius="8" zPosition="12" />
+        <widget name="keyYellow" position="645,1016" size="181,38" font="Regular;23" halign="left" valign="center" foregroundColor="#F0F6FC" backgroundColor="#1A121822" transparent="1" zPosition="12" />
+        <widget name="keyDotB"   position="853,1027" size="16,16" backgroundColor="#3E7BFA" cornerRadius="8" zPosition="12" />
+        <widget name="keyBlue"   position="877,1016" size="181,38" font="Regular;23" halign="left" valign="center" foregroundColor="#F0F6FC" backgroundColor="#1A121822" transparent="1" zPosition="12" />
+        <widget name="osd_keys"     position="1048,1016" size="676,38" font="Regular;22" foregroundColor="#A3ADBB" transparent="1" zPosition="12" halign="right" valign="center" />
+        <widget name="seekBubble"   position="200,822" size="147,40" font="Bold;24" foregroundColor="#0C1017" backgroundColor="#F2C230" cornerRadius="10" halign="center" valign="center" transparent="0" zPosition="14" />
         <!-- old OSD parts, no longer shown (kept so nothing that still sets them breaks) -->
         <widget name="osd_shadow" position="-300,-300" size="1,1" font="Regular;10" transparent="1" zPosition="0" />
         <widget name="osd_topline" position="-300,-300" size="1,1" font="Regular;10" transparent="1" zPosition="0" />

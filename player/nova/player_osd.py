@@ -177,13 +177,16 @@ class PlayerOSD(object):
             if total <= 0:
                 return
             pct = min(1.0, max(0.0, float(target_secs) / float(total)))
-            x = 184 + int(1552 * pct) - 75
-            x = max(170, min(1750 - 150, x))
             inst = self["seekBubble"].instance
             if inst is not None:
-                # [2026-11-05] just above the bar (it covered the title line)
-                from .plugin_gridlist import sc as _sc
-                inst.move(ePoint(_sc(x), _sc(822)))
+                # [2026-11-06] follows the seek bar wherever the skin puts it
+                # (the bar sits inside the side lights); just above it
+                bar = self["seekbar"].instance
+                bx, bw = bar.position().x(), bar.size().width()
+                half = inst.size().width() // 2
+                x = bx + int(bw * pct) - half
+                x = max(bx - 14, min(bx + bw + 14 - 2 * half, x))
+                inst.move(ePoint(x, inst.position().y()))
             self["seekBubble"].setText(self._clockText(target_secs))
             self["seekBubble"].show()
         except Exception as e:

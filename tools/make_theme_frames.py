@@ -97,7 +97,7 @@ def render(kind, w, h, accent):
             x0, x1, nd, s = notch
             y = nd + 12 * SS
             d.rounded_rectangle([x0 + s + 10 * SS, y, x1 - s - 10 * SS, y + 4 * SS], radius=2 * SS, fill=lit)
-        if not short:                                           # side lights (not on short bars: text is close)
+        if h >= 120:                                            # side lights (short bars: the text is kept 24 px in)
             bl = int(min(60, h * 0.14)) * SS
             for x in (10 * SS, W - 16 * SS):
                 for k in (0, 1):
