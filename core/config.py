@@ -174,8 +174,8 @@ class WGFileManagerConfig:
         try:
             issues = []
             p = self.plugins.wgfilemanager
-            if p.left_path.value != DEVICES_VALUE and not os.path.isabs(p.left_path.value): issues.append("Left path must be absolute")
-            if p.right_path.value != DEVICES_VALUE and not os.path.isabs(p.right_path.value): issues.append("Right path must be absolute")
+            if p.left_path.value.strip() not in (DEVICES_VALUE, "") and not os.path.isabs(p.left_path.value): issues.append("Left path must be absolute")
+            if p.right_path.value.strip() not in (DEVICES_VALUE, "") and not os.path.isabs(p.right_path.value): issues.append("Right path must be absolute")
             
             import re
             ip_pattern = r'^((25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)\.){3}(25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)$'

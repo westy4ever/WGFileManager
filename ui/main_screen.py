@@ -416,8 +416,8 @@ class WGFileManagerMain(Screen):
         left_path = self.config.plugins.wgfilemanager.left_path.value
         right_path = self.config.plugins.wgfilemanager.right_path.value
         # [2026-11-06] "Storage devices": the pane opens on the list of drives
-        left_path = None if left_path == DEVICES_VALUE else left_path
-        right_path = None if right_path == DEVICES_VALUE else right_path
+        left_path = None if (left_path or "").strip() in (DEVICES_VALUE, "") else left_path   # empty too
+        right_path = None if (right_path or "").strip() in (DEVICES_VALUE, "") else right_path
         
         logger.debug("[MainScreen] Creating EnhancedFileList widgets")
         logger.debug((("[MainScreen] Left pane path: " + "{left_path}").format(left_path=(left_path))))
@@ -617,12 +617,12 @@ class WGFileManagerMain(Screen):
         # Check paths exist
         from ..core.config import DEVICES_VALUE
         left_path = self.config.plugins.wgfilemanager.left_path.value
-        if left_path != DEVICES_VALUE and not os.path.isdir(left_path):
+        if (left_path or "").strip() not in (DEVICES_VALUE, "") and not os.path.isdir(left_path):
             issues.append((("Left path not found: " + "{left_path}").format(left_path=(left_path))))
             logger.warning((("[MainScreen] Left path not found: " + "{left_path}").format(left_path=(left_path))))
         
         right_path = self.config.plugins.wgfilemanager.right_path.value
-        if right_path != DEVICES_VALUE and not os.path.isdir(right_path):
+        if (right_path or "").strip() not in (DEVICES_VALUE, "") and not os.path.isdir(right_path):
             issues.append((("Right path not found: " + "{right_path}").format(right_path=(right_path))))
             logger.warning((("[MainScreen] Right path not found: " + "{right_path}").format(right_path=(right_path))))
         

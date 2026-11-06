@@ -727,7 +727,7 @@ def check_default_path_devices():
         SS.config = old
     src = open(os.path.join(REPO, "ui", "main_screen.py"), encoding="utf-8").read()
     expect("the pane opens on the drives (None) for that value",
-           "left_path = None if left_path == DEVICES_VALUE else left_path" in src, True)
+           "left_path = None if (left_path or \"\").strip() in (DEVICES_VALUE, \"\") else left_path" in src, True)
 
 
 def main():
