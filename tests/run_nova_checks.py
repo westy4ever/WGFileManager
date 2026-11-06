@@ -543,6 +543,41 @@ def check_file_icons():
     expect("the '..' entry gets the up-folder icon", (up[1][5], up[2][7]), ("PNG:up", ".."))
 
 
+def check_marks():
+    """YELLOW marks: the count and 'hold YELLOW' follow the marks on the rows"""
+    print("\n[12] marks")
+    MS = __import__(PKG + ".ui.main_screen", fromlist=["x"])
+    def pane(cur, rows):
+        fl = object.__new__(MS.EnhancedFileList)
+        fl.getCurrentDirectory = lambda: cur
+        fl.list = [[(p, False, os.path.basename(p), mk), "row"] for p, mk in rows]
+        fl.l = type("L", (), {"setList": lambda s, x: None})()
+        fl._restyle = lambda: None
+        fl.getSelection = lambda: (rows[0][0], False)
+        fl.getSelectionIndex = lambda: 0
+        return fl
+    m = object.__new__(MS.WGFileManagerMain)
+    left = pane("/m/a/", [("/m/a/1.mkv", True), ("/m/a/2.mkv", True), ("/m/a/3.mkv", False)])
+    right = pane("/m/b/", [("/m/b/x.mp3", True)])
+    shown = {}
+    m._hw = {"left_pane": left, "right_pane": right,
+             "status_bar": type("SB", (), {"setText": lambda s, t: shown.__setitem__("status", t)})(),
+             "info_panel": type("IP", (), {"setText": lambda s, t: None})()}
+    _orig_getitem = MS.WGFileManagerMain.__dict__.get("__getitem__")
+    MS.WGFileManagerMain.__getitem__ = lambda self, k: self._hw[k]
+    m.active_pane = left
+    m.marked_files = {"/old/folder/gone.mkv", "/old/folder/gone2.mkv", "/x", "/y", "/z"}   # stale
+    m.update_status_bar()
+    expect("the count is the marks you can see in this pane (not an old list)", shown["status"].split(" |")[0], u"✓ SELECTED: 2 items")
+    m.unmark_all()
+    expect("hold YELLOW clears the row marks in both panes",
+           (left.markedPaths(), right.markedPaths(), shown["status"]), ([], [], "Cleared 3 marks."))
+    if _orig_getitem is None:
+        del MS.WGFileManagerMain.__getitem__
+    else:
+        MS.WGFileManagerMain.__getitem__ = _orig_getitem
+
+
 def main():
     check_imports()
     check_screen()
@@ -555,6 +590,7 @@ def main():
     check_exit_to_tv()
     check_browser()
     check_file_icons()
+    check_marks()
     print("\n" + ("ALL PASSED" if not FAILS else "%d FAILED" % len(FAILS)))
     sys.exit(1 if FAILS else 0)
 

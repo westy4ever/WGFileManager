@@ -643,8 +643,12 @@ class WGFileManagerMain(Screen):
     def update_status_bar(self):
         """Update the bottom status bar with selection info"""
         try:
-            # 1. Get the number of marked items
-            count = len(self.marked_files)
+            # 1. The marks you can see in the active pane ([2026-11-06]: the count used
+            #    to come from a separate list that kept old marks after a folder change)
+            try:
+                count = len(self.active_pane.markedPaths())
+            except Exception:
+                count = 0
             logger.debug((("[MainScreen] Marked files count: " + "{count}").format(count=(count))))
             
             # 2. Get current path info for the active pane
@@ -923,18 +927,29 @@ class WGFileManagerMain(Screen):
             logger.error((("[MainScreen] Error toggling selection: " + "{e}").format(e=(e))))
 
     def unmark_all(self):
-        """Clears all marked files from memory and refreshes the UI"""
-        logger.debug("[MainScreen] Unmark all called")
-        if self.marked_files:
-            self.marked_files.clear()
-            # Refresh both panes so the visual markers disappear
-            self["left_pane"].refresh()
-            self["right_pane"].refresh()
-            self["status_bar"].setText("All selections cleared.")
-            logger.info("[MainScreen] Marked files cleared by user")
-        else:
-            self["status_bar"].setText("Nothing was selected.")
-            logger.debug("[MainScreen] No marked files to clear")
+        """Hold YELLOW: clear the marks on the rows of both panes ([2026-11-06]: it
+        cleared only a separate list and reloaded the panes, so the rows' own
+        marks -- the ones RED / BLUE act on -- could stay)"""
+        cleared = 0
+        for pn in ("left_pane", "right_pane"):
+            pane = self[pn]
+            try:
+                for i, it in enumerate(pane.list):
+                    d = it[0]
+                    if isinstance(d, tuple) and len(d) > 3 and d[3] is True:
+                        pane.list[i] = [d[:3] + (False,) + d[4:]] + list(it[1:])
+                        cleared += 1
+                if hasattr(pane, "_restyle"):
+                    pane._restyle()
+                else:
+                    pane.l.setList(pane.list)
+            except Exception as e:
+                logger.error("[MainScreen] unmark %s: %s", pn, e)
+        self.marked_files.clear()
+        self.update_info_panel()
+        self["status_bar"].setText("Cleared %d mark%s." % (cleared, "" if cleared == 1 else "s") if cleared
+                                   else "Nothing was selected.")
+        logger.info("[MainScreen] unmark all: %d cleared", cleared)
 
     def up(self):
         """Move up in file list"""
