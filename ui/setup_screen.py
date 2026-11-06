@@ -232,6 +232,9 @@ class WGFileManagerSetup(ConfigListScreen, Screen):
             p = config.plugins.wgfilemanager
             item = cur[1] if cur else None
             if item is not p.left_path and item is not p.right_path:
+                sel = getattr(ConfigListScreen, "keySelect", None)   # other rows: Enigma2's own OK
+                if sel is not None:
+                    sel(self)
                 return
             from Screens.ChoiceBox import ChoiceBox
             from ..core.config import DEVICES_VALUE
@@ -263,6 +266,20 @@ class WGFileManagerSetup(ConfigListScreen, Screen):
             self.session.openWithCallback(_picked, ChoiceBox, title=title, list=choices)
         except Exception as e:
             logger.error("Setup: path choice: %s", e)
+
+    def keySelect(self):
+        """OpenATV's OK on a setup row (ConfigListActions "select"): the path rows
+        open the chooser, the rest behave as before"""
+        try:
+            cur = self["config"].getCurrent()
+            p = config.plugins.wgfilemanager
+            if cur and (cur[1] is p.left_path or cur[1] is p.right_path):
+                return self.keyOK()
+        except Exception:
+            pass
+        sel = getattr(ConfigListScreen, "keySelect", None)
+        if sel is not None:
+            return sel(self)
 
     def _setPath(self, item, value):
         item.value = value
