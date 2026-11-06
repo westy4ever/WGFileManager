@@ -84,6 +84,25 @@ class EnhancedFileList(FileList):
         return [x[0][0] for x in self.list if x[0][3] and not self.isParentPath(x[0][0])]
 
     def changeDir(self, directory, select=None):
+        """[2026-11-06] the folder's rows, then the theme's line icons on them"""
+        r = self._changeDir_rows(directory, select)
+        self._restyle()
+        return r
+
+    def markSelected(self, *a, **k):
+        """mark / unmark, then redraw the rows (Enigma2 rebuilds the marked row)"""
+        r = FileList.markSelected(self, *a, **k)
+        self._restyle()
+        return r
+
+    def _restyle(self):
+        try:
+            from .file_icons import restyle_rows
+            restyle_rows(self)
+        except Exception as e:
+            logger.error("[EnhancedFileList] icons: %s", e)
+
+    def _changeDir_rows(self, directory, select=None):
         """Override to always show parent directory with detailed debugging"""
         logger.debug((("[EnhancedFileList] changeDir called: " + "{directory}" + ", select=" + "{select}").format(directory=(directory), select=(select))))
         

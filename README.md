@@ -26,10 +26,13 @@ Picture subtitles (PGS / DVD / DVB) can't be used.
 
 **Theme colour:** Setup › Media Player › **Theme Colour** (Green / Blue / Red / Gold).
 The file browser (its window and both panes; the active pane's frame glows, the other
-is dim), the Nova player and the audio player draw their panels as armoured metal plates with cut
+is dim), the file rows (line icons in the theme colour: folder, up, video, music, picture,
+archive, subtitle, text, other; a marked file shows ✓ in the theme colour), the Nova
+player and the audio player draw their panels as armoured metal plates with cut
 corners and a neon edge in that colour; highlights follow it. It shows after Enigma2
 restarts (Setup offers the restart). Frame pictures: `player/nova/images/theme/<colour>/`,
-made by `tools/make_theme_frames.py --repo . --pkg player.nova --scan ui`.
+made by `tools/make_theme_frames.py --repo . --pkg player.nova --scan ui`; icons by
+`tools/make_theme_icons.py`.
 
 **Log:** `/tmp/wgfilemanager.log` (cleared on reboot) has the player and the Subtitle Studio lines.
 After a problem: `tail -n 80 /tmp/wgfilemanager.log`. A subtitle line there says who draws it:
