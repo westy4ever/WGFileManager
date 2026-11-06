@@ -538,8 +538,8 @@ def check_file_icons():
            (row[0] is data, row[1][5], row[2][1:5], row[2][7]), (True, "PNG:video", (56, 0, 746, 48), "Dune.mkv"))
     marked = ("/media/hdd/movie/Dune.mkv", False, "Dune.mkv", True)
     row = FI.restyle_row([marked, ("txt", 35, 1, 470, 20, 0, 0, "Dune.mkv")], 816)
-    expect("a marked file: lit icon, ✓ and the theme colour", (row[1][5], row[2][7], row[2][8]),
-           ("LIT:video", u"✓ Dune.mkv", T.TH_GOLD_INT))
+    expect("a marked file: lit icon and the theme colour (no tick)", (row[1][5], row[2][7], row[2][8]),
+           ("LIT:video", u"Dune.mkv", T.TH_GOLD_INT))
     up = FI.restyle_row([("/media/hdd", True, "..", False), ".."], 816)
     expect("the '..' entry gets the up-folder icon", (up[1][5], up[2][7]), ("PNG:up", ".."))
 
@@ -553,7 +553,7 @@ def check_marks():
         fl.getCurrentDirectory = lambda: cur
         fl.list = [[(p, False, os.path.basename(p), mk), "row"] for p, mk in rows]
         fl.l = type("L", (), {"setList": lambda s, x: None})()
-        fl._restyle = lambda: None
+        fl._wg_marked = set(p for p, mk in rows if mk)    # an image without multi-select: our own marks
         fl.getSelection = lambda: (rows[0][0], False)
         fl.getSelectionIndex = lambda: 0
         return fl
@@ -571,7 +571,7 @@ def check_marks():
     m.update_status_bar()
     expect("the count is the marks you can see in this pane (not an old list)", shown["status"].split(" |")[0], u"✓ SELECTED: 2 items")
     m.unmark_all()
-    expect("hold YELLOW clears the row marks in both panes",
+    expect("hold YELLOW clears the marks in both panes",
            (left.markedPaths(), right.markedPaths(), shown["status"]), ([], [], "Cleared 3 marks."))
     if _orig_getitem is None:
         del MS.WGFileManagerMain.__getitem__

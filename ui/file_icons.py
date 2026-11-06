@@ -7,7 +7,7 @@ is-folder, name, marked; item[0]) is left exactly as it was, so selecting,
 marking, copying and moving behave as before:
 
     [data, icon (32x32 in the theme colour), name (centred in the 48 px row;
-     a marked file: a lit icon -- filled, white lines -- and "✓ name" in the
+     a marked file: a lit icon -- filled, white lines -- and its name in the
      theme colour)]
 
 Icons: player/nova/images/theme/<colour>/icon_<kind>.png (tools/make_theme_icons.py).
@@ -92,7 +92,7 @@ def restyle_row(item, width):
     if png is None:
         return item
     from ..player.nova.novaplay_theme import TH_GOLD_INT
-    text = (u"✓ " + name) if marked else name
+    text = name                                    # marked: lit icon + theme colour (no tick)
     row = [data, (M.TYPE_PIXMAP_ALPHABLEND, 12, (ROW_H - ICON) // 2, ICON, ICON, png)]
     if marked:
         row.append((M.TYPE_TEXT, 56, 0, max(100, width - 70), ROW_H, 0, RT_HALIGN_LEFT | RT_VALIGN_CENTER, text,

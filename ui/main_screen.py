@@ -37,8 +37,20 @@ class EnhancedFileList(FileList):
         """Initialize EnhancedFileList with debug logging"""
         logger.debug((("[EnhancedFileList] Initializing with directory: " + "{directory}").format(directory=(directory))))
         try:
+            self._wg_marked = set()          # own marks (images without multi-select); set
+                                             # first: FileList.__init__ already lists the folder
             # Initialize parent class
             FileList.__init__(self, directory, **kwargs)
+
+            # [2026-11-06] marking (YELLOW): OpenATV's FileList keeps rows unmarkable
+            # (selected = None) unless it is in multi-select mode -- markSelected()
+            # never existed there, so YELLOW did nothing. Multi-select keeps the
+            # marks in self.selectedItems (they survive leaving the folder).
+            if hasattr(self, "setMultiSelectMode") and hasattr(self, "toggleSelection"):
+                try:
+                    self.setMultiSelectMode()
+                except Exception as e:
+                    logger.error("[EnhancedFileList] multi-select: %s", e)
             
             # Enable parent directory display
             self.alwaysshow_parent = True  
@@ -89,13 +101,47 @@ class EnhancedFileList(FileList):
         self._restyle()
         return r
 
+    def _native_marks(self):
+        return bool(getattr(self, "multiSelect", False)) and hasattr(self, "toggleSelection")
+
     def markSelected(self, *a, **k):
-        """mark / unmark, then redraw the rows (Enigma2 rebuilds the marked row)"""
-        r = FileList.markSelected(self, *a, **k)
+        """YELLOW: mark / unmark the row under the cursor, then redraw the rows"""
+        if self._native_marks():
+            self.toggleSelection()                       # OpenATV: selectedItems + row flag
+        else:                                            # older images: our own marks
+            try:
+                idx = self.getSelectionIndex()
+                path = self.list[idx][0][0]
+                if path in self._wg_marked:
+                    self._wg_marked.discard(path)
+                else:
+                    self._wg_marked.add(path)
+            except Exception as e:
+                logger.error("[EnhancedFileList] mark: %s", e)
         self._restyle()
-        return r
+
+    def clearMarks(self):
+        """hold YELLOW: no marks; returns how many there were"""
+        n = len(self.markedPaths())
+        if self._native_marks() and hasattr(self, "clearAllSelections"):
+            self.clearAllSelections()
+        self._wg_marked.clear()
+        self._restyle()
+        return n
 
     def _restyle(self):
+        if not self._native_marks():                     # own marks -> the rows' "marked" flag
+            try:
+                for i, it in enumerate(self.list):
+                    d = it[0]
+                    if isinstance(d, tuple) and len(d) > 1 and not self.isParentPath(d[0]):
+                        want = d[0] in self._wg_marked
+                        dd = list(d) + [None] * max(0, 4 - len(d))
+                        if dd[3] is not want:
+                            dd[3] = want
+                            self.list[i] = [tuple(dd)] + list(it[1:])
+            except Exception as e:
+                logger.error("[EnhancedFileList] marks: %s", e)
         try:
             from .file_icons import restyle_rows
             restyle_rows(self)
@@ -144,9 +190,12 @@ class EnhancedFileList(FileList):
                     try:
                         item_path = item[0][0]
                         item_name = item[0][2] if len(item[0]) > 2 else ""
+                        # [2026-11-06] OpenATV's own up rows (path, isDir, isLink, selected,
+                        # name, dirIcon): dirIcon set / a "<...>" name -- no second ".."
+                        native_up = len(item[0]) > 5 and (item[0][5] is not None or str(item[0][4]).startswith("<"))
                         
                         # Check for parent directory marker
-                        if ".." in str(item_path) or ".." in str(item_name):
+                        if native_up or ".." in str(item_path) or ".." in str(item_name):
                             has_parent = True
                             logger.debug("[EnhancedFileList] Found existing '..' entry")
                             break
@@ -927,22 +976,11 @@ class WGFileManagerMain(Screen):
             logger.error((("[MainScreen] Error toggling selection: " + "{e}").format(e=(e))))
 
     def unmark_all(self):
-        """Hold YELLOW: clear the marks on the rows of both panes ([2026-11-06]: it
-        cleared only a separate list and reloaded the panes, so the rows' own
-        marks -- the ones RED / BLUE act on -- could stay)"""
+        """Hold YELLOW: clear the marks in both panes"""
         cleared = 0
         for pn in ("left_pane", "right_pane"):
-            pane = self[pn]
             try:
-                for i, it in enumerate(pane.list):
-                    d = it[0]
-                    if isinstance(d, tuple) and len(d) > 3 and d[3] is True:
-                        pane.list[i] = [d[:3] + (False,) + d[4:]] + list(it[1:])
-                        cleared += 1
-                if hasattr(pane, "_restyle"):
-                    pane._restyle()
-                else:
-                    pane.l.setList(pane.list)
+                cleared += self[pn].clearMarks()
             except Exception as e:
                 logger.error("[MainScreen] unmark %s: %s", pn, e)
         self.marked_files.clear()
