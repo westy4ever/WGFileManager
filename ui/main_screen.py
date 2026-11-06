@@ -284,8 +284,47 @@ class WGFileManagerMain(Screen):
         button_y = h - 60
         label_y = h - 45
         
-        # Skin with proper attributes
-        self.skin = (("\n        <screen name=\"WGFileManagerMain\" position=\"0,0\" size=\"" + "{w}" + "," + "{h}" + "\" backgroundColor=\"#1a1a1a\" flags=\"wfNoBorder\">\n            <eLabel position=\"0,0\" size=\"" + "{_a0}" + ",60\" backgroundColor=\"#0055aa\" />\n            <eLabel text=\"WG FILE MANAGER PRO\" position=\"20,8\" size=\"600,44\" font=\"Regular;30\" halign=\"left\" valign=\"center\" transparent=\"1\" foregroundColor=\"#ffffff\" />\n            <eLabel text=\"v1.0 Professional\" position=\"" + "{_a1}" + ",12\" size=\"230,36\" font=\"Regular;22\" halign=\"right\" valign=\"center\" transparent=\"1\" foregroundColor=\"#00ffff\" />\n            \n            <widget name=\"left_banner\" position=\"25,70\" size=\"" + "{pane_width}" + ",28\" font=\"Regular;20\" halign=\"left\" valign=\"center\" backgroundColor=\"#333333\" foregroundColor=\"#ffff00\" />\n            <eLabel position=\"" + "{_a2}" + ",70\" size=\"10,28\" backgroundColor=\"#555555\" />\n            <widget name=\"right_banner\" position=\"" + "{_a3}" + ",70\" size=\"" + "{_a4}" + ",28\" font=\"Regular;20\" halign=\"left\" valign=\"center\" backgroundColor=\"#333333\" foregroundColor=\"#aaaaaa\" />\n            \n            <widget name=\"left_pane\" position=\"25,110\" size=\"" + "{_a5}" + "," + "{pane_height}" + "\" font=\"Regular;18\" itemHeight=\"38\" selectionColor=\"#FF5555\" scrollbarMode=\"showOnDemand\" />\n            <widget name=\"right_pane\" position=\"" + "{_a6}" + ",110\" size=\"" + "{_a7}" + "," + "{_a8}" + "\" font=\"Regular;18\" itemHeight=\"38\" selectionColor=\"#FF5555\" scrollbarMode=\"showOnDemand\" />\n            \n            <widget name=\"progress_bar\" position=\"20," + "{_a9}" + "\" size=\"" + "{_a10}" + ",8\" backgroundColor=\"#333333\" foregroundColor=\"#00aaff\" borderWidth=\"2\" borderColor=\"#aaaaaa\" />\n            <widget name=\"info_panel\" position=\"20," + "{_a11}" + "\" size=\"" + "{_a12}" + ",30\" font=\"Regular;20\" foregroundColor=\"#ff8800\" transparent=\"1\" />\n            <widget name=\"status_bar\" position=\"20," + "{_a13}" + "\" size=\"" + "{_a14}" + ",35\" font=\"Regular;22\" foregroundColor=\"#ffffff\" transparent=\"1\" />\n            \n            <eLabel position=\"0," + "{_a15}" + "\" size=\"" + "{_a16}" + ",60\" backgroundColor=\"#000000\" />\n            <ePixmap pixmap=\"buttons/red.png\" position=\"20," + "{button_y}" + "\" size=\"30,30\" alphatest=\"on\" />\n            <ePixmap pixmap=\"buttons/green.png\" position=\"180," + "{_a17}" + "\" size=\"30,30\" alphatest=\"on\" />\n            <ePixmap pixmap=\"buttons/yellow.png\" position=\"340," + "{_a18}" + "\" size=\"30,30\" alphatest=\"on\" />\n            <ePixmap pixmap=\"buttons/blue.png\" position=\"500," + "{_a19}" + "\" size=\"30,30\" alphatest=\"on\" />\n            \n            <eLabel text=\"Delete\" position=\"60," + "{label_y}" + "\" size=\"100,30\" font=\"Regular;20\" transparent=\"1\" foregroundColor=\"#ffffff\" />\n            <eLabel text=\"Rename\" position=\"220," + "{_a20}" + "\" size=\"100,30\" font=\"Regular;20\" transparent=\"1\" foregroundColor=\"#ffffff\" />\n            <eLabel text=\"Select\" position=\"380," + "{_a21}" + "\" size=\"100,30\" font=\"Regular;20\" transparent=\"1\" foregroundColor=\"#ffffff\" />\n            <eLabel text=\"Copy/Move\" position=\"540," + "{_a22}" + "\" size=\"150,30\" font=\"Regular;20\" transparent=\"1\" foregroundColor=\"#ffffff\" />\n            <widget name=\"help_text\" position=\"50," + "{_a23}" + "\" size=\"" + "{_a24}" + ",30\" font=\"Regular;18\" halign=\"right\" transparent=\"1\" foregroundColor=\"#aaaaaa\" />\n        </screen>").format(w=(w), h=(h), _a0=(w), _a1=(w-250), pane_width=(pane_width), _a2=(pane_width + 30), _a3=(pane_width + 45), _a4=(pane_width), _a5=(pane_width), pane_height=(pane_height), _a6=(pane_width + 45), _a7=(pane_width), _a8=(pane_height), _a9=(h-150), _a10=(w-40), _a11=(h-135), _a12=(w-40), _a13=(h-100), _a14=(w-40), _a15=(h-60), _a16=(w), button_y=(button_y), _a17=(button_y), _a18=(button_y), _a19=(button_y), label_y=(label_y), _a20=(label_y), _a21=(label_y), _a22=(label_y), _a23=(h-80), _a24=(w-100)))
+        # [2026-11-05] the armoured look (Theme Colour, as the players): designed at
+        # 1920x1080; scale_skin_xml() recolours, draws the theme="..." frames and
+        # scales to the box's screen. The colour keys keep their remote colours.
+        from ..player.nova.plugin_gridlist import scale_skin_xml
+        key = ('<eLabel position="{x},990" size="{w},40" backgroundColor="#161C23" cornerRadius="8" zPosition="2" />'
+               '<eLabel position="{dx},1002" size="16,16" backgroundColor="{c}" cornerRadius="8" zPosition="3" />'
+               '<eLabel text="{t}" position="{tx},990" size="{tw},40" font="Regular;24" valign="center" '
+               'foregroundColor="#F0F6FC" transparent="1" zPosition="3" />')
+        keys = "".join(key.format(x=x, w=wd, dx=x + 14, c=c, t=t, tx=x + 42, tw=wd - 50) for x, wd, c, t in (
+            (100, 150, "#E5484D", "Delete"), (266, 160, "#30A46C", "Rename"),
+            (442, 150, "#F2C231", "Select"), (608, 200, "#3E7BFA", "Copy / Move")))
+        pane = ('<widget name="{n}_frame_on" theme="card" position="{x},142" size="860,726" zPosition="1" />'
+                '<widget name="{n}_frame_off" theme="dim" position="{x},142" size="860,726" zPosition="1" />'
+                '<widget name="{n}_banner" position="{bx},158" size="800,46" font="Regular;26" halign="left" valign="center" '
+                'foregroundColor="#F2C230" backgroundColor="#141A21" cornerRadius="8" zPosition="3" />'
+                '<widget name="{n}_pane" position="{lx},216" size="816,576" font="Regular;26" itemHeight="48" '
+                'backgroundColor="#0D1014" foregroundColor="#E6EDF3" selectionColor="#8A6D1E" '
+                'foregroundColorSelected="#FFFFFF" scrollbarMode="showOnDemand" zPosition="3" />')
+        panes = pane.format(n="left", x=88, bx=118, lx=110) + pane.format(n="right", x=972, bx=1002, lx=994)
+        self.skin = scale_skin_xml(
+            '<screen name="WGFileManagerMain" position="0,0" size="1920,1080" backgroundColor="#06090C" flags="wfNoBorder">'
+            '<eLabel theme="panel" position="40,30" size="1840,1020" backgroundColor="#0A0C0F" zPosition="0" />'
+            '<eLabel text="WG FILE MANAGER" position="100,74" size="520,52" font="Regular;34" valign="center" '
+            'foregroundColor="#F2C230" transparent="1" zPosition="2" />'
+            '<eLabel text="PRO" position="472,84" size="70,32" font="Regular;22" halign="center" valign="center" '
+            'foregroundColor="#0B0F14" backgroundColor="#F2C230" cornerRadius="6" zPosition="2" />'
+            '<widget source="global.CurrentTime" render="Label" position="1620,74" size="200,52" font="Regular;32" '
+            'halign="right" valign="center" foregroundColor="#FFFFFF" transparent="1" zPosition="2">'
+            '<convert type="ClockToText">Default</convert></widget>'
+            + panes +
+            '<widget name="progress_bar" position="100,882" size="1720,12" backgroundColor="#1B222B" '
+            'foregroundColor="#F2C230" cornerRadius="6" zPosition="3" />'
+            '<widget name="info_panel" position="100,900" size="1720,36" font="Regular;24" valign="center" '
+            'foregroundColor="#E5D1A6" transparent="1" zPosition="3" />'
+            '<widget name="status_bar" position="100,936" size="1720,36" font="Regular;24" valign="center" '
+            'foregroundColor="#C9D1D9" transparent="1" zPosition="3" />'
+            '<eLabel position="100,978" size="1720,1" backgroundColor="#2F3A46" zPosition="2" />'
+            + keys +
+            '<widget name="help_text" position="830,990" size="990,40" font="Regular;22" halign="right" valign="center" '
+            'foregroundColor="#9AA4B2" transparent="1" zPosition="3" />'
+            '</screen>')
         
         # Create widgets
         left_path = self.config.plugins.wgfilemanager.left_path.value
@@ -323,6 +362,9 @@ class WGFileManagerMain(Screen):
         self["progress_bar"] = ProgressBar()
         self["status_bar"] = Label("Loading...")
         self["info_panel"] = Label("")
+        from ..player.nova.novaplay_theme import Frame
+        for _n in ("left_frame_on", "left_frame_off", "right_frame_on", "right_frame_off"):
+            self[_n] = Frame()                         # [theme] the active pane glows, the other is dim
         self["left_banner"] = Label("◀ LEFT PANE")
         self["right_banner"] = Label("RIGHT PANE ▶")
         self["help_text"] = Label("OK:Navigate(hold:Menu) 0:Menu YEL:Select MENU:Tools")
@@ -552,8 +594,16 @@ class WGFileManagerMain(Screen):
             try:
                 from enigma import gRGB
                 
-                ACTIVE_COLOR = gRGB(0xffff00)  # Yellow
-                INACTIVE_COLOR = gRGB(0xaaaaaa)  # Gray
+                from ..player.nova.novaplay_theme import TH_GOLD_INT
+                ACTIVE_COLOR = gRGB(TH_GOLD_INT)  # the theme colour
+                INACTIVE_COLOR = gRGB(0x8B949E)  # Gray
+                # [theme] the active pane's frame glows, the other one is dim
+                for side, on in (("left", is_left_active), ("right", is_right_active)):
+                    try:
+                        (self[side + "_frame_on"].show if on else self[side + "_frame_on"].hide)()
+                        (self[side + "_frame_off"].hide if on else self[side + "_frame_off"].show)()
+                    except Exception:
+                        pass
                 
                 left_instance = self["left_banner"].instance
                 right_instance = self["right_banner"].instance

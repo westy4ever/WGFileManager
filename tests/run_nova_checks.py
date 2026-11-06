@@ -477,6 +477,47 @@ def check_exit_to_tv():
     expect("audio player exit: the channel comes back with a full re-tune (no frozen picture)", calls, [TV])
 
 
+def check_browser():
+    """the file browser: armoured layout, the active pane's frame glows"""
+    print("\n[10] file browser look")
+    import re
+    MS = __import__(PKG + ".ui.main_screen", fromlist=["x"])
+
+    class _S(object):
+        def width(self): return 1920
+        def height(self): return 1080
+
+    class _D(object):
+        def size(self): return _S()
+
+    class _Cfg(object):
+        value = "/tmp/"
+        def __getattr__(self, k): return _Cfg()
+        def __call__(self, *a, **k): return {}
+        def __iter__(self): return iter(())
+    old = MS.getDesktop, MS.WGFileManagerConfig
+    MS.getDesktop, MS.WGFileManagerConfig = (lambda n: _D()), (lambda: _Cfg())
+    try:
+        m = MS.WGFileManagerMain(Dummy())
+    finally:
+        MS.getDesktop, MS.WGFileManagerConfig = old
+    w = widgets_of(m.skin)
+    c = set(k for k in m._hw if not k.lower().endswith("actions"))
+    expect("browser builds; widgets in code == widgets in the skin; no theme= left",
+           (sorted(c - w), sorted(w - c), 'theme="' in m.skin), ([], [], False))
+    expect("window and both panes are frame pictures (on + dim each)", len(re.findall(r"images/theme/", m.skin)), 5)
+    seen = {}
+    for n in ("left_frame_on", "left_frame_off", "right_frame_on", "right_frame_off"):
+        m[n].show = (lambda n=n: seen.__setitem__(n, True))
+        m[n].hide = (lambda n=n: seen.__setitem__(n, False))
+    m.active_pane = m["right_pane"]
+    m.update_banners()
+    expect("right pane active: its frame glows, the left one is dim",
+           (seen.get("right_frame_on"), seen.get("right_frame_off"), seen.get("left_frame_on"), seen.get("left_frame_off")),
+           (True, False, False, True))
+    expect("the YELLOW key dot keeps the remote's yellow", "#F2C231" in m.skin, True)
+
+
 def main():
     check_imports()
     check_screen()
@@ -487,6 +528,7 @@ def main():
     check_file_manager()
     check_theme()
     check_exit_to_tv()
+    check_browser()
     print("\n" + ("ALL PASSED" if not FAILS else "%d FAILED" % len(FAILS)))
     sys.exit(1 if FAILS else 0)
 

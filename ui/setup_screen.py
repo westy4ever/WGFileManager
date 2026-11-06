@@ -128,7 +128,7 @@ class WGFileManagerSetup(ConfigListScreen, Screen):
             self.list.append(getConfigListEntry("Use Internal Player:", p.use_internal_player))
             self.list.append(getConfigListEntry("Fallback to External:", p.fallback_to_external))
             if hasattr(p, "player_theme_colour"):
-                self.list.append(getConfigListEntry("Player Theme Colour (after restart):", p.player_theme_colour))
+                self.list.append(getConfigListEntry("Theme Colour - browser and players (after restart):", p.player_theme_colour))
             
             # Remote & Network
             self.list.append(getConfigListEntry("══════ Remote Access ══════", ConfigNothing()))
@@ -189,7 +189,7 @@ class WGFileManagerSetup(ConfigListScreen, Screen):
                         self.session.open(TryQuitMainloop, 3)
                     self.close()
                 self.session.openWithCallback(_restart, MessageBox,
-                                              "Player theme colour: %s.\n\nRestart Enigma2 now so it takes effect?"
+                                              "Theme colour: %s.\n\nRestart Enigma2 now so it takes effect?"
                                               % p.player_theme_colour.value.capitalize(), MessageBox.TYPE_YESNO)
                 return
 

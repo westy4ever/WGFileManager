@@ -36,6 +36,9 @@ def _chamfer_poly(w, h, c, notch=None):
 
 
 def render(kind, w, h, accent):
+    if kind == "dim":                         # a card not in focus: grey edge, faint glow
+        accent = (58, 70, 84)
+        kind = "card"
     W, H = w * SS, h * SS
     panel = kind == "panel"
     c = int(max(14, min(40, min(w, h) * 0.18)) if panel else max(8, min(22, min(w, h) * 0.10))) * SS
@@ -130,7 +133,7 @@ def collect(repo, pkg, scan=()):
             print("  (skipped %s: %s)" % (n, e))
     # skins built only when a screen opens: their fixed sizes, read from the source
     import re
-    rx = re.compile(r'theme="(panel|card)"[^>]*?size="(\d+),(\d+)"|size="(\d+),(\d+)"[^>]*?theme="(panel|card)"')
+    rx = re.compile(r'theme="(panel|card|dim)"[^>]*?size="(\d+),(\d+)"|size="(\d+),(\d+)"[^>]*?theme="(panel|card|dim)"')
     files = [os.path.join(folder, n + ".py") for n in names]
     for extra in scan:                                          # more folders (WGFileManager's ui/)
         d = os.path.join(repo, extra)

@@ -34,7 +34,7 @@ _HERE = os.path.dirname(os.path.abspath(__file__))
 FRAME_DIR = os.path.join(_HERE, "images", "theme")
 KEY_YELLOW = "#F2C231"       # the YELLOW remote-key dots: never recoloured (one off from the old gold)
 REQUESTED = set()            # (kind, w, h) every skin asked for -- the frame maker reads this
-GENERIC = {"panel": (1200, 720), "card": (520, 300)}   # <kind>_any.png: sizes known only at run time
+GENERIC = {"panel": (1200, 720), "card": (520, 300), "dim": (520, 300)}   # dim: a card that is not in focus (grey edge)   # <kind>_any.png: sizes known only at run time
 
 
 def theme_name():
@@ -101,7 +101,7 @@ def frame_path(kind, w, h, name=None):
 
 
 _ATTR = re.compile(r'(\w+)="([^"]*)"')
-_EL = re.compile(r'<(eLabel|widget)\b([^<>]*?)\btheme="(panel|card|hide)"([^<>]*?)/>', re.S)
+_EL = re.compile(r'<(eLabel|widget)\b([^<>]*?)\btheme="(panel|card|dim|hide)"([^<>]*?)/>', re.S)
 _KEEP = ("name", "position", "size", "zPosition")
 
 
