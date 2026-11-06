@@ -704,7 +704,7 @@ class WGFileManagerMain(Screen):
             sel = self.active_pane.getSelection()
             current_name = ""
             if sel and sel[0]:
-                current_name = os.path.basename(sel[0])
+                current_name = os.path.basename(str(sel[0]).rstrip("/")) or str(sel[0])
                 logger.debug((("[MainScreen] Current selection: " + "{current_name}").format(current_name=(current_name))))
 
             # 3. Create the status text
@@ -729,7 +729,7 @@ class WGFileManagerMain(Screen):
             sel = self.active_pane.getSelection()
             if sel and sel[0]:
                 path = sel[0]
-                name = os.path.basename(path)
+                name = os.path.basename(str(path).rstrip("/")) or str(path)   # a folder path ends in "/"
                 icon = get_file_icon(path)
                 
                 logger.debug((("[MainScreen] Updating info panel for: " + "{name}").format(name=(name))))
