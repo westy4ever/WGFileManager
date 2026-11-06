@@ -226,7 +226,50 @@ class WGFileManagerSetup(ConfigListScreen, Screen):
         ConfigListScreen.keyRight(self)
 
     def keyOK(self):
-        pass
+        """[2026-11-06] OK on Default Left / Right Path: pick where the pane opens"""
+        try:
+            cur = self["config"].getCurrent()
+            p = config.plugins.wgfilemanager
+            item = cur[1] if cur else None
+            if item is not p.left_path and item is not p.right_path:
+                return
+            from Screens.ChoiceBox import ChoiceBox
+            from ..core.config import DEVICES_VALUE
+            choices = [("Storage devices (the list of drives)", DEVICES_VALUE),
+                       ("/media/hdd/  (hard disk)", "/media/hdd/"),
+                       ("/  (Internal flash)", "/")]
+            if item.value not in [c[1] for c in choices]:
+                choices.append((item.value + "  (now)", item.value))
+            choices.append(("Type a folder...", "__type__"))
+            title = "%s opens on:" % ("Left pane" if item is p.left_path else "Right pane")
+
+            def _picked(choice):
+                if not choice:
+                    return
+                if choice[1] == "__type__":
+                    from Screens.VirtualKeyBoard import VirtualKeyBoard
+
+                    def _typed(text):
+                        if text:
+                            text = text.strip()
+                            if not text.startswith("/"):
+                                self.session.open(MessageBox, "A folder path starts with /", MessageBox.TYPE_ERROR, timeout=4)
+                                return
+                            self._setPath(item, text if text.endswith("/") else text + "/")
+                    start = item.value if item.value.startswith("/") else "/media/hdd/"
+                    self.session.openWithCallback(_typed, VirtualKeyBoard, title=title, text=start)
+                    return
+                self._setPath(item, choice[1])
+            self.session.openWithCallback(_picked, ChoiceBox, title=title, list=choices)
+        except Exception as e:
+            logger.error("Setup: path choice: %s", e)
+
+    def _setPath(self, item, value):
+        item.value = value
+        try:
+            self["config"].invalidateCurrent()
+        except Exception:
+            self["config"].setList(self.list)
 
     # Change this in setup_screen.py
 def update_help_text(self):

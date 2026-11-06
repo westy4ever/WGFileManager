@@ -688,6 +688,48 @@ def check_storage_list():
             MS.WGFileManagerMain.__getitem__ = _orig
 
 
+def check_default_path_devices():
+    """Setup: OK on Default Left Path offers "Storage devices"; the pane then
+    opens on the list of drives"""
+    print("\n[15] default path: storage devices")
+    SS = __import__(PKG + ".ui.setup_screen", fromlist=["x"])
+    CFG = __import__(PKG + ".core.config", fromlist=["x"])
+    if "Screens.ChoiceBox" not in sys.modules:
+        import types
+        sys.modules["Screens.ChoiceBox"] = types.ModuleType("Screens.ChoiceBox")
+        sys.modules["Screens.ChoiceBox"].ChoiceBox = object
+
+    class _V(object):
+        def __init__(self, v):
+            self.value = v
+    left, right = _V("/media/hdd/"), _V("/")
+
+    class _P(object):
+        left_path, right_path = left, right
+    old = SS.config
+    SS.config = type("C", (), {"plugins": type("PL", (), {"wgfilemanager": _P()})()})()
+    asked = []
+    try:
+        fake = object.__new__(SS.WGFileManagerSetup)
+        fake._hw = {"config": type("CL", (), {"getCurrent": lambda s: ("Default Left Path:", left),
+                                               "invalidateCurrent": lambda s: None})()}
+        _gi = SS.WGFileManagerSetup.__dict__.get("__getitem__")
+        SS.WGFileManagerSetup.__getitem__ = lambda self, k: self._hw[k]
+        fake.session = type("S", (), {"openWithCallback": lambda s, cb, cls, **k: asked.append((cb, k.get("list")))})()
+        fake.keyOK()
+        labels = [c[1] for c in asked[0][1]] if asked else []
+        expect("OK on the path row offers Storage devices", CFG.DEVICES_VALUE in labels, True)
+        asked[0][0](("Storage devices (the list of drives)", CFG.DEVICES_VALUE))
+        expect("choosing it saves 'Storage devices'", left.value, CFG.DEVICES_VALUE)
+        if _gi is None:
+            del SS.WGFileManagerSetup.__getitem__
+    finally:
+        SS.config = old
+    src = open(os.path.join(REPO, "ui", "main_screen.py"), encoding="utf-8").read()
+    expect("the pane opens on the drives (None) for that value",
+           "left_path = None if left_path == DEVICES_VALUE else left_path" in src, True)
+
+
 def main():
     check_imports()
     check_screen()
@@ -703,6 +745,7 @@ def main():
     check_marks()
     check_setup_save()
     check_storage_list()
+    check_default_path_devices()
     print("\n" + ("ALL PASSED" if not FAILS else "%d FAILED" % len(FAILS)))
     sys.exit(1 if FAILS else 0)
 

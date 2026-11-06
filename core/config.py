@@ -6,6 +6,11 @@ from ..utils.logging_config import get_logger
 
 logger = get_logger(__name__)
 
+
+# [2026-11-06] Default Left / Right Path: this value opens the pane on the
+# list of drives (Internal flash, hard disk, USB) instead of a folder
+DEVICES_VALUE = "Storage devices"
+
 class WGFileManagerConfig:
     # Change the class to a standard function
     def __init__(self):
@@ -30,7 +35,7 @@ class WGFileManagerConfig:
         
         p = config.plugins.wgfilemanager
         
-        # --- Paths ---
+        # --- Paths --- (DEVICES_VALUE: the pane opens on the list of drives)
         if not hasattr(p, 'left_path'):
             p.left_path = ConfigText(default="/media/hdd/", fixed_size=False)
         if not hasattr(p, 'right_path'):
@@ -169,8 +174,8 @@ class WGFileManagerConfig:
         try:
             issues = []
             p = self.plugins.wgfilemanager
-            if not os.path.isabs(p.left_path.value): issues.append("Left path must be absolute")
-            if not os.path.isabs(p.right_path.value): issues.append("Right path must be absolute")
+            if p.left_path.value != DEVICES_VALUE and not os.path.isabs(p.left_path.value): issues.append("Left path must be absolute")
+            if p.right_path.value != DEVICES_VALUE and not os.path.isabs(p.right_path.value): issues.append("Right path must be absolute")
             
             import re
             ip_pattern = r'^((25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)\.){3}(25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)$'
