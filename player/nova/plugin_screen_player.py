@@ -71,12 +71,12 @@ class NovaPlaySimplePlayer(PlayerStudioUI, PlayerOSD, PlayerSwitch, PlayerNetWai
              remaining + "Ends 23:14" / colour keys + one help line.
              (No double hyphen inside an XML comment: the skin would not load.) -->
         <widget name="overlayEdge" theme="hide"  position="158,866" size="1604,204" backgroundColor="#F2C230" transparent="1" zPosition="9" />
-        <widget name="posterEdge" theme="hide"   position="188,578" size="180,270" backgroundColor="#1A121822" zPosition="11" />
+        <widget name="posterEdge" theme="hide"   position="178,466" size="240,350" backgroundColor="#1A121822" zPosition="11" />
         <!-- [2026-11-04] slightly see-through like the BLUE / MENU panels; the gold
              frame is the panel's own border now (a gold block behind would show through) -->
         <widget name="overlay_bg" theme="panel"   position="160,868" size="1600,200" backgroundColor="#1A121822" borderWidth="2" borderColor="#F2C230" cornerRadius="20" zPosition="10" />
-        <widget name="osdPosterBox" theme="card" position="188,578" size="180,270" backgroundColor="#1A121822" zPosition="11" transparent="0" />
-        <widget name="osdPoster" position="188,578" size="180,270" zPosition="12" alphatest="blend" scale="1" />
+        <widget name="osdPosterBox" theme="card" position="178,466" size="240,350" backgroundColor="#1A121822" zPosition="11" transparent="0" />
+        <widget name="osdPoster" position="188,476" size="220,330" zPosition="12" alphatest="blend" scale="1" />
         <widget name="osd_title"    position="184,880" size="766,40" font="Regular;30" foregroundColor="#F2C230" transparent="1" zPosition="12" halign="left" valign="center" />
         <widget name="osd_episode"  position="770,880" size="180,40" font="Regular;24" foregroundColor="#F2C230" transparent="1" zPosition="12" halign="left" valign="center" />
         <widget name="osd_videinfo" position="960,880" size="260,40" font="Regular;22" foregroundColor="#A3ADBB" transparent="1" zPosition="12" halign="left" valign="center" />
@@ -174,7 +174,7 @@ class NovaPlaySimplePlayer(PlayerStudioUI, PlayerOSD, PlayerSwitch, PlayerNetWai
                     "prog_bar", "osd_hints", "osd_keybar", "osd_botline", "osd_jump")
 
     _OSD_DESIGN_Y = {
-        "overlayEdge": 866, "overlay_bg": 868, "posterEdge": 578, "osdPosterBox": 578, "osdPoster": 578,
+        "overlayEdge": 866, "overlay_bg": 868, "posterEdge": 466, "osdPosterBox": 466, "osdPoster": 476,   # [2026-11-06] bigger, clear of the seek bubble
         "osd_title": 880, "osd_episode": 880, "osd_videinfo": 880, "osd_subdetail": 880, "osd_clock": 880,
         "seekFrame": 930, "seekbar": 932, "seekMarker": 927,
         "osd_elapsed": 958, "osd_state": 958, "status": 958, "osd_durtext": 958,

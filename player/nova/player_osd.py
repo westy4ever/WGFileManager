@@ -457,12 +457,12 @@ class PlayerOSD(object):
             path = ""
         if not path:
             try:
-                path = plugin_imagecache.getCachedImage(url, target_size=(180, 270)) or ""
+                path = plugin_imagecache.getCachedImage(url, target_size=(220, 330)) or ""
             except Exception:
                 path = ""
         if not path and not getattr(self, "_poster_requested", False):
             try:
-                plugin_imagecache.requestImageAsyncPriority(url, target_size=(180, 270))
+                plugin_imagecache.requestImageAsyncPriority(url, target_size=(220, 330))
                 self._poster_requested = True
             except Exception:
                 pass
