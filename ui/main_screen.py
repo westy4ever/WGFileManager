@@ -1944,11 +1944,13 @@ class WGFileManagerMain(Screen):
             'zip': 'ZIP archives',
             'unzip': 'ZIP extraction',
             'tar': 'TAR archives',
-            'cifs-utils': 'Network mounts',
+            'mount.cifs': 'Network mounts (package cifs-utils)',
             'smbclient': 'Network scanning',
             'curl': 'WebDAV support',
-            'ftp': 'FTP client',
         }
+        # [2026-11-06] the check looks for programs: "cifs-utils" is the package's
+        # name (its program is mount.cifs), so it was always reported missing; FTP
+        # browsing uses Python's own ftplib, no "ftp" program needed
         
         missing = []
         for tool, desc in tools.items():
