@@ -35,7 +35,7 @@ def _chamfer_poly(w, h, c, notch=None):
     return pts
 
 
-def render(kind, w, h, accent):
+def render(kind, w, h, accent, full_top=False):
     if kind == "dim":                         # a card not in focus: grey edge, faint glow
         accent = (58, 70, 84)
         kind = "card"
@@ -44,7 +44,8 @@ def render(kind, w, h, accent):
     c = int(max(14, min(40, min(w, h) * 0.18)) if panel else max(8, min(22, min(w, h) * 0.10))) * SS
     edge = (3 if panel else 2) * SS
     notch = None
-    short = h < 320                       # a short panel (the player's): text starts near the top
+    short = h < 320 and not full_top      # a short panel (the player's): text starts near the top
+    # full_top: a panel whose height changes (STEPPED) keeps the same notch and top light at every height
     if panel and w >= 500:
         nw = int(w * (0.18 if short else 0.22)) * SS
         x0 = (W - nw) // 2
@@ -159,6 +160,7 @@ def main():
     ap.add_argument("--scan", action="append", default=[], help="another folder whose skins use theme= (repeatable)")
     a = ap.parse_args()
     theme = collect(a.repo, a.pkg, a.scan)
+    theme.REQUESTED.update(theme.stepped_sizes())             # frames whose height changes at run time
     want = sorted(theme.REQUESTED)
     print("%d frame sizes asked for" % len(want))
     missing = 0
@@ -172,7 +174,7 @@ def main():
                 print("  missing", path)
                 continue
             os.makedirs(os.path.dirname(path), exist_ok=True)
-            render(kind, w, h, accent).save(path, optimize=True)
+            render(kind, w, h, accent, (kind, w) in theme.STEPPED).save(path, optimize=True)
     for name, _label, accent in theme.THEMES:              # the general frames (run-time sizes)
         for kind, (w, h) in theme.GENERIC.items():
             path = os.path.join(theme.FRAME_DIR, name, "%s_any.png" % kind)

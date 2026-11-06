@@ -607,6 +607,15 @@ class NovaSettingsPanel(Screen):
         """[2026-10-31] the panel is as tall as what the tab shows"""
         h = (_SP_Y0 - _SP_Y) + body_h + 70
         self._box("spBg", _SP_X, _SP_Y, _SP_W, h)
+        try:                         # [theme] the frame drawn for this height (a stretched one squashes the lights)
+            from .novaplay_theme import frame_near
+            pic = frame_near("panel", _SP_W, h)
+            inst = self["spBg"].instance
+            if pic and inst is not None and pic != getattr(self, "_spBgPic", None):
+                inst.setPixmapFromFile(pic)
+                self._spBgPic = pic
+        except Exception:
+            pass
         self._box("help", _SP_X + 40, _SP_Y + h - 52)
 
     def _paintBody(self):

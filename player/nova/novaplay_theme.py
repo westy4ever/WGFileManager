@@ -104,6 +104,31 @@ def frame_path(kind, w, h, name=None):
     return os.path.join(FRAME_DIR, name or _NAME, "%s_%dx%d.png" % (kind, int(w), int(h)))
 
 
+# Frames whose height the code changes while the screen is open (the player's
+# settings panel grows / shrinks with the tab). A frame stretched to another
+# height squashes its notch, top light and side lights, so these get a picture
+# every few pixels of height and frame_near() picks the closest one.
+STEPPED = {("panel", 780): (260, 812, 26)}
+
+
+def stepped_sizes():
+    for (kind, w), (lo, hi, st) in STEPPED.items():
+        for h in sorted(set(list(range(lo, hi, st)) + [hi])):
+            yield kind, w, h
+
+
+def frame_near(kind, w, h, name=None):
+    """the picture made for the height closest to h (None: there is none)"""
+    rng = STEPPED.get((kind, int(w)))
+    if not rng:
+        p = frame_path(kind, w, h, name)
+        return p if os.path.isfile(p) else None
+    lo, hi, st = rng
+    best = min(set(list(range(lo, hi, st)) + [hi]), key=lambda v: abs(v - h))
+    p = frame_path(kind, w, best, name)
+    return p if os.path.isfile(p) else None
+
+
 _ATTR = re.compile(r'(\w+)="([^"]*)"')
 _EL = re.compile(r'<(eLabel|widget)\b([^<>]*?)\btheme="(panel|card|dim|hide)"([^<>]*?)/>', re.S)
 _KEEP = ("name", "position", "size", "zPosition")
