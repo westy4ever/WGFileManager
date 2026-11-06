@@ -7,7 +7,8 @@ is-folder, name, marked; item[0]) is left exactly as it was, so selecting,
 marking, copying and moving behave as before:
 
     [data, icon (32x32 in the theme colour), name (centred in the 48 px row;
-     a marked file: "✓ name" in the theme colour)]
+     a marked file: a lit icon -- filled, white lines -- and "✓ name" in the
+     theme colour)]
 
 Icons: player/nova/images/theme/<colour>/icon_<kind>.png (tools/make_theme_icons.py).
 If an icon is missing the row keeps the look Enigma2 gave it.
@@ -48,19 +49,22 @@ def icon_kind(path, is_dir, name=""):
     return "file"
 
 
-def _icon(kind):
-    if kind in _cache:
-        return _cache[kind]
+def _icon(kind, marked=False):
+    key = (kind, marked)
+    if key in _cache:
+        return _cache[key]
     png = None
     try:
         from ..player.nova.novaplay_theme import FRAME_DIR, theme_name
-        path = os.path.join(FRAME_DIR, theme_name(), "icon_%s.png" % kind)
+        path = os.path.join(FRAME_DIR, theme_name(), "%s_%s.png" % ("iconm" if marked else "icon", kind))
+        if marked and not os.path.isfile(path):             # no lit icon: the normal one
+            path = os.path.join(FRAME_DIR, theme_name(), "icon_%s.png" % kind)
         if os.path.isfile(path):
             from Tools.LoadPixmap import LoadPixmap
             png = LoadPixmap(path)
     except Exception as e:
         logger.debug("file icon %s: %s", kind, e)
-    _cache[kind] = png
+    _cache[key] = png
     return png
 
 
@@ -84,7 +88,7 @@ def restyle_row(item, width):
     path, is_dir = data[0], bool(data[1]) if len(data) > 1 else False
     name = _row_name(item)
     marked = len(data) > 3 and data[3] is True
-    png = _icon(icon_kind(path, is_dir, data[2] if len(data) > 2 and isinstance(data[2], str) else name))
+    png = _icon(icon_kind(path, is_dir, data[2] if len(data) > 2 and isinstance(data[2], str) else name), marked)
     if png is None:
         return item
     from ..player.nova.novaplay_theme import TH_GOLD_INT

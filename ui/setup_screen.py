@@ -199,7 +199,8 @@ class WGFileManagerSetup(ConfigListScreen, Screen):
         except Exception as e:
             # 4. Comprehensive error handling with logging
             logger.error(f"Error saving WGFileManager settings: {e}")
-            from Screens.MessageBox import MessageBox
+            # (no local "import MessageBox" here: it made MessageBox local to the whole
+            #  function and broke the theme restart question above -- [2026-11-06])
             self.session.open(MessageBox, f"Error saving settings: {e}", MessageBox.TYPE_ERROR)
 
     def key_cancel(self):

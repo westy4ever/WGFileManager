@@ -5,7 +5,7 @@
     python3 tools/make_theme_icons.py
 
 Writes player/nova/images/theme/<colour>/icon_<kind>.png (32 x 32, and a 48 x 48
-set for big screens as icon48_<kind>.png): folder, up (the ".." entry), video,
+set for big screens as icon48_<kind>.png; iconm_* = a marked file's lit icon): folder, up (the ".." entry), video,
 audio, image, archive, subtitle, text, file. Lines in the theme colour with a
 faint fill, drawn at 4x and scaled down so the strokes stay smooth.
 """
@@ -29,11 +29,12 @@ def _page(d, c, fill, sw):
     d.line([(78, 12), (78, 34), (100, 34)], fill=c, width=sw, joint="curve")
 
 
-def draw(kind, rgb):
+def draw(kind, rgb, marked=False):
+    """marked: a lit icon -- filled with the theme colour, white lines"""
     im = Image.new("RGBA", (S, S), (0, 0, 0, 0))
     d = ImageDraw.Draw(im)
-    c = rgb + (255,)
-    fill = rgb + (46,)
+    c = (255, 255, 255, 255) if marked else rgb + (255,)
+    fill = rgb + (225,) if marked else rgb + (46,)
     sw = 8
     if kind in ("folder", "up"):
         d.polygon([(10, 30), (50, 30), (60, 42), (118, 42), (118, 108), (10, 108)], fill=fill)
@@ -82,10 +83,11 @@ def main():
         folder = os.path.join(OUT, name)
         os.makedirs(folder, exist_ok=True)
         for kind in KINDS:
-            big = draw(kind, rgb)
-            big.resize((32, 32), Image.LANCZOS).save(os.path.join(folder, "icon_%s.png" % kind), optimize=True)
-            big.resize((48, 48), Image.LANCZOS).save(os.path.join(folder, "icon48_%s.png" % kind), optimize=True)
-            n += 2
+            for marked, pre in ((False, "icon"), (True, "iconm")):
+                big = draw(kind, rgb, marked)
+                big.resize((32, 32), Image.LANCZOS).save(os.path.join(folder, "%s_%s.png" % (pre, kind)), optimize=True)
+                big.resize((48, 48), Image.LANCZOS).save(os.path.join(folder, "%s48_%s.png" % (pre, kind)), optimize=True)
+                n += 2
     print("%d icons made" % n)
 
 

@@ -529,16 +529,17 @@ def check_file_icons():
                                                    ("/m/x.ar.srt", False, ""), ("/m/x.nfo", False, ""), ("/m/x.ipk", False, ""))],
            ["folder", "up", "video", "audio", "image", "archive", "subtitle", "text", "file"])
     missing = [(n, k) for n, _l, _c in T.THEMES for k in ("folder", "up", "video", "audio", "image", "archive", "subtitle", "text", "file")
-               if not os.path.isfile(os.path.join(T.FRAME_DIR, n, "icon_%s.png" % k))]
+               for pre in ("icon", "iconm") if not os.path.isfile(os.path.join(T.FRAME_DIR, n, "%s_%s.png" % (pre, k)))]
     expect("every icon exists in Green, Blue, Red and Gold", missing, [])
-    FI._icon = lambda kind: "PNG:" + kind                    # no Enigma2 pictures here
+    FI._icon = lambda kind, marked=False: ("LIT:" if marked else "PNG:") + kind   # no Enigma2 pictures here
     data = ("/media/hdd/movie/Dune.mkv", False, "Dune.mkv", False)
     row = FI.restyle_row([data, ("txt", 35, 1, 470, 20, 0, 0, "Dune.mkv"), ("pix", 10, 2, 20, 20, "old")], 816)
     expect("a row: same data, theme icon, name centred in the 48 px row",
            (row[0] is data, row[1][5], row[2][1:5], row[2][7]), (True, "PNG:video", (56, 0, 746, 48), "Dune.mkv"))
     marked = ("/media/hdd/movie/Dune.mkv", False, "Dune.mkv", True)
     row = FI.restyle_row([marked, ("txt", 35, 1, 470, 20, 0, 0, "Dune.mkv")], 816)
-    expect("a marked file: ✓ and the theme colour", (row[2][7], row[2][8]), (u"✓ Dune.mkv", T.TH_GOLD_INT))
+    expect("a marked file: lit icon, ✓ and the theme colour", (row[1][5], row[2][7], row[2][8]),
+           ("LIT:video", u"✓ Dune.mkv", T.TH_GOLD_INT))
     up = FI.restyle_row([("/media/hdd", True, "..", False), ".."], 816)
     expect("the '..' entry gets the up-folder icon", (up[1][5], up[2][7]), ("PNG:up", ".."))
 
@@ -578,6 +579,47 @@ def check_marks():
         MS.WGFileManagerMain.__getitem__ = _orig_getitem
 
 
+def check_setup_save():
+    """Setup: saving a new theme colour asks to restart (it failed with 'cannot
+    access local variable MessageBox')"""
+    print("\n[13] setup save")
+    SS = __import__(PKG + ".ui.setup_screen", fromlist=["x"])
+    asked = []
+
+    class _V(object):
+        value = "green"
+
+    class _P(object):
+        player_theme_colour = _V()
+
+    class _C(object):
+        plugins = type("PL", (), {"wgfilemanager": _P()})()
+    old = SS.config
+    SS.config = _C()
+    try:
+        fake = type("F", (), {})()
+        fake._theme_before = "gold"
+        fake.session = type("S", (), {"openWithCallback": lambda s, cb, cls, text, *a: asked.append(text.split("\n")[0]),
+                                      "open": lambda s, cls, text, *a: asked.append("ERROR: " + text)})()
+        fake.close = lambda: asked.append("closed")
+        import types
+        CL = sys.modules["Components.ConfigList"]
+        _sa = getattr(CL.ConfigListScreen, "saveAll", None)
+        CL.ConfigListScreen.saveAll = lambda self: None
+        CC = sys.modules["Components.config"]
+        _cf = getattr(CC, "configfile", None)
+        CC.configfile = type("CF", (), {"save": lambda s: None})()
+        try:
+            SS.WGFileManagerSetup.key_save(fake)
+        finally:
+            if _sa is not None:
+                CL.ConfigListScreen.saveAll = _sa
+            CC.configfile = _cf
+    finally:
+        SS.config = old
+    expect("a new colour: the restart question, no error", asked, ["Theme colour: Green."])
+
+
 def main():
     check_imports()
     check_screen()
@@ -591,6 +633,7 @@ def main():
     check_browser()
     check_file_icons()
     check_marks()
+    check_setup_save()
     print("\n" + ("ALL PASSED" if not FAILS else "%d FAILED" % len(FAILS)))
     sys.exit(1 if FAILS else 0)
 
